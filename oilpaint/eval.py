@@ -728,7 +728,7 @@ def build_parser():
     r.add_argument("--name", default=None)
     r.add_argument("--width", type=int, default=DEFAULT_WIDTH, help=f"sheet width in px (default {DEFAULT_WIDTH}; below {EM.RESOLVED_W} bristle/hairline scales are unresolved)")
     r.add_argument("--seed", type=int, default=1907)
-    r.add_argument("--mixer", choices=["mixbox", "rgb"], default="mixbox")
+    r.add_argument("--mixer", choices=["mixbox", "rgb", "mixbox-material", "ochrell"], default="mixbox")
     r.add_argument("--light", choices=["default", "painting", "run"], default="default",
                    help="light preset: default = engine defaults, painting = the README flags of the real painting, run = each run's own recorded light")
     for k in LIGHT_KEYS:

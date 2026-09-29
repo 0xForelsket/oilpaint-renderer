@@ -10,6 +10,8 @@
 // v1's clamp01 and range checks are kept verbatim (same results as f32::clamp, including NaN and signed zero).
 #![allow(clippy::manual_clamp, clippy::manual_range_contains)]
 
+pub mod srgb;
+
 /// A paint state: a fixed-length f32 vector that mixes by linear interpolation.
 pub trait State: Copy + Send + Sync + 'static {
     const LEN: usize;
@@ -89,16 +91,16 @@ pub fn clamp01(x: f32) -> f32 {
     }
 }
 
-/// Composite `new` over `old` (both sRGB) with coverage `a` in linear light, using the engine's sRGB transfer.
+/// Composite `new` over `old` (both sRGB) with coverage `a` in linear light, using the engine's sRGB transfer
+/// (`srgb`: table interpolation built from `oil-math`).
 #[inline]
 pub fn composite_srgb(old: &mut [f32; 3], new: [f32; 3], a: f32) {
     for ch in 0..3 {
-        let lo = oil_math::srgb_to_linear(old[ch] as f64);
-        let ln = oil_math::srgb_to_linear(new[ch] as f64);
-        old[ch] = oil_math::linear_to_srgb(lo + a as f64 * (ln - lo)) as f32;
+        let lo = srgb::to_linear(old[ch]);
+        let ln = srgb::to_linear(new[ch]);
+        old[ch] = srgb::from_linear(lo + a * (ln - lo));
     }
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;

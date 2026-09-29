@@ -16,6 +16,8 @@ pub struct Planes<'a, S> {
     pub wet: &'a mut [f32],
     /// Summed deposit alpha.
     pub cover: &'a mut [f32],
+    /// Relative paint amount (0 = bare ground): deposits mix by amount with the wet part of it.
+    pub amount: &'a mut [f32],
     /// Blurred height, read by scumble strokes; empty means zero everywhere.
     pub hblur: &'a [f32],
 }
@@ -26,7 +28,7 @@ impl<S> Planes<'_, S> {
         if self.w == 0 || self.h == 0 || self.w > i32::MAX as usize / 2 || self.h > i32::MAX as usize / 2 {
             return Err("canvas dimensions out of range");
         }
-        if self.lat.len() != n || self.rgb.len() != n || self.hgt.len() != n || self.wet.len() != n || self.cover.len() != n {
+        if self.lat.len() != n || self.rgb.len() != n || self.hgt.len() != n || self.wet.len() != n || self.cover.len() != n || self.amount.len() != n {
             return Err("plane length does not match width x height");
         }
         if !self.hblur.is_empty() && self.hblur.len() != n {
@@ -45,6 +47,7 @@ pub struct Canvas<M: Mixer> {
     pub hgt: Vec<f32>,
     pub wet: Vec<f32>,
     pub cover: Vec<f32>,
+    pub amount: Vec<f32>,
     pub hblur: Vec<f32>,
 }
 
@@ -54,7 +57,7 @@ impl<M: Mixer> Canvas<M> {
         let n = w * h;
         let g = m.encode(ground);
         let rgb = m.decode_srgb(&g);
-        Canvas { w, h, lat: vec![g; n], rgb: vec![rgb; n], hgt: vec![0.0; n], wet: vec![0.0; n], cover: vec![0.0; n], hblur: Vec::new() }
+        Canvas { w, h, lat: vec![g; n], rgb: vec![rgb; n], hgt: vec![0.0; n], wet: vec![0.0; n], cover: vec![0.0; n], amount: vec![0.0; n], hblur: Vec::new() }
     }
 
     pub fn planes(&mut self) -> Planes<'_, M::State> {
@@ -66,6 +69,7 @@ impl<M: Mixer> Canvas<M> {
             hgt: &mut self.hgt,
             wet: &mut self.wet,
             cover: &mut self.cover,
+            amount: &mut self.amount,
             hblur: &self.hblur,
         }
     }
@@ -77,8 +81,9 @@ impl<M: Mixer> Canvas<M> {
         }
     }
 
-    /// Bytes per pixel of this canvas's planes (the memory budget uses this).
+    /// Bytes per pixel of this canvas's planes (the memory budget uses this): state, rgb, h, wet, cover, amount,
+    /// hblur.
     pub fn bytes_per_pixel() -> usize {
-        4 * (<M::State as State>::LEN + 3 + 4)
+        4 * (<M::State as State>::LEN + 3 + 5)
     }
 }

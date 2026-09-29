@@ -26,11 +26,17 @@ def library(comparison=False):
 def _library(comparison):
     # Cargo tracks the path dependency and shared kernel, so stale DLLs are not
     # silently reused. Build once per process, outside measured painting loops.
-    crate = ROOT / "native" / "mixer-comparison" if comparison else CRATE
-    target = crate / "target"
-    subprocess.run([os.environ.get("CARGO", "cargo"), "build", "--release", "--offline",
-                    "--manifest-path", str(crate / "Cargo.toml"), "--target-dir", str(target)], check=True)
-    stem = "mixer_comparison" if comparison else "ochrell_brush"
+    if os.environ.get("OILPAINT_KERNEL") == "oil":
+        # the new engine's kernel (crates/oil-kernel) behind this bridge ABI (crates/oil-shim), for the port checks
+        subprocess.run([os.environ.get("CARGO", "cargo"), "build", "--release", "-p", "oil-shim",
+                        "--manifest-path", str(ROOT / "Cargo.toml")], check=True)
+        target, stem = ROOT / "target", "oil_shim"
+    else:
+        crate = ROOT / "native" / "mixer-comparison" if comparison else CRATE
+        target = crate / "target"
+        subprocess.run([os.environ.get("CARGO", "cargo"), "build", "--release", "--offline",
+                        "--manifest-path", str(crate / "Cargo.toml"), "--target-dir", str(target)], check=True)
+        stem = "mixer_comparison" if comparison else "ochrell_brush"
     name = stem + ".dll" if sys.platform == "win32" else (
         "lib" + stem + (".dylib" if sys.platform == "darwin" else ".so"))
     lib = ctypes.CDLL(str(target / "release" / name))

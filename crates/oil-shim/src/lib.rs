@@ -1,19 +1,44 @@
-//! ctypes shim: the new kernel behind v1's `brush.c` C ABI, so the Python renderer and eval harness can paint with
-//! it (`OILPAINT_KERNEL=oil`, see `oilpaint/_build.py`). It serves the port checks (P1 in L1, level E in L3) and is
-//! retired together with the Python harness in L5.
+//! ctypes shim: the new kernel behind the Ochrell bridge's C ABI (`native/ochrell-brush`, `oilpaint/ochrell.py`), so the
+//! Python renderer and eval harness can paint with it: `OILPAINT_KERNEL=oil` with a material backend
+//! (`--mixer mixbox-material`, and `ochrell` once it is wired in). It serves the port checks (L1) and level E (L3), and
+//! is retired together with the Python harness in L5.
 //!
-//! Safety contract (as for `brush.c`): every pointer is non-null, aligned, and addresses a live, disjoint buffer of
-//! the stated length for the duration of the call. The Python side checks shapes and dtypes.
+//! The kernel has one transport, the material transport, which needs the canvas `amount` plane; v1's `brush.c` ABI
+//! has no such plane and is not served (step 1 of the L1 port check used it: commit a9c573a).
+//!
+//! Safety contract (as for the bridge): every pointer is non-null, aligned, and addresses a live, disjoint buffer of
+//! the stated length for the duration of the call. The Python side checks shapes, dtypes and values.
 use oil_kernel::{render_stroke as kernel_stroke, BrushParams, Load, Planes};
 use oil_mix::Mixer;
 use oil_mix_mixbox::MixboxMixer;
 
-type M = MixboxMixer;
-const LAT: usize = 7;
+/// Floats per state on the wire (the bridge's format: K[41], S[41], residual[3] for Ochrell).
+pub const LAT: usize = 85;
+/// Bridge mixing modes this shim serves.
+pub const MODE_OCHRELL: i32 = 0;
+pub const MODE_MIXBOX_MATERIAL: i32 = 3;
 
-/// v1's `Canvas` struct from `brush.c` (`oilpaint/_build.py: CCanvas`).
+/// Mixbox in the bridge's 85-float wire format (first 7 floats; the rest stay zero): the `mixbox-material`
+/// control of the Ochrell integration. Test-only; the engine's Mixbox mixer uses a 7-float state.
+#[derive(Clone, Copy, Default)]
+pub struct Mixbox85;
+
+impl Mixer for Mixbox85 {
+    const ID: &'static str = "mixbox-2.0-padded85";
+    type State = [f32; LAT];
+    fn encode(&self, srgb: [f32; 3]) -> [f32; LAT] {
+        let mut z = [0.0; LAT];
+        z[..7].copy_from_slice(&MixboxMixer.encode(srgb));
+        z
+    }
+    fn decode_srgb(&self, z: &[f32; LAT]) -> [f32; 3] {
+        MixboxMixer.decode_srgb(z[..7].try_into().unwrap())
+    }
+}
+
+/// The bridge's canvas struct (`oilpaint/_build.py: OchrellCanvas`).
 #[repr(C)]
-pub struct CCanvas {
+pub struct OchrellCanvas {
     pub w: i32,
     pub h: i32,
     pub lat: *mut f32,
@@ -23,6 +48,8 @@ pub struct CCanvas {
     pub cover: *mut f32,
     pub hblur: *mut f32,
     pub region: *mut u8,
+    pub amount: *mut f32,
+    pub mixing_mode: i32,
 }
 
 /// v1's `BrushParams` layout (`oilpaint/_build.py`). `allow_mask` and `override_p` were never read by the kernel.
@@ -102,21 +129,114 @@ impl From<&CBrushParams> for BrushParams {
 pub unsafe extern "C" fn oil_engine_version(buf: *mut u8, cap: usize) -> usize {
     let v = oil_kernel::ENGINE_VERSION.as_bytes();
     if !buf.is_null() && cap > 0 {
-        let n = v.len().min(cap);
         // SAFETY: the caller guarantees `cap` writable bytes at `buf`.
-        unsafe { std::ptr::copy_nonoverlapping(v.as_ptr(), buf, n) };
+        unsafe { std::ptr::copy_nonoverlapping(v.as_ptr(), buf, v.len().min(cap)) };
     }
     v.len()
 }
 
-/// Paints one stroke; returns the painted pixel count, or -1 if the kernel panicked.
+#[no_mangle]
+pub extern "C" fn ochrell_bridge_abi() -> u32 {
+    1
+}
+
+#[no_mangle]
+pub extern "C" fn ochrell_state_len() -> usize {
+    LAT
+}
+
+/// Encodes `n` sRGB colours into 85-float states. Returns 0, -1 for bad arguments, -3 for an unavailable mode.
 ///
 /// # Safety
-/// See the crate documentation: `cv` and its planes, `pts` (`n * 4` floats), `zcol`/`zcol2`/`dz` (7 floats each),
+/// `rgb` addresses `n * 3` floats and `lat` `n * 85` writable floats.
+#[no_mangle]
+pub unsafe extern "C" fn ochrell_encode(rgb: *const f32, lat: *mut f32, n: usize, mode: i32) -> i32 {
+    if n == 0 {
+        return 0;
+    }
+    if rgb.is_null() || lat.is_null() {
+        return -1;
+    }
+    // SAFETY: caller contract.
+    let (rgb, lat) = unsafe { (std::slice::from_raw_parts(rgb as *const [f32; 3], n), std::slice::from_raw_parts_mut(lat as *mut [f32; LAT], n)) };
+    match mode {
+        MODE_MIXBOX_MATERIAL => rgb.iter().zip(lat.iter_mut()).for_each(|(c, z)| *z = Mixbox85.encode(*c)),
+        _ => return -3,
+    }
+    0
+}
+
+/// Decodes `n` 85-float states to sRGB. Returns 0, -1 for bad arguments, -3 for an unavailable mode.
+///
+/// # Safety
+/// `lat` addresses `n * 85` floats and `rgb` `n * 3` writable floats.
+#[no_mangle]
+pub unsafe extern "C" fn ochrell_decode(lat: *const f32, rgb: *mut f32, n: usize, mode: i32) -> i32 {
+    if n == 0 {
+        return 0;
+    }
+    if rgb.is_null() || lat.is_null() {
+        return -1;
+    }
+    // SAFETY: caller contract.
+    let (lat, rgb) = unsafe { (std::slice::from_raw_parts(lat as *const [f32; LAT], n), std::slice::from_raw_parts_mut(rgb as *mut [f32; 3], n)) };
+    match mode {
+        MODE_MIXBOX_MATERIAL => lat.iter().zip(rgb.iter_mut()).for_each(|(z, c)| *c = Mixbox85.decode_srgb(z)),
+        _ => return -3,
+    }
+    0
+}
+
+/// # Safety
+/// Forwarded from `render_stroke`.
+#[allow(clippy::too_many_arguments)] // mirrors the C ABI
+unsafe fn paint<M: Mixer<State = [f32; LAT]>>(
+    m: &M,
+    cv: &mut OchrellCanvas,
+    pts: *const f32,
+    n: i32,
+    zcol: *const f32,
+    zcol2: *const f32,
+    dz: *const f32,
+    bp: *const CBrushParams,
+    out_stats: *mut f32,
+) -> i32 {
+    // SAFETY: forwarded caller contract.
+    unsafe {
+        let npx = cv.w as usize * cv.h as usize;
+        let mut planes = Planes::<M::State> {
+            w: cv.w as usize,
+            h: cv.h as usize,
+            lat: std::slice::from_raw_parts_mut(cv.lat as *mut M::State, npx),
+            rgb: std::slice::from_raw_parts_mut(cv.rgb as *mut [f32; 3], npx),
+            hgt: std::slice::from_raw_parts_mut(cv.hgt, npx),
+            wet: std::slice::from_raw_parts_mut(cv.wet, npx),
+            cover: std::slice::from_raw_parts_mut(cv.cover, npx),
+            amount: std::slice::from_raw_parts_mut(cv.amount, npx),
+            hblur: if cv.hblur.is_null() { &[] } else { std::slice::from_raw_parts(cv.hblur, npx) },
+        };
+        let pts = std::slice::from_raw_parts(pts as *const [f32; 4], n as usize);
+        let s = |p: *const f32| *(p as *const M::State);
+        let load = Load { zcol: s(zcol), zcol2: s(zcol2), dz: s(dz) };
+        let st = kernel_stroke(m, &mut planes, pts, &load, &BrushParams::from(&*bp));
+        if !out_stats.is_null() {
+            let o = std::slice::from_raw_parts_mut(out_stats, 3);
+            o[0] = st.alpha as f32;
+            o[1] = st.pixels as f32;
+            o[2] = st.wet;
+        }
+        st.pixels.min(i32::MAX as i64) as i32
+    }
+}
+
+/// Paints one stroke; returns the painted pixel count, -1 if the kernel panicked, -3 for an unavailable mode.
+///
+/// # Safety
+/// See the crate documentation: `cv` and its planes, `pts` (`n * 4` floats), `zcol`/`zcol2`/`dz` (85 floats each),
 /// `bp`, and `out_stats` (3 floats, or null) must be valid.
 #[no_mangle]
 pub unsafe extern "C" fn render_stroke(
-    cv: *mut CCanvas,
+    cv: *mut OchrellCanvas,
     pts: *const f32,
     n: i32,
     zcol: *const f32,
@@ -132,27 +252,10 @@ pub unsafe extern "C" fn render_stroke(
         // SAFETY: forwarded caller contract.
         unsafe {
             let cv = &mut *cv;
-            let npx = cv.w as usize * cv.h as usize;
-            let mut planes = Planes::<[f32; LAT]> {
-                w: cv.w as usize,
-                h: cv.h as usize,
-                lat: std::slice::from_raw_parts_mut(cv.lat as *mut [f32; LAT], npx),
-                rgb: std::slice::from_raw_parts_mut(cv.rgb as *mut [f32; 3], npx),
-                hgt: std::slice::from_raw_parts_mut(cv.hgt, npx),
-                wet: std::slice::from_raw_parts_mut(cv.wet, npx),
-                cover: std::slice::from_raw_parts_mut(cv.cover, npx),
-                hblur: if cv.hblur.is_null() { &[] } else { std::slice::from_raw_parts(cv.hblur, npx) },
-            };
-            let pts = std::slice::from_raw_parts(pts as *const [f32; 4], n as usize);
-            let load = Load { zcol: *(zcol as *const [f32; LAT]), zcol2: *(zcol2 as *const [f32; LAT]), dz: *(dz as *const [f32; LAT]) };
-            let st = kernel_stroke(&MixboxMixer, &mut planes, pts, &load, &BrushParams::from(&*bp));
-            if !out_stats.is_null() {
-                let o = std::slice::from_raw_parts_mut(out_stats, 3);
-                o[0] = st.alpha as f32;
-                o[1] = st.pixels as f32;
-                o[2] = st.wet;
+            match cv.mixing_mode {
+                MODE_MIXBOX_MATERIAL => paint(&Mixbox85, cv, pts, n, zcol, zcol2, dz, bp, out_stats),
+                _ => -3,
             }
-            st.pixels.min(i32::MAX as i64) as i32
         }
     }))
     .unwrap_or(-1)
@@ -166,7 +269,7 @@ pub unsafe extern "C" fn render_stroke(
 /// per stroke.
 #[no_mangle]
 pub unsafe extern "C" fn render_strokes(
-    cv: *mut CCanvas,
+    cv: *mut OchrellCanvas,
     pts_all: *const f32,
     offsets: *const i32,
     n_strokes: i32,
@@ -181,16 +284,7 @@ pub unsafe extern "C" fn render_strokes(
         let r = unsafe {
             let a = *offsets.add(i) as usize;
             let b = *offsets.add(i + 1) as usize;
-            render_stroke(
-                cv,
-                pts_all.add(a * 4),
-                (b - a) as i32,
-                zcols.add(i * LAT),
-                zcols2.add(i * LAT),
-                dzs.add(i * LAT),
-                params.add(i),
-                std::ptr::null_mut(),
-            )
+            render_stroke(cv, pts_all.add(a * 4), (b - a) as i32, zcols.add(i * LAT), zcols2.add(i * LAT), dzs.add(i * LAT), params.add(i), std::ptr::null_mut())
         };
         if r < 0 {
             return r;
@@ -200,18 +294,17 @@ pub unsafe extern "C" fn render_strokes(
     total.min(i32::MAX as i64) as i32
 }
 
-/// Decodes `n` Mixbox latents to sRGB.
-///
-/// # Safety
-/// `lat` addresses `n * 7` floats and `rgb` `n * 3` writable floats.
-#[no_mangle]
-pub unsafe extern "C" fn latent_to_rgb_array(lat: *const f32, rgb: *mut f32, n: i32) {
-    let n = n.max(0) as usize;
-    // SAFETY: caller contract.
-    let (lat, rgb) = unsafe {
-        (std::slice::from_raw_parts(lat as *const [f32; LAT], n), std::slice::from_raw_parts_mut(rgb as *mut [f32; 3], n))
-    };
-    for (z, c) in lat.iter().zip(rgb.iter_mut()) {
-        *c = M::default().decode_srgb(z);
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oil_mix::State;
+
+    #[test]
+    fn padded_mixbox_matches_mixbox() {
+        let c = [0.2, 0.6, 0.9];
+        let z = Mixbox85.encode(c);
+        assert!(z[7..].iter().all(|v| *v == 0.0));
+        assert_eq!(Mixbox85.decode_srgb(&z), MixboxMixer.decode_srgb(&MixboxMixer.encode(c)));
+        assert_eq!(<[f32; LAT] as State>::LEN, 85);
     }
 }
