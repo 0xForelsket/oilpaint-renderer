@@ -99,19 +99,53 @@ pub struct StrokeStats {
 }
 
 // ---------------- random / hashing ----------------
-#[inline(always)]
-fn xs32(s: &mut u32) -> u32 {
-    let mut x = *s;
-    x ^= x << 13;
-    x ^= x >> 17;
-    x ^= x << 5;
-    *s = x;
-    x
+// Counter-based RNG: every draw is a hash of (stroke seed, lane, sample, purpose), never a position in a sequential
+// stream. The number of samples along a stroke then only moves the end of the arrays, never the pattern, so a
+// stroke replayed at another size keeps its bristles (G3), and any lane or sample can be evaluated on its own.
+const GLOBAL: u32 = u32::MAX; // "lane" for per-stroke draws
+
+#[derive(Clone, Copy)]
+#[repr(u32)]
+enum Draw {
+    Splay = 1,
+    ColStart,
+    Phase1,
+    Phase2,
+    LaneU,
+    LaneSig,
+    LaneFlip,
+    SplaySide,
+    SplayColour,
+    Streak,
+    WobbleAmp,
+    WobbleK,
+    WobblePhase,
+    Start,
+    EndCut,
+    Base,
+    AlongK,
+    AlongPhase,
+    Drop,
+    DropLength,
 }
 
 #[inline(always)]
-fn frand(s: &mut u32) -> f32 {
-    (xs32(s) >> 8) as f32 * (1.0f32 / 16_777_216.0f32)
+fn fmix32(mut h: u32) -> u32 {
+    h ^= h >> 16;
+    h = h.wrapping_mul(0x85eb_ca6b);
+    h ^= h >> 13;
+    h = h.wrapping_mul(0xc2b2_ae35);
+    h ^= h >> 16;
+    h
+}
+
+/// Uniform in [0, 1) with 24 bits, from (seed, lane, sample, purpose).
+#[inline(always)]
+fn crand(seed: u32, lane: u32, sample: u32, what: Draw) -> f32 {
+    let h = fmix32(
+        seed ^ fmix32(lane.wrapping_mul(0x9e37_79b9) ^ fmix32(sample.wrapping_mul(0x85eb_ca77) ^ (what as u32).wrapping_mul(0xc2b2_ae3d))),
+    );
+    (h >> 8) as f32 * (1.0f32 / 16_777_216.0f32)
 }
 
 #[inline(always)]
@@ -178,9 +212,11 @@ struct Bristles {
     nph2: f32,
 }
 
-fn make_bristles(bp: &BrushParams, total_s: f32, rs: &mut u32) -> Bristles {
+fn make_bristles(bp: &BrushParams, total_s: f32) -> Bristles {
+    let seed = bp.seed;
+    let r = |lane: usize, what: Draw| crand(seed, lane as u32, 0, what);
     let nb_i = bp.nb.clamp(2, MAX_NB as i32 - 4);
-    let nsplay = ((bp.splay + frand(rs)) as i32).min(3);
+    let nsplay = ((bp.splay + crand(seed, GLOBAL, 0, Draw::Splay)) as i32).min(3);
     let nb = nb_i as usize;
     let ntot = (nb_i + nsplay) as usize;
     let ns_i = (total_s * ALONG_PER_WIDTH).ceil() as i32 + 3;
@@ -204,41 +240,39 @@ fn make_bristles(bp: &BrushParams, total_s: f32, rs: &mut u32) -> Bristles {
     };
     let hard = clamp01(bp.hardness);
     let pitch = 2.0f32 / nb_i as f32;
-    let mut colstate = frand(rs) < 0.5;
-    b.nph1 = frand(rs) * 100.0;
-    b.nph2 = frand(rs) * 100.0;
+    let mut colstate = crand(seed, GLOBAL, 0, Draw::ColStart) < 0.5;
+    b.nph1 = crand(seed, GLOBAL, 0, Draw::Phase1) * 100.0;
+    b.nph2 = crand(seed, GLOBAL, 0, Draw::Phase2) * 100.0;
     for l in 0..ntot {
         let is_splay = l >= nb;
         let (u, sig);
         if !is_splay {
-            u = -1.0f32 + (l as f32 + 0.5) * pitch + (frand(rs) - 0.5) * 0.5 * pitch;
-            sig = (0.28f32 + 0.30 * frand(rs)) * pitch;
-            let _w = 0.55f32 + 0.45 * frand(rs);
-            if frand(rs) < 0.35 {
+            u = -1.0f32 + (l as f32 + 0.5) * pitch + (r(l, Draw::LaneU) - 0.5) * 0.5 * pitch;
+            sig = (0.28f32 + 0.30 * r(l, Draw::LaneSig)) * pitch;
+            if r(l, Draw::LaneFlip) < 0.35 {
                 colstate = !colstate;
             }
             b.col_b[l] = if colstate { 1.0 } else { 0.0 };
         } else {
-            let side = if frand(rs) < 0.5 { -1.0f32 } else { 1.0 };
-            u = side * (0.98f32 + 0.18 * frand(rs));
-            sig = (0.18f32 + 0.15 * frand(rs)) * pitch;
-            let _w = 0.25f32 + 0.25 * frand(rs);
-            b.col_b[l] = if frand(rs) < 0.5 { 1.0 } else { 0.0 };
+            let side = if r(l, Draw::SplaySide) < 0.5 { -1.0f32 } else { 1.0 };
+            u = side * (0.98f32 + 0.18 * r(l, Draw::LaneU));
+            sig = (0.18f32 + 0.15 * r(l, Draw::LaneSig)) * pitch;
+            b.col_b[l] = if r(l, Draw::SplayColour) < 0.5 { 1.0 } else { 0.0 };
         }
         b.u0[l] = u;
         b.sig_r[l] = sig;
         b.sig_f[l] = if is_splay { sig * 1.3 } else { sig * (2.8 - 1.0 * hard) };
-        b.tstreak[l] = 2.0 * frand(rs) - 1.0;
-        b.wob_amp[l] = (0.10f32 + 0.30 * frand(rs)) * pitch * (if is_splay { 2.0 } else { 1.0 });
-        b.wob_k[l] = 6.283_185_3_f32 / (1.5 + 4.0 * frand(rs));
-        b.wob_ph[l] = 6.283_185_3_f32 * frand(rs);
+        b.tstreak[l] = 2.0 * r(l, Draw::Streak) - 1.0;
+        b.wob_amp[l] = (0.10f32 + 0.30 * r(l, Draw::WobbleAmp)) * pitch * (if is_splay { 2.0 } else { 1.0 });
+        b.wob_k[l] = 6.283_185_3_f32 / (1.5 + 4.0 * r(l, Draw::WobbleK));
+        b.wob_ph[l] = 6.283_185_3_f32 * r(l, Draw::WobblePhase);
         let a = &mut b.along[l * ns..(l + 1) * ns];
-        let start = frand(rs) * bp.ragged * ALONG_PER_WIDTH;
-        let endcut = frand(rs) * bp.ragged * ALONG_PER_WIDTH * (if is_splay { 3.0 } else { 1.0 });
+        let start = r(l, Draw::Start) * bp.ragged * ALONG_PER_WIDTH;
+        let endcut = r(l, Draw::EndCut) * bp.ragged * ALONG_PER_WIDTH * (if is_splay { 3.0 } else { 1.0 });
         let mut drop_left: i32 = 0;
-        let base = 0.85f32 + 0.15 * frand(rs);
-        let lk = 6.283_185_3_f32 / ((2.0 + 4.0 * frand(rs)) * ALONG_PER_WIDTH);
-        let lph = 6.283_185_3_f32 * frand(rs);
+        let base = 0.85f32 + 0.15 * r(l, Draw::Base);
+        let lk = 6.283_185_3_f32 / ((2.0 + 4.0 * r(l, Draw::AlongK)) * ALONG_PER_WIDTH);
+        let lph = 6.283_185_3_f32 * r(l, Draw::AlongPhase);
         for (i, ai) in a.iter_mut().enumerate() {
             let s_w = i as f32 / ALONG_PER_WIDTH;
             let v_ = bp.load - bp.deplete * s_w;
@@ -253,8 +287,8 @@ fn make_bristles(bp: &BrushParams, total_s: f32, rs: &mut u32) -> Bristles {
                 *ai = 0.0;
                 continue;
             }
-            if frand(rs) < pdrop {
-                drop_left = 2 + (frand(rs) * (3.0 + 8.0 * dryness)) as i32;
+            if crand(seed, l as u32, i as u32, Draw::Drop) < pdrop {
+                drop_left = 2 + (crand(seed, l as u32, i as u32, Draw::DropLength) * (3.0 + 8.0 * dryness)) as i32;
                 *ai = 0.0;
                 continue;
             }
@@ -284,6 +318,39 @@ fn make_bristles(bp: &BrushParams, total_s: f32, rs: &mut u32) -> Bristles {
         }
     }
     b
+}
+
+/// Pick-up sums of one row chunk, per lane.
+struct Partials<S> {
+    z: [S; MAX_NB],
+    a: [f32; MAX_NB],
+    wet: [f32; MAX_NB],
+    alpha: f64,
+    touched: u128,
+}
+
+impl<S: State> Partials<S> {
+    /// Add this chunk's sums to the segment totals (lanes in increasing order) and clear it.
+    #[inline]
+    fn flush(&mut self, seg_z: &mut [S; MAX_NB], seg_a: &mut [f32; MAX_NB], seg_wet: &mut [f32; MAX_NB], alpha: &mut f64) {
+        let mut t = self.touched;
+        while t != 0 {
+            let l = t.trailing_zeros() as usize;
+            t &= t - 1;
+            let (dst, src) = (seg_z[l].as_mut_slice(), self.z[l].as_mut_slice());
+            for k in 0..dst.len() {
+                dst[k] += src[k];
+                src[k] = 0.0;
+            }
+            seg_a[l] += self.a[l];
+            seg_wet[l] += self.wet[l];
+            self.a[l] = 0.0;
+            self.wet[l] = 0.0;
+        }
+        self.touched = 0;
+        *alpha += self.alpha;
+        self.alpha = 0.0;
+    }
 }
 
 struct Sample {
@@ -388,7 +455,27 @@ fn eval_lanes(b: &Bristles, g: &SegLanes, u: f32, s: f32, bodyf: f32, o: &mut Sa
     }
 }
 
-/// Paint one stroke. `pts` are (x, y, width, pressure) in pixels.
+/// Rows per reduction chunk. Chunks are fixed by absolute row index (row / CHUNK_ROWS), and each chunk's pick-up sums
+/// are added to the segment totals in chunk order, so splitting a segment's rows across threads gives the same bits.
+pub const CHUNK_ROWS: i32 = 16;
+
+/// Stroke length in brush widths, measured in canvas-width units: independent of the canvas size.
+/// `pts_cw` are (x, y, width, pressure) in cw.
+pub fn length_in_widths(pts_cw: &[[f32; 4]]) -> f32 {
+    let wref = pts_cw.iter().fold(1e-9f64, |w, p| w.max(p[2] as f64));
+    let total: f64 = pts_cw
+        .windows(2)
+        .map(|p| {
+            let (dx, dy) = ((p[1][0] - p[0][0]) as f64, (p[1][1] - p[0][1]) as f64);
+            (dx * dx + dy * dy).sqrt()
+        })
+        .sum();
+    (total / wref) as f32
+}
+
+/// Paint one stroke. `pts` are (x, y, width, pressure) in pixels. The stroke length in widths, which sets the
+/// number of bristle samples, is measured from the pixel coordinates; use `render_stroke_len` with
+/// `length_in_widths` of the cw points to make it exactly size-independent.
 pub fn render_stroke<M: Mixer>(
     m: &M,
     cv: &mut Planes<'_, M::State>,
@@ -396,31 +483,37 @@ pub fn render_stroke<M: Mixer>(
     load: &Load<M::State>,
     bp: &BrushParams,
 ) -> StrokeStats {
+    if pts.len() < 2 {
+        return StrokeStats::default();
+    }
+    let wref = pts.iter().fold(1e-3f32, |w, p| if p[2] > w { p[2] } else { w });
+    let total: f32 = pts
+        .windows(2)
+        .map(|p| {
+            let (dx, dy) = (p[1][0] - p[0][0], p[1][1] - p[0][1]);
+            (dx * dx + dy * dy).sqrt()
+        })
+        .sum();
+    render_stroke_len(m, cv, pts, load, bp, total / wref)
+}
+
+/// Paint one stroke whose length in brush widths is given (see `length_in_widths`).
+pub fn render_stroke_len<M: Mixer>(
+    m: &M,
+    cv: &mut Planes<'_, M::State>,
+    pts: &[[f32; 4]],
+    load: &Load<M::State>,
+    bp: &BrushParams,
+    total_s: f32,
+) -> StrokeStats {
     let n = pts.len();
     if n < 2 {
         return StrokeStats::default();
     }
     let (w_i, h_i) = (cv.w as i32, cv.h as i32);
     let wu = cv.w;
-
-    let mut rs: u32 = bp.seed.wrapping_mul(747_796_405).wrapping_add(2_891_336_453);
-    if rs == 0 {
-        rs = 1;
-    }
-    let mut wref = 1e-3f32;
-    for p in pts {
-        if p[2] > wref {
-            wref = p[2];
-        }
-    }
-    let mut total = 0.0f32;
-    for i in 0..n - 1 {
-        let dx = pts[i + 1][0] - pts[i][0];
-        let dy = pts[i + 1][1] - pts[i][1];
-        total += (dx * dx + dy * dy).sqrt();
-    }
-    let total_s = total / wref;
-    let bb = make_bristles(bp, total_s, &mut rs);
+    let wref = pts.iter().fold(1e-3f32, |w, p| if p[2] > w { p[2] } else { w });
+    let bb = make_bristles(bp, total_s);
     let mode = bp.mode;
 
     let zero = M::State::zero();
@@ -430,6 +523,8 @@ pub fn render_stroke<M: Mixer>(
     let mut seg_z = [zero; MAX_NB];
     let mut seg_a = [0.0f32; MAX_NB];
     let mut seg_wet = [0.0f32; MAX_NB];
+    // per-chunk partial sums, flushed into seg_* in chunk order
+    let mut part = Partials { z: [zero; MAX_NB], a: [0.0; MAX_NB], wet: [0.0; MAX_NB], alpha: 0.0, touched: 0 };
     {
         let (zc, zc2, dz) = (load.zcol.as_slice(), load.zcol2.as_slice(), load.dz.as_slice());
         for l in 0..bb.ntot {
@@ -512,6 +607,9 @@ pub fn render_stroke<M: Mixer>(
 
         if bx1 >= bx0 && by1 >= by0 {
             for py in by0..=by1 {
+                if py > by0 && py % CHUNK_ROWS == 0 {
+                    part.flush(&mut seg_z, &mut seg_a, &mut seg_wet, &mut stat_alpha);
+                }
                 let row = py as usize * wu;
                 for px in bx0..=bx1 {
                     let vx = px as f32 + 0.5 - x0;
@@ -594,13 +692,14 @@ pub fn render_stroke<M: Mixer>(
                     }
                     {
                         let lpix = cv.lat[idx].as_slice();
-                        let sz = seg_z[bd].as_mut_slice();
+                        let sz = part.z[bd].as_mut_slice();
                         for k in 0..sz.len() {
                             sz[k] += alpha * lpix[k];
                         }
                     }
-                    seg_a[bd] += alpha;
-                    seg_wet[bd] += alpha * cv.wet[idx];
+                    part.a[bd] += alpha;
+                    part.wet[bd] += alpha * cv.wet[idx];
+                    part.touched |= 1u128 << bd;
                     if !can_deposit {
                         continue;
                     }
@@ -663,10 +762,11 @@ pub fn render_stroke<M: Mixer>(
                         cv.hgt[idx] -= a * bp.flatten * (cv.hgt[idx] - base);
                     }
                     cv.cover[idx] += a;
-                    stat_alpha += a as f64;
+                    part.alpha += a as f64;
                     stat_pix += 1;
                 }
             }
+            part.flush(&mut seg_z, &mut seg_a, &mut seg_wet, &mut stat_alpha);
         }
         for l in 0..bb.ntot {
             if seg_a[l] <= 1e-6 {
