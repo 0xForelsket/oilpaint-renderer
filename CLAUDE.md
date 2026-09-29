@@ -87,13 +87,16 @@ Ochrell integration checks (see `docs/OCHRELL.md`):
 .venv\Scripts\python.exe tools\check_ochrell.py
 ```
 
-New engine (from L1 on; the commands are defined as the milestones land):
+New engine (Rust workspace `crates/`, TypeScript and CI scripts at the root):
 
 ```powershell
+cargo clippy --workspace --release --all-targets -- -D warnings   # clippy.toml bans platform libm (determinism)
 cargo test --workspace --release
-cargo run --release -p oil-cli -- --help
-npm install; npm test                  # TypeScript packages, Node and Playwright cross-host checks
+$env:PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"; npm install         # Playwright 1.58.2 matches the cached browsers
+npm run xhost          # cross-host check: native + Node + Chromium + Firefox + WebKit, then compare (ci/xhost)
 ```
+
+From L1: `cargo run --release -p oil-cli -- --help`.
 
 ## Conventions
 

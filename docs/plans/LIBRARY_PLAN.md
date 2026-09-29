@@ -173,6 +173,14 @@ is best-effort. Nothing is promised across engine versions. Outputs are compared
 
   `cbrt` (OKLab) and `powi` appear only in diagnostics, and the K/S optics use only `+ - * / sqrt`.
 
+  *Measured* (L0 cross-host negative control, laptop): that exact sRGB transfer with platform `powf` differs between
+  native Windows (the C runtime's pow) and WASM (Rust's libm) on 9.7% of 400,000 f64 results, by up to 4 ulp.
+  Platform `exp` differs on 9.5%.
+  - After rounding to f32, as Ochrell's decode does, none of that grid flipped.
+  - The encode residual is a difference of f64 values, though, and a 2400 px painting runs about 10⁹ per-pixel
+    composites. So flips are expected (*projected*), and pick-up then propagates them.
+  - The `oil-math` cases were identical on native, Node, Chromium, Firefox and WebKit.
+
   **Fix:** the engine never calls those functions. It converts sRGB to and from linear with `oil-math`, calls
   Ochrell's existing `decode_linear`, and needs one additive Ochrell API, `encode_linear(&self, [f64; 3])`.
   `encode(c)` becomes `encode_linear(c.linear())`, bit-identical for existing callers. There are no dependencies
