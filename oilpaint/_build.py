@@ -62,7 +62,13 @@ def build_and_load(backend="mixbox"):
         digest = hashlib.sha1(f.read()).hexdigest()[:12]
     ext = ".dll" if sys.platform == "win32" else (".dylib" if sys.platform == "darwin" else ".so")
     so = os.path.join(HERE, "csrc", f"brush_{digest}{ext}")
-    if os.environ.get("OILPAINT_KERNEL") == "rust":
+    if os.environ.get("OILPAINT_KERNEL") == "oil":
+        # the new engine's kernel (crates/oil-kernel) behind the brush.c ABI, for the port checks
+        root = os.path.abspath(os.path.join(HERE, ".."))
+        subprocess.run([os.environ.get("CARGO", "cargo"), "build", "--release", "-p", "oil-shim",
+                        "--manifest-path", os.path.join(root, "Cargo.toml")], check=True)
+        so = os.path.join(root, "target", "release", "oil_shim.dll" if sys.platform == "win32" else "liboil_shim" + ext)
+    elif os.environ.get("OILPAINT_KERNEL") == "rust":
         crate = os.path.abspath(os.path.join(HERE, "..", "spikes", "oilcore"))
         target = os.path.join(crate, "target")
         subprocess.run([os.environ.get("CARGO", "cargo"), "build", "--release", "--offline", "--lib",

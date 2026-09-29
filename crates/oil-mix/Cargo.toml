@@ -1,6 +1,6 @@
 [package]
-name = "oil-kernel"
-description = "oilpaint engine: canvas planes and the bristle-lane brush, generic over the mixer; the engine version"
+name = "oil-mix"
+description = "oilpaint mixers behind one trait: the per-pixel paint state, its encoding from sRGB and its display colour"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,7 +9,6 @@ publish.workspace = true
 
 [dependencies]
 oil-math = { path = "../oil-math" }
-oil-mix = { path = "../oil-mix" }
 
 [lints]
 workspace = true

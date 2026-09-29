@@ -1,5 +1,14 @@
-//! oilpaint engine kernel. L0 holds only the engine version; L1 ports the bristle-lane brush.
+//! oilpaint engine kernel: canvas planes and the bristle-lane brush, generic over the mixer.
 #![forbid(unsafe_code)]
+// v1's clamp01 and range checks are kept verbatim (same results as f32::clamp, including NaN and signed zero).
+// Its literals (6.2831853) and compound updates (bf *= bf * g) are also kept as v1 wrote them.
+#![allow(clippy::manual_clamp, clippy::manual_range_contains, clippy::approx_constant, clippy::misrefactored_assign_op)]
+
+pub mod brush;
+pub mod planes;
+
+pub use brush::{render_stroke, BrushParams, Load, StrokeStats};
+pub use planes::{Canvas, Planes};
 
 /// The engine version (spec/README.md): bump it with every change that can move an output bit, and regenerate
 /// `golden/<version>.json` with it. `2.0.0-dev.0` means "no engine output yet" (the L0 skeleton).

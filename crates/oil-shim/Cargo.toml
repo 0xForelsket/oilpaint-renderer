@@ -1,0 +1,20 @@
+[package]
+name = "oil-shim"
+description = "ctypes shim so the Python eval harness can drive the new kernel (OILPAINT_KERNEL=oil); retired with the harness in L5"
+version.workspace = true
+edition.workspace = true
+# The shim links the opt-in Mixbox mixer (CC BY-NC 4.0) because the Python harness paints Mixbox latents.
+license = "MIT AND CC-BY-NC-4.0"
+rust-version.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+oil-kernel = { path = "../oil-kernel" }
+oil-mix = { path = "../oil-mix" }
+oil-mix-mixbox = { path = "../oil-mix-mixbox" }
+
+[lints]
+workspace = true
