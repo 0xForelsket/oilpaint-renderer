@@ -1,0 +1,15 @@
+[package]
+name = "oil-light"
+description = "oilpaint relighting: canvas weave, two-scale normals from paint height, raking diffuse, satin specular, cavity"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+oil-math = { path = "../oil-math" }
+oil-image = { path = "../oil-image" }
+
+[lints]
+workspace = true

@@ -1,0 +1,31 @@
+[package]
+name = "oil-cli"
+description = "oilpaint native CLI: paint StrokeLists, relight, inspect; JSON reports for agents"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "oil"
+path = "src/main.rs"
+
+[features]
+default = []
+# Opt-in Mixbox mixer (CC BY-NC 4.0, non-commercial): never in a published build.
+mixbox = ["dep:oil-mix-mixbox"]
+
+[dependencies]
+oil-kernel = { path = "../oil-kernel" }
+oil-mix = { path = "../oil-mix" }
+oil-mix-mixbox = { path = "../oil-mix-mixbox", optional = true }
+oil-strokes = { path = "../oil-strokes" }
+oil-paint = { path = "../oil-paint" }
+oil-light = { path = "../oil-light" }
+png = "0.17"
+serde_json = "1"
+sha2 = "0.10"
+
+[lints]
+workspace = true
