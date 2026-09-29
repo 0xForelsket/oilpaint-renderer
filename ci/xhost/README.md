@@ -35,7 +35,7 @@ Cases by milestone:
 | Milestone | Cases |
 |---|---|
 | L0 | `oil-math` exp, sin/cos and expf over dense grids, plus the negative controls (platform `exp`; the sRGB transfer with platform `powf`, as Ochrell 0.2 computes it) |
-| L1 | canvas planes (rgb, height, wet, cover, latent) of the swatch sheet painted by the new kernel, with each mixer |
+| L1 | the procedural test sheet (`oil-paint`): its StrokeList bytes, and all six canvas planes (lat, rgb, h, wet, cover, amount) plus the lit image at 400 px, with the rgb and Mixbox mixers (Ochrell to follow) |
 | L3 | StrokeList bytes planned from ScenePlans, and the planes they paint |
 
 CI: `.github/workflows/determinism.yml` runs the native side on Windows, Linux and macOS and the WASM side in

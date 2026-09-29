@@ -68,7 +68,10 @@ pub fn paint<M: Mixer>(m: &M, list: &StrokeList, w: u32, mut after_layer: impl F
     (cv, stats)
 }
 
-/// Little-endian bytes of the planes, for hashing: `lat`, `rgb`, `h`, `wet`, `cover`.
+/// Canvas planes that `plane_bytes` serialises.
+pub const PLANES: [&str; 6] = ["lat", "rgb", "h", "wet", "cover", "amount"];
+
+/// Little-endian bytes of a plane, for hashing (one of `PLANES`).
 pub fn plane_bytes<M: Mixer>(cv: &Canvas<M>, plane: &str) -> Vec<u8> {
     let f = |v: &mut Vec<u8>, x: f32| v.extend_from_slice(&x.to_bits().to_le_bytes());
     let mut out = Vec::new();
@@ -78,6 +81,7 @@ pub fn plane_bytes<M: Mixer>(cv: &Canvas<M>, plane: &str) -> Vec<u8> {
         "h" => cv.hgt.iter().for_each(|x| f(&mut out, *x)),
         "wet" => cv.wet.iter().for_each(|x| f(&mut out, *x)),
         "cover" => cv.cover.iter().for_each(|x| f(&mut out, *x)),
+        "amount" => cv.amount.iter().for_each(|x| f(&mut out, *x)),
         _ => panic!("unknown plane {plane}"),
     }
     out

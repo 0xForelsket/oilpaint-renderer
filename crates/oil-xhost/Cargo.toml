@@ -17,6 +17,11 @@ path = "src/bin/xhost.rs"
 [dependencies]
 oil-math = { path = "../oil-math" }
 oil-kernel = { path = "../oil-kernel" }
+oil-mix = { path = "../oil-mix" }
+# Mixbox (CC BY-NC 4.0) is in the determinism test build only; oil-xhost is never published.
+oil-mix-mixbox = { path = "../oil-mix-mixbox" }
+oil-paint = { path = "../oil-paint" }
+oil-light = { path = "../oil-light" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 sha2 = "0.10"

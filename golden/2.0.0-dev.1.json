@@ -1,0 +1,32 @@
+{
+ "engine": "2.0.0-dev.1",
+ "hosts": [
+  "chrome-154.0.8037.58",
+  "chromium-145.0.7632.6",
+  "firefox-146.0.1",
+  "msedge-154.0.4258.37",
+  "native-windows-x86_64",
+  "node-v24.11.1-win32-x64",
+  "webkit-26.0"
+ ],
+ "cases": {
+  "kernel.testsheet@mixbox@400.amount": "f4536cfcc1304e7dcd15f1b690ba5943fe7f36a593f54070f593203d70fa85e6",
+  "kernel.testsheet@mixbox@400.cover": "1c3f7d2a0c95ec919d5ff334c74ba02373316f8446c3c2368c01a3c1c0905e7c",
+  "kernel.testsheet@mixbox@400.h": "d952ba5d204e3f62c10bcc72279c08b95b2aa857fa8afa945cfbc7462498c290",
+  "kernel.testsheet@mixbox@400.lat": "6f734516a598004e53242044a8be1b5966d5d8f788e29954cc8bb2de3e4c4afd",
+  "kernel.testsheet@mixbox@400.rgb": "c074e23b03a956420642dd2d5f835a7b12b27f1b48a6167461a7810062fe3be6",
+  "kernel.testsheet@mixbox@400.wet": "3819abef5e1ee69e89c285d257665f30bb0b187ff54f0008b188f590f6328537",
+  "kernel.testsheet@rgb@400.amount": "f4536cfcc1304e7dcd15f1b690ba5943fe7f36a593f54070f593203d70fa85e6",
+  "kernel.testsheet@rgb@400.cover": "1c3f7d2a0c95ec919d5ff334c74ba02373316f8446c3c2368c01a3c1c0905e7c",
+  "kernel.testsheet@rgb@400.h": "d952ba5d204e3f62c10bcc72279c08b95b2aa857fa8afa945cfbc7462498c290",
+  "kernel.testsheet@rgb@400.lat": "b4afd4c60c6c626e70589917f90902bb8c9d088781745d25cf2ffb0d2eb2cf78",
+  "kernel.testsheet@rgb@400.rgb": "70712f5668593a49df84411f1d9112131e0725778b32b5e9381bb9c5faa975ee",
+  "kernel.testsheet@rgb@400.wet": "3819abef5e1ee69e89c285d257665f30bb0b187ff54f0008b188f590f6328537",
+  "light.testsheet@mixbox@400.lit": "83a0c322c145401408ffc6c5d865a4ad99f8dc0ff0c6a129d012d73ce1f82095",
+  "light.testsheet@rgb@400.lit": "0b7446f43d6a4729d8d92930c08bf9fa0f4007a73e5175e9d7be7bd0bd0da1cb",
+  "math.exp.f64": "96c165b5039ad466d647fd6c7d11de58e1db28edc1749d0c2a41d2daeb4b614a",
+  "math.expf.f32": "a422eb3d4f5b12121303655da5547361b5b33206d14467ca329e2d2a59e48b53",
+  "math.sincos.f64": "95bef6dd8e069136656d63e9546b24417814a024cdc9d1f233cff98d1ac752ec",
+  "strokes.testsheet": "a7ad58ab6a6fa851546d088d3f6367b48e312d73cb831df2909225829a9660d8"
+ }
+}

@@ -65,7 +65,7 @@ fn paint_with<M: Mixer>(m: &M, list: &StrokeList, w: u32, light: Option<LightPar
     let paint_s = t0.elapsed().as_secs_f64();
     let (wu, hu) = (cv.w, cv.h);
     let mut hashes = serde_json::Map::new();
-    for plane in ["lat", "rgb", "h", "wet", "cover"] {
+    for plane in oil_paint::PLANES {
         hashes.insert(plane.into(), json!(hex(&oil_paint::plane_bytes(&cv, plane))));
     }
     let t1 = Instant::now();

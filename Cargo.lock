@@ -242,7 +242,11 @@ name = "oil-xhost"
 version = "2.0.0-dev.0"
 dependencies = [
  "oil-kernel",
+ "oil-light",
  "oil-math",
+ "oil-mix",
+ "oil-mix-mixbox",
+ "oil-paint",
  "sha2",
 ]
 

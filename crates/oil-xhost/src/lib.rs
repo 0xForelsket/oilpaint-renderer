@@ -2,9 +2,16 @@
 //!
 //! Each case is a deterministic function that returns bytes. The same cases run natively (`xhost` binary) and as
 //! WASM in Node, Chromium and Firefox (exports below); the hosts hash the bytes with their own SHA-256 and
-//! `ci/xhost/compare.mjs` requires identical digests. L0 carries maths cases plus a negative control; L1 adds
-//! kernel cases (canvas planes of the swatch sheet), L3 planner cases (StrokeList bytes).
+//! `ci/xhost/compare.mjs` requires identical digests. Cases: maths (L0) with negative controls, the test sheet's
+//! StrokeList bytes and every canvas plane plus the lit image with each mixer (L1); planner cases come in L3.
 #![deny(unsafe_code)]
+
+use oil_kernel::Canvas;
+use oil_light::LightParams;
+use oil_mix::{Mixer, RgbMixer};
+use oil_mix_mixbox::MixboxMixer;
+use oil_paint::testsheet::testsheet;
+use std::sync::OnceLock;
 
 /// What the comparison requires of a case.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -16,27 +23,70 @@ pub enum Expect {
 }
 
 pub struct Case {
-    pub name: &'static str,
+    pub name: String,
     pub expect: Expect,
-    pub run: fn() -> Vec<u8>,
+    pub run: Box<dyn Fn() -> Vec<u8> + Send + Sync>,
 }
 
 pub fn cases() -> &'static [Case] {
-    &CASES
+    static CASES: OnceLock<Vec<Case>> = OnceLock::new();
+    CASES.get_or_init(build_cases)
 }
 
 pub fn engine_version() -> &'static str {
     oil_kernel::ENGINE_VERSION
 }
 
-static CASES: [Case; 5] = [
-    Case { name: "math.exp.f64", expect: Expect::Identical, run: exp_f64 },
-    Case { name: "math.sincos.f64", expect: Expect::Identical, run: sincos_f64 },
-    Case { name: "math.expf.f32", expect: Expect::Identical, run: expf_f32 },
-    Case { name: "control.libm.powf_srgb", expect: Expect::MayDiffer, run: control_powf_srgb },
-    Case { name: "control.libm.exp", expect: Expect::MayDiffer, run: control_exp },
-];
+fn case(name: impl Into<String>, expect: Expect, run: impl Fn() -> Vec<u8> + Send + Sync + 'static) -> Case {
+    Case { name: name.into(), expect, run: Box::new(run) }
+}
 
+/// Test-sheet width for the kernel cases: small enough for every browser, large enough for all four modes.
+const SHEET_WIDTH: u32 = 400;
+
+fn build_cases() -> Vec<Case> {
+    let mut v = vec![
+        case("math.exp.f64", Expect::Identical, exp_f64),
+        case("math.sincos.f64", Expect::Identical, sincos_f64),
+        case("math.expf.f32", Expect::Identical, expf_f32),
+        case("control.libm.powf_srgb", Expect::MayDiffer, control_powf_srgb),
+        case("control.libm.exp", Expect::MayDiffer, control_exp),
+        case("strokes.testsheet", Expect::Identical, || testsheet().to_bytes()),
+    ];
+    kernel_cases::<RgbMixer>(&mut v, "rgb", painted_rgb);
+    kernel_cases::<MixboxMixer>(&mut v, "mixbox", painted_mixbox);
+    v
+}
+
+/// The test sheet painted (and lit) once per mixer; each plane is its own case.
+type Painted<M> = (Canvas<M>, Vec<[f32; 3]>);
+
+fn paint_sheet<M: Mixer + Default>() -> Painted<M> {
+    let (cv, _) = oil_paint::paint(&M::default(), &testsheet(), SHEET_WIDTH, |_, _| {});
+    let lit = oil_light::relight(&cv.rgb, &cv.hgt, cv.w, cv.h, &LightParams::default());
+    (cv, lit)
+}
+
+fn painted_rgb() -> &'static Painted<RgbMixer> {
+    static P: OnceLock<Painted<RgbMixer>> = OnceLock::new();
+    P.get_or_init(paint_sheet::<RgbMixer>)
+}
+
+fn painted_mixbox() -> &'static Painted<MixboxMixer> {
+    static P: OnceLock<Painted<MixboxMixer>> = OnceLock::new();
+    P.get_or_init(paint_sheet::<MixboxMixer>)
+}
+
+fn kernel_cases<M: Mixer>(v: &mut Vec<Case>, id: &str, painted: fn() -> &'static Painted<M>) {
+    for plane in oil_paint::PLANES {
+        v.push(case(format!("kernel.testsheet@{id}@{SHEET_WIDTH}.{plane}"), Expect::Identical, move || {
+            oil_paint::plane_bytes(&painted().0, plane)
+        }));
+    }
+    v.push(case(format!("light.testsheet@{id}@{SHEET_WIDTH}.lit"), Expect::Identical, move || {
+        f32_bytes(painted().1.iter().flatten().copied())
+    }));
+}
 const N: usize = 200_000;
 
 /// x_i = lo + (hi - lo) * i / n, evaluated identically everywhere (basic ops only).
@@ -102,7 +152,7 @@ mod wasm_abi {
 
     #[no_mangle]
     pub extern "C" fn xhost_case_name(i: u32) -> u32 {
-        put(super::cases()[i as usize].name.as_bytes().to_vec())
+        put(super::cases()[i as usize].name.clone().into_bytes())
     }
 
     #[no_mangle]
@@ -133,7 +183,7 @@ mod wasm_abi {
 mod tests {
     #[test]
     fn case_names_are_unique_and_outputs_repeat() {
-        let names: std::collections::BTreeSet<_> = super::cases().iter().map(|c| c.name).collect();
+        let names: std::collections::BTreeSet<_> = super::cases().iter().map(|c| c.name.as_str()).collect();
         assert_eq!(names.len(), super::cases().len());
         for c in super::cases().iter().filter(|c| c.expect == super::Expect::Identical) {
             assert_eq!((c.run)(), (c.run)(), "{} is not repeatable", c.name);
