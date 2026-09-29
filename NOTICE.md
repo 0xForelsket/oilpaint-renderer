@@ -33,11 +33,22 @@ add a LICENSE file before sharing the repo.
   (`spikes/mixers/LICENSE_spectral.js`). Used by the KM-12 mixer spike only. The v3 plan's open mixer was built on
   these tables; the current plan (v4) uses Ochrell instead and does not ship them.
 
-## Library plan (v4): what the new engine will ship
+## The new engine (`crates/`, library plan v4)
 
-Nothing below is published yet. See `docs/plans/LIBRARY_PLAN.md`, section 10.
-- Ochrell (default mixer): code MIT OR Apache-2.0. Its generated optical tables are CC BY-SA 4.0 (derived from
-  CIE 2019 data), so any build with the default mixer is "MIT AND CC-BY-SA-4.0" and must carry the attribution
-  listed in `../ochrell/data/README.md`. Sean chose to ship it as is (plan section 10, option A): the package
-  licence is `(MIT AND CC-BY-SA-4.0)`, with the CIE attribution and licence text shipped alongside.
-- Mixbox: only in the opt-in `oil-mix-mixbox` crate and `@oilpaint/mixbox` package (CC BY-NC 4.0, non-commercial).
+Nothing here is published yet; packaging follows `docs/plans/LIBRARY_PLAN.md`, section 10. The engine's own code is
+written for this project (MIT is the planned licence; no LICENSE file yet).
+
+- **Ochrell** (default mixer, `crates/oil-mix`), a Cargo git dependency pinned by commit: code MIT OR Apache-2.0.
+  Its generated optical tables (`src/optical_generated.rs`) are CC BY-SA 4.0, derived from CIE 2019 data, although
+  Cargo's metadata lists only the code licence. Any build with the default mixer is "MIT AND CC-BY-SA-4.0" and must
+  carry the attribution in `../ochrell/data/README.md`. Sean chose to ship it as is (plan section 10, option A):
+  the package licence will be `(MIT AND CC-BY-SA-4.0)`, with the CIE attribution and licence text alongside.
+- **Mixbox** (`mixbox` crate 2.0.0, CC BY-NC 4.0, non-commercial): only in the opt-in `oil-mix-mixbox` crate, the
+  CLI's `mixbox` feature, the Python-harness shim (`crates/oil-shim`) and the cross-host test build
+  (`crates/oil-xhost`); never in a default build. Later only in the `@oilpaint/mixbox` package.
+- **Other crates** (checked with `cargo metadata` in L1): serde, serde_json, sha2 and its RustCrypto helpers, png,
+  flate2, miniz_oxide, crc32fast, fdeflate, simd-adler32, zlib-rs, adler2, memchr, itoa, libm (via mixbox),
+  bitflags, generic-array, typenum, libc, cfg-if, cpufeatures, version_check, proc-macro2, quote, syn,
+  unicode-ident, zmij: all MIT, Apache-2.0, Zlib, Unicode-3.0, Unlicense or 0BSD (as alternatives or
+  combinations). No GPL.
+- **npm dev dependency:** Playwright 1.58.2 (Apache-2.0), for the cross-host check only.
