@@ -75,6 +75,7 @@ scenes/storm_light.py  the picture   tests/checkpoints.py, tests/t5_coarse2fine.
 oilpaint/eval*.py      evaluation harness (see "Evaluating changes")     scenes/swatches.py   the standard swatch sheet
 tests/t8_eval.py       harness self-tests                                eval/                thresholds, baselines, reference calibration
 docs/STYLE_REFERENCE.md   PLAN.md   RESEARCH.md
+docs/plans/            plans for the next phase (library, Rust engine, physics)   spikes/   evidence experiments for those plans
 ```
 
 ## Engine notes and limits

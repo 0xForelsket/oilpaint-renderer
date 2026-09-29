@@ -1,0 +1,6 @@
+ramp_fresh sky_strata hair 0.0452 bristle 0.0054 |grad| p99 161 p99.9 287
+ramp_fresh sky_top    hair 0.0295 bristle 0.0046 |grad| p99 260 p99.9 332
+ramp_fresh rock       hair 0.0879 bristle 0.0132 |grad| p99 434 p99.9 701
+ramp_fresh sea        hair 0.1432 bristle 0.0133 |grad| p99 403 p99.9 778
+ramp_fresh tower_base hair 0.0360 bristle 0.0031 |grad| p99 573 p99.9 854
+ramp_fresh: total 46.3s, levelling 7.4s (12 iters/layer)

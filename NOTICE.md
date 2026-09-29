@@ -8,3 +8,10 @@ default `--mixer mixbox` are therefore for non-commercial use; every `run.json` 
 
 The renderer's own code was written for this project with Claude (Anthropic). No licence has been chosen for it yet:
 add a LICENSE file before sharing the repo.
+
+## Spikes (`spikes/`, evidence only)
+
+- `spikes/mixers/helpers.c`, `helpers.h`: taken from **libmypaint** (c) Martin Renold and contributors, ISC licence
+  (`spikes/mixers/COPYING_libmypaint`). Used only to test its spectral mixer against Mixbox; the plan does not ship it.
+- `spikes/mixers/spectral_data.json`: data tables from **spectral.js 3.0.0**, MIT licence
+  (`spikes/mixers/LICENSE_spectral.js`). The plan's default open mixer is built on these tables.

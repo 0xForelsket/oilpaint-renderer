@@ -1,0 +1,12 @@
+fresh_s150 sky_strata hair 0.0137 bristle 0.0042 |grad| p99 141 p99.9 265
+fresh_s150 sky_top    hair 0.0108 bristle 0.0034 |grad| p99 243 p99.9 308
+fresh_s150 rock       hair 0.0410 bristle 0.0088 |grad| p99 391 p99.9 639
+fresh_s150 sea        hair 0.0642 bristle 0.0085 |grad| p99 377 p99.9 724
+fresh_s150 tower_base hair 0.0195 bristle 0.0021 |grad| p99 574 p99.9 876
+fresh_s150: total 52.2s, levelling 11.7s (20 iters/layer)
+displace   sky_strata hair 0.0003 bristle 0.0025 |grad| p99 61 p99.9 104
+displace   sky_top    hair 0.0005 bristle 0.0024 |grad| p99 101 p99.9 137
+displace   rock       hair 0.0294 bristle 0.0090 |grad| p99 198 p99.9 296
+displace   sea        hair 0.0517 bristle 0.0084 |grad| p99 172 p99.9 275
+displace   tower_base hair 0.0110 bristle 0.0020 |grad| p99 189 p99.9 272
+displace: total 48.3s, levelling 7.2s (12 iters/layer)

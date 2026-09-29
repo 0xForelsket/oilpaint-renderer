@@ -1,0 +1,22 @@
+[package]
+name = "oilcore"
+version = "0.0.1"
+edition = "2021"
+license = "MIT"
+description = "Spike: oilpaint kernel ported from brush.c (paint/scumble/smudge/glaze, bristle lanes, height) + relight"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+# own exp/sin built from + - * / only: identical bits on every IEEE-754 target (native, wasm32)
+detmath = []
+# open Kubelka-Munk mixer (spectral.js data, MIT) instead of Mixbox
+mixer_km12 = []
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"

@@ -4,3 +4,7 @@ __pycache__/
 oilpaint/csrc/*.so
 oilpaint/csrc/*.dylib
 oilpaint/csrc/*.dll
+spikes/**/target/
+spikes/**/target_*/
+spikes/**/node_modules/
+spikes/planspike/data/
