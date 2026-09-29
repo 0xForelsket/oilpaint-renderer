@@ -71,18 +71,21 @@ pub fn paint<M: Mixer>(m: &M, list: &StrokeList, w: u32, mut after_layer: impl F
 /// Canvas planes that `plane_bytes` serialises.
 pub const PLANES: [&str; 6] = ["lat", "rgb", "h", "wet", "cover", "amount"];
 
-/// Little-endian bytes of a plane, for hashing (one of `PLANES`).
-pub fn plane_bytes<M: Mixer>(cv: &Canvas<M>, plane: &str) -> Vec<u8> {
-    let f = |v: &mut Vec<u8>, x: f32| v.extend_from_slice(&x.to_bits().to_le_bytes());
-    let mut out = Vec::new();
+/// The values of a plane (one of `PLANES`), in row-major order; a mixer state contributes its floats in order.
+pub fn plane_values<'a, M: Mixer>(cv: &'a Canvas<M>, plane: &str) -> Box<dyn Iterator<Item = f32> + 'a> {
     match plane {
-        "lat" => cv.lat.iter().flat_map(|z| z.as_slice().iter().copied()).for_each(|x| f(&mut out, x)),
-        "rgb" => cv.rgb.iter().flatten().for_each(|x| f(&mut out, *x)),
-        "h" => cv.hgt.iter().for_each(|x| f(&mut out, *x)),
-        "wet" => cv.wet.iter().for_each(|x| f(&mut out, *x)),
-        "cover" => cv.cover.iter().for_each(|x| f(&mut out, *x)),
-        "amount" => cv.amount.iter().for_each(|x| f(&mut out, *x)),
+        "lat" => Box::new(cv.lat.iter().flat_map(|z| z.as_slice().iter().copied())),
+        "rgb" => Box::new(cv.rgb.iter().flatten().copied()),
+        "h" => Box::new(cv.hgt.iter().copied()),
+        "wet" => Box::new(cv.wet.iter().copied()),
+        "cover" => Box::new(cv.cover.iter().copied()),
+        "amount" => Box::new(cv.amount.iter().copied()),
         _ => panic!("unknown plane {plane}"),
     }
-    out
+}
+
+/// Little-endian bytes of a plane, for hashing (one of `PLANES`). This copies the plane: to hash large canvases,
+/// stream `plane_values` instead.
+pub fn plane_bytes<M: Mixer>(cv: &Canvas<M>, plane: &str) -> Vec<u8> {
+    plane_values(cv, plane).flat_map(|x| x.to_bits().to_le_bytes()).collect()
 }

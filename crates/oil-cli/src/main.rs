@@ -38,6 +38,21 @@ fn hex(bytes: &[u8]) -> String {
     Sha256::digest(bytes).iter().map(|b| format!("{b:02x}")).collect()
 }
 
+/// SHA-256 of f32 values as little-endian bytes, streamed in 64 KB chunks (no copy of the plane).
+fn hex_f32(values: impl Iterator<Item = f32>) -> String {
+    let mut h = Sha256::new();
+    let mut buf = Vec::with_capacity(1 << 16);
+    for v in values {
+        buf.extend_from_slice(&v.to_bits().to_le_bytes());
+        if buf.len() >= 1 << 16 {
+            h.update(&buf);
+            buf.clear();
+        }
+    }
+    h.update(&buf);
+    h.finalize().iter().map(|b| format!("{b:02x}")).collect()
+}
+
 fn read_list(path: &str) -> StrokeList {
     let bytes = std::fs::read(path).unwrap_or_else(|e| fail(Error::new("IO", format!("cannot read {path}: {e}"))));
     StrokeList::from_bytes(&bytes).unwrap_or_else(|errs| {
@@ -66,14 +81,13 @@ fn paint_with<M: Mixer>(m: &M, list: &StrokeList, w: u32, light: Option<LightPar
     let (wu, hu) = (cv.w, cv.h);
     let mut hashes = serde_json::Map::new();
     for plane in oil_paint::PLANES {
-        hashes.insert(plane.into(), json!(hex(&oil_paint::plane_bytes(&cv, plane))));
+        hashes.insert(plane.into(), json!(hex_f32(oil_paint::plane_values(&cv, plane))));
     }
     let t1 = Instant::now();
     let lit = light.map(|p| oil_light::relight(&cv.rgb, &cv.hgt, wu, hu, &p));
     let light_s = t1.elapsed().as_secs_f64();
     if let Some(lit) = &lit {
-        let bytes: Vec<u8> = lit.iter().flatten().flat_map(|v| v.to_bits().to_le_bytes()).collect();
-        hashes.insert("lit".into(), json!(hex(&bytes)));
+        hashes.insert("lit".into(), json!(hex_f32(lit.iter().flatten().copied())));
     }
     let mut files = Vec::new();
     if let Some(dir) = out {
