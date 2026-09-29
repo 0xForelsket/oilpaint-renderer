@@ -1,0 +1,6 @@
+out/
+__pycache__/
+*.pyc
+oilpaint/csrc/*.so
+oilpaint/csrc/*.dylib
+oilpaint/csrc/*.dll
