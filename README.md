@@ -1,5 +1,11 @@
 # oilpaint
 
+**Ochrell integration:** `--mixer ochrell` now runs the existing planner, bristle
+renderer and relighting with persistent synthetic K/S material states. It needs
+Rust and the sibling `../ochrell` source directory, but no C compiler or Mixbox
+installation. See [setup, architecture, limitations and reproduction](docs/OCHRELL.md).
+The original default and its notices below remain in place.
+
 An offline, stroke-based oil painting renderer aimed at a Monet-like look: a scene description (soft target
 image + regions + flow fields + per-region styles + a layer schedule) is planned into an ordered list of
 brush strokes, which a small C kernel paints onto a canvas that holds pigment-space colour, paint height and

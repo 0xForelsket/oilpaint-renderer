@@ -7,11 +7,10 @@ concentrations, so the same kernel does plain RGB lerps: that is the A/B baselin
 """
 import numpy as np
 
-try:
-    import mixbox as _mixbox_ref
-    _LUT = np.frombuffer(bytes(_mixbox_ref._lut), dtype=np.uint8).astype(np.float32)
-except ImportError as e:  # pragma: no cover
-    raise ImportError("pymixbox is required: pip install --break-system-packages pymixbox") from e
+# Ochrell uses a separate 85-float K/S/residual adapter and native brush backend.
+# The old seven-float coefficients below belong only to the optional old backend.
+
+_LUT = None  # optional legacy backend; never loaded by Ochrell or RGB
 
 LAT = 7
 _MODE = {"backend": "mixbox"}
@@ -27,12 +26,19 @@ COEF = np.array([
 
 
 def set_backend(name):
-    assert name in ("mixbox", "rgb")
+    global LAT
+    if name not in ("mixbox", "rgb", "ochrell", "ochrell-roundtrip", "ochrell-srgb", "mixbox-material"):
+        raise ValueError(f"unknown mixer: {name}")
+    LAT = 85 if is_material(name) else 7
     _MODE["backend"] = name
 
 
 def backend():
     return _MODE["backend"]
+
+
+def is_material(name):
+    return name.startswith("ochrell") or name == "mixbox-material"
 
 
 def _eval_poly(c0, c1, c2, c3):
@@ -45,12 +51,22 @@ def _eval_poly(c0, c1, c2, c3):
 
 
 def rgb_to_latent(rgb):
-    """rgb float array (..., 3) in 0..1 -> latent (..., 7)."""
+    """sRGB (...,3) -> active mixer state (...,LAT); clips inputs as the renderer historically did."""
     rgb = np.clip(np.asarray(rgb, np.float32), 0, 1)
+    if _MODE["backend"].startswith("ochrell"):
+        from .ochrell import encode
+        return encode(rgb, backend())
     if _MODE["backend"] == "rgb":
         out = np.zeros(rgb.shape[:-1] + (LAT,), np.float32)
         out[..., 4:7] = rgb
         return out
+    global _LUT
+    if _LUT is None:
+        try:
+            import mixbox as ref
+        except ImportError as e:
+            raise ImportError("The optional mixbox backend needs pymixbox; select --mixer ochrell or rgb") from e
+        _LUT = np.frombuffer(bytes(ref._lut), dtype=np.uint8).astype(np.float32)
     x, y, z = rgb[..., 0] * 63, rgb[..., 1] * 63, rgb[..., 2] * 63
     ix = np.minimum(x.astype(np.int32), 62); iy = np.minimum(y.astype(np.int32), 62); iz = np.minimum(z.astype(np.int32), 62)
     tx, ty, tz = x - ix, y - iy, z - iz
@@ -63,11 +79,19 @@ def rgb_to_latent(rgb):
     c /= 255.0
     c3 = 1 - c.sum(-1)
     mix = _eval_poly(c[..., 0], c[..., 1], c[..., 2], c3)
-    return np.concatenate([c, c3[..., None], rgb - mix], -1).astype(np.float32)
+    result = np.concatenate([c, c3[..., None], rgb - mix], -1).astype(np.float32)
+    if backend() == "mixbox-material":
+        out = np.zeros(rgb.shape[:-1] + (85,),np.float32)
+        out[...,:7] = result
+        return out
+    return result
 
 
 def latent_to_rgb(lat):
     lat = np.asarray(lat, np.float32)
+    if is_material(backend()):
+        from .ochrell import decode
+        return decode(lat, backend())
     rgb = _eval_poly(lat[..., 0], lat[..., 1], lat[..., 2], lat[..., 3]) + lat[..., 4:7]
     return np.clip(rgb, 0, 1).astype(np.float32)
 

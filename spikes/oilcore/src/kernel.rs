@@ -4,18 +4,22 @@
 //! wrapper can load either library.
 use crate::math::{expf, sinf};
 
-#[cfg(not(feature = "mixer_km12"))]
+#[cfg(not(any(feature = "mixer_km12", feature = "mixer_ochrell")))]
 pub const LAT: usize = 7;
 #[cfg(feature = "mixer_km12")]
 pub const LAT: usize = 16;
+#[cfg(feature = "mixer_ochrell")]
+pub const LAT: usize = 85;
 
 /// latent -> display sRGB for the compiled-in mixer
 #[inline(always)]
 pub fn latent_to_rgb(l: &[f32], rgb: &mut [f32]) {
-    #[cfg(not(feature = "mixer_km12"))]
+    #[cfg(not(any(feature = "mixer_km12", feature = "mixer_ochrell")))]
     mixbox_latent_to_rgb(l, rgb);
     #[cfg(feature = "mixer_km12")]
     crate::km_tables::km_latent_to_rgb(l, rgb);
+    #[cfg(feature = "mixer_ochrell")]
+    rgb.copy_from_slice(&crate::material::decode(l, 0));
 }
 const MAX_NB: usize = 72;
 const ALONG_PER_WIDTH: f32 = 6.0;
@@ -32,6 +36,10 @@ pub struct Canvas {
     pub cover: *mut f32,
     pub hblur: *mut f32,
     pub region: *mut u8,
+    #[cfg(feature = "mixer_ochrell")]
+    pub amount: *mut f32,
+    #[cfg(feature = "mixer_ochrell")]
+    pub mixing_mode: i32,
 }
 
 #[repr(C)]
@@ -126,6 +134,7 @@ fn vnoise(x: f32, y: f32, seed: u32) -> f32 {
 
 // ---------------- Mixbox polynomial (latent -> rgb), (c) 2022 Secret Weapons, CC BY-NC 4.0 ----------------
 #[inline(always)]
+#[cfg(any(not(feature = "mixer_ochrell"), feature = "mixbox_comparison"))]
 pub fn mixbox_latent_to_rgb(l: &[f32], rgb: &mut [f32]) {
     let (c0, c1, c2, c3) = (l[0], l[1], l[2], l[3]);
     let (c00, c11, c22, c33, c01, c02, c12) = (c0 * c0, c1 * c1, c2 * c2, c3 * c3, c0 * c1, c0 * c2, c1 * c2);
@@ -430,6 +439,8 @@ pub unsafe fn render_stroke_impl(
     let hh = std::slice::from_raw_parts_mut(cv.hgt, npx);
     let wet = std::slice::from_raw_parts_mut(cv.wet, npx);
     let cover = std::slice::from_raw_parts_mut(cv.cover, npx);
+    #[cfg(feature = "mixer_ochrell")]
+    let amount = std::slice::from_raw_parts_mut(cv.amount, npx);
     let hblur: Option<&[f32]> = if cv.hblur.is_null() { None } else { Some(std::slice::from_raw_parts(cv.hblur, npx)) };
 
     let mut rs: u32 = bp.seed.wrapping_mul(747796405).wrapping_add(2891336453);
@@ -458,12 +469,23 @@ pub unsafe fn render_stroke_impl(
     let mut seg_z = [[0.0f32; LAT]; MAX_NB];
     let mut seg_a = [0.0f32; MAX_NB];
     let mut seg_wet = [0.0f32; MAX_NB];
+    #[cfg(feature = "mixer_ochrell")]
+    let mut seg_cov = [0.0f32; MAX_NB];
+    #[cfg(feature = "mixer_ochrell")]
+    let mut tip_amount = [if mode == 2 { 0. } else { bp.load }; MAX_NB];
     for l in 0..bb.ntot {
         let m_b = bp.marble * bb.col_b[l];
         let st = bp.streak * bb.tstreak[l];
+        #[cfg(not(feature = "mixer_ochrell"))]
         for k in 0..LAT {
             zload[l][k] = zcol[k] + m_b * (zcol2[k] - zcol[k]) + st * dz[k];
             ztip[l][k] = zload[l][k];
+        }
+        #[cfg(feature = "mixer_ochrell")]
+        {
+            for k in 0..LAT { zload[l][k] = (1. - m_b) * zcol[k] + m_b * zcol2[k]; }
+            crate::material::streak(&mut zload[l], dz, st, cv.mixing_mode);
+            ztip[l] = zload[l];
         }
         dirt[l] = if mode == 2 { 1.0 } else { 0.0 };
     }
@@ -533,6 +555,8 @@ pub unsafe fn render_stroke_impl(
         for l in 0..bb.ntot {
             seg_a[l] = 0.0;
             seg_wet[l] = 0.0;
+            #[cfg(feature = "mixer_ochrell")]
+            { seg_cov[l] = 0.; }
             for k in 0..LAT {
                 seg_z[l][k] = 0.0;
             }
@@ -623,19 +647,33 @@ pub unsafe fn render_stroke_impl(
                             bd = smp.idx[c];
                         }
                     }
-                    for k in 0..LAT {
-                        seg_z[bd][k] += alpha * lpix[k];
-                    }
-                    seg_a[bd] += alpha;
-                    seg_wet[bd] += alpha * wet[idx];
+                    #[cfg(not(feature = "mixer_ochrell"))]
+                    let sample_amount = alpha;
+                    #[cfg(feature = "mixer_ochrell")]
+                    let sample_amount = alpha * amount[idx];
+                    for k in 0..LAT { seg_z[bd][k] += sample_amount * lpix[k]; }
+                    seg_a[bd] += sample_amount;
+                    seg_wet[bd] += sample_amount * wet[idx];
+                    #[cfg(feature = "mixer_ochrell")]
+                    { seg_cov[bd] += alpha; }
                     if !can_deposit {
                         continue;
                     }
                     let mut zpix = [0.0f32; LAT];
+                    #[cfg(feature = "mixer_ochrell")]
+                    let source_amount = if mode == 2 {
+                        (0..smp.n).map(|c| {
+                            (if use_r { smp.w_r[c] } else { smp.w_f[c] }) / wsum * tip_amount[smp.idx[c]]
+                        }).sum::<f32>()
+                    } else { v_load.max(0.) };
+                    #[cfg(feature = "mixer_ochrell")]
+                    if source_amount <= 1e-8 { continue; }
                     if mode == 2 {
                         for c in 0..smp.n {
                             let w = (if use_r { smp.w_r[c] } else { smp.w_f[c] }) / wsum;
                             let l = smp.idx[c];
+                            #[cfg(feature = "mixer_ochrell")]
+                            let w = w * tip_amount[l] / source_amount;
                             for k in 0..LAT {
                                 zpix[k] += w * ztip[l][k];
                             }
@@ -644,23 +682,31 @@ pub unsafe fn render_stroke_impl(
                         for c in 0..smp.n {
                             let w = (if use_r { smp.w_r[c] } else { smp.w_f[c] }) / wsum;
                             let l = smp.idx[c];
-                            let mut dpix = dirt[l] * (1.0 + bp.streak_mix * bb.tstreak[l]);
-                            if dpix > 1.0 {
-                                dpix = 1.0;
-                            }
-                            if dpix < 0.0 {
-                                dpix = 0.0;
-                            }
+                            #[cfg(not(feature = "mixer_ochrell"))]
+                            let dpix = clamp01(dirt[l] * (1.0 + bp.streak_mix * bb.tstreak[l]));
+                            // Ochrell tips already contain load + collected paint,
+                            // combined by their amounts. No second dirt dilution.
+                            #[cfg(feature = "mixer_ochrell")]
+                            let dpix = 1.0;
                             for k in 0..LAT {
-                                zpix[k] += w * (zload[l][k] + dpix * (ztip[l][k] - zload[l][k]));
+                                #[cfg(not(feature = "mixer_ochrell"))]
+                                { zpix[k] += w * (zload[l][k] + dpix * (ztip[l][k] - zload[l][k])); }
+                                #[cfg(feature = "mixer_ochrell")]
+                                { zpix[k] += w * ((1. - dpix) * zload[l][k] + dpix * ztip[l][k]); }
                             }
                         }
                     }
                     let a = alpha;
+                    #[cfg(not(feature = "mixer_ochrell"))]
+                    {
                     for k in 0..LAT {
                         lpix[k] += a * (zpix[k] - lpix[k]);
                     }
                     latent_to_rgb(lpix, &mut rgb[idx * 3..idx * 3 + 3]);
+                    }
+                    #[cfg(feature = "mixer_ochrell")]
+                    crate::material::deposit(lpix, &mut rgb[idx * 3..idx * 3 + 3], &mut amount[idx],
+                        &zpix, a * source_amount, wet[idx], a, mode == 3, cv.mixing_mode);
                     let base = hprev + (hcur - hprev) * t;
                     if mode == 0 {
                         let au = u.abs();
@@ -686,6 +732,8 @@ pub unsafe fn render_stroke_impl(
                         }
                     } else if mode == 2 {
                         hh[idx] -= a * bp.flatten * (hh[idx] - base);
+                        #[cfg(feature = "mixer_ochrell")]
+                        { wet[idx] = wet[idx].max(a); }
                     }
                     cover[idx] += a;
                     stat_alpha += a as f64;
@@ -696,11 +744,40 @@ pub unsafe fn render_stroke_impl(
         for l in 0..bb.ntot {
             if seg_a[l] <= 1e-6 {
                 dirt[l] -= bp.release * dirt[l] * (if mode == 2 { 0.0 } else { 1.0 });
+                #[cfg(feature = "mixer_ochrell")]
+                if mode != 2 && mode != 3 {
+                    let release = bp.release.clamp(0., 1.);
+                    for k in 0..LAT { ztip[l][k] = (1. - release) * ztip[l][k] + release * zload[l][k]; }
+                    tip_amount[l] = (1. - release) * tip_amount[l] + release * v_load.max(0.);
+                    crate::material::roundtrip(&mut ztip[l], cv.mixing_mode);
+                }
                 continue;
             }
             let wetavg = seg_wet[l] / seg_a[l];
             sum_wet_all += seg_wet[l] as f64;
             sum_a_all += seg_a[l] as f64;
+            #[cfg(feature = "mixer_ochrell")]
+            {
+                if mode != 3 {
+                    let picked = bp.pickup * wetavg * seg_a[l] / seg_cov[l].max(1e-6);
+                    if picked > 0. {
+                        let t = picked / (tip_amount[l] + picked);
+                        for k in 0..LAT { ztip[l][k] = (1. - t) * ztip[l][k] + t * seg_z[l][k] / seg_a[l]; }
+                        tip_amount[l] += picked;
+                        crate::material::roundtrip(&mut ztip[l], cv.mixing_mode);
+                    }
+                    if mode != 2 {
+                        // Existing release control replenishes the tip with fresh
+                        // reservoir paint. It is not a conserved brush volume.
+                        let release = bp.release.clamp(0., 1.);
+                        for k in 0..LAT { ztip[l][k] = (1. - release) * ztip[l][k] + release * zload[l][k]; }
+                        tip_amount[l] = (1. - release) * tip_amount[l] + release * v_load.max(0.);
+                        crate::material::roundtrip(&mut ztip[l], cv.mixing_mode);
+                    }
+                }
+            }
+            #[cfg(not(feature = "mixer_ochrell"))]
+            {
             if mode == 2 {
                 for k in 0..LAT {
                     ztip[l][k] += bp.pickup * (seg_z[l][k] / seg_a[l] - ztip[l][k]);
@@ -717,6 +794,7 @@ pub unsafe fn render_stroke_impl(
                 } else {
                     dirt[l] -= bp.release * (dirt[l] - target);
                 }
+            }
             }
         }
         hbase = hcur;

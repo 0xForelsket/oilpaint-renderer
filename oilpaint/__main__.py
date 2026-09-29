@@ -53,7 +53,7 @@ def main(argv=None):
     r.add_argument("--only", type=int, default=None, help="re-plan only layer N over the saved state of --from")
     r.add_argument("--from", dest="from_run", default=None, help="run directory with strokes.npz and states/")
     r.add_argument("--strokes", default=None, help="replay a saved strokes.npz instead of planning")
-    r.add_argument("--mixer", choices=["mixbox", "rgb"], default="mixbox")
+    r.add_argument("--mixer", choices=["mixbox", "rgb", "ochrell", "ochrell-roundtrip", "ochrell-srgb"], default="mixbox")
     r.add_argument("--no-light", action="store_true")
     r.add_argument("--no-layers", action="store_true", help="skip per-layer PNGs")
     r.add_argument("--timelapse", default=None, help="write an mp4 time-lapse to this path")

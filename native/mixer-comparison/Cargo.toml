@@ -1,0 +1,24 @@
+[package]
+name = "mixer-comparison"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Optional diagnostic comparison using the renderer's existing Mixbox code"
+
+[lib]
+path = "../ochrell-brush/src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+ochrell = { path = "../../../ochrell" }
+
+[features]
+default = ["mixer_ochrell", "mixbox_comparison"]
+mixer_ochrell = []
+mixbox_comparison = []
+mixer_km12 = []
+detmath = []
+
+[profile.release]
+codegen-units = 1
+lto = false

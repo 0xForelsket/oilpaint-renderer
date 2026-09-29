@@ -1,0 +1,7 @@
+# No Mixbox package or data needed for the Ochrell integration.
+numpy
+scipy
+opencv-python
+scikit-image
+imageio
+imageio-ffmpeg

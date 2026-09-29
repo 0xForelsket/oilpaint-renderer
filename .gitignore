@@ -1,4 +1,6 @@
 out/
+.venv/
+native/**/target/
 __pycache__/
 *.pyc
 oilpaint/csrc/*.so

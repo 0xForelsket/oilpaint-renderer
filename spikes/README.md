@@ -1,7 +1,10 @@
 # Spikes
 
 Throw-away experiments that back the plans in `docs/plans/`. They are evidence, not product code: nothing in `oilpaint/`
-imports from here.
+imports from here, except the new `native/ochrell-brush` integration crate, which
+compiles the existing `oilcore/src/kernel.rs` and `math.rs` directly with an
+Ochrell-only feature. It retains one bristle implementation while the rest of
+this directory remains experimental. See `docs/OCHRELL.md`.
 
 | Folder | What it is | Build / run |
 |---|---|---|

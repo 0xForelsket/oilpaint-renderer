@@ -1,0 +1,26 @@
+[package]
+name = "ochrell-brush"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Renderer-owned native bridge to the independent Ochrell library"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+ochrell = { path = "../../../ochrell" }
+
+[features]
+default = ["mixer_ochrell"]
+mixer_ochrell = []
+# Names used by the shared kernel; these are not supported bridge configurations.
+mixer_km12 = []
+detmath = []
+
+[profile.release]
+codegen-units = 1
+lto = false
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(feature, values("mixbox_comparison"))'] }

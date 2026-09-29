@@ -105,6 +105,22 @@ def _light_name(args):
 def _rss_mb(peak=True):
     """Resident memory in MB of this process: the high-water mark (VmHWM) or the current size (VmRSS).  /proc is used rather than
     ru_maxrss because ru_maxrss survives exec, so a child spawned from a big parent would report the parent's peak."""
+    if sys.platform == "win32":
+        import ctypes
+        from ctypes import wintypes
+        class Counters(ctypes.Structure):
+            _fields_ = [("cb", wintypes.DWORD), ("faults", wintypes.DWORD)] + [
+                (name, ctypes.c_size_t) for name in ("peak_working", "working", "peak_paged", "paged",
+                    "peak_nonpaged", "nonpaged", "pagefile", "peak_pagefile")]
+        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel.GetCurrentProcess.argtypes = []
+        kernel.GetCurrentProcess.restype = wintypes.HANDLE
+        kernel.K32GetProcessMemoryInfo.argtypes = [wintypes.HANDLE, ctypes.POINTER(Counters), wintypes.DWORD]
+        kernel.K32GetProcessMemoryInfo.restype = wintypes.BOOL
+        info = Counters(); info.cb = ctypes.sizeof(info)
+        if not kernel.K32GetProcessMemoryInfo(kernel.GetCurrentProcess(), ctypes.byref(info), info.cb):
+            raise ctypes.WinError(ctypes.get_last_error())
+        return (info.peak_working if peak else info.working) / 1e6
     try:
         key = "VmHWM:" if peak else "VmRSS:"
         for line in open("/proc/self/status"):

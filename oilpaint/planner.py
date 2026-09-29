@@ -72,7 +72,7 @@ def _rgb_spec(c):
 
 
 class Palette:
-    """Nearest-mixture snapping in Lab over Mixbox mixtures of a region's colours (+ white)."""
+    """Nearest-mixture snapping in Lab using the selected mixer (+ white)."""
     def __init__(self, colors, steps=9, white="lead_white"):
         cols = [np.asarray(_rgb_spec(c), np.float32) for c in colors]
         if not cols:
@@ -97,7 +97,7 @@ class Palette:
         rgb = np.asarray(rgb, np.float32)
         lab = mix.rgb_to_lab(rgb)
         _, idx = self.tree.query(lab.reshape(-1, 3))
-        target = self.lat[idx].reshape(rgb.shape[:-1] + (7,))
+        target = self.lat[idx].reshape(rgb.shape[:-1] + (mix.LAT,))
         src = mix.rgb_to_latent(rgb)
         return mix.latent_to_rgb(src + amount * (target - src))
 

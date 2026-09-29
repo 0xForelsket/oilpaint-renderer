@@ -33,12 +33,15 @@ def write_guides(S, g, out):
 
 # ------------------------------------------------------------------ strokes and states on disk
 def save_strokes(path, strokes, ranges):
+    if any(s.backend != mix.backend() for s in strokes):
+        raise ValueError("cannot save mixed-backend strokes")
     pts = np.concatenate([s.pts for s in strokes]) if strokes else np.zeros((0, 4), np.float32)
     off = np.zeros(len(strokes) + 1, np.int64); off[1:] = np.cumsum([s.pts.shape[0] for s in strokes])
-    np.savez_compressed(path, pts=pts, offsets=off,
-                        zcol=np.stack([s.zcol for s in strokes]) if strokes else np.zeros((0, 7), np.float32),
-                        zcol2=np.stack([s.zcol2 for s in strokes]) if strokes else np.zeros((0, 7), np.float32),
-                        dz=np.stack([s.dz for s in strokes]) if strokes else np.zeros((0, 7), np.float32),
+    np.savez_compressed(path, pts=pts, offsets=off, backend=mix.backend(), format_version=2,
+                        material_format=_material_format(mix.backend()),
+                        zcol=np.stack([s.zcol for s in strokes]) if strokes else np.zeros((0, mix.LAT), np.float32),
+                        zcol2=np.stack([s.zcol2 for s in strokes]) if strokes else np.zeros((0, mix.LAT), np.float32),
+                        dz=np.stack([s.dz for s in strokes]) if strokes else np.zeros((0, mix.LAT), np.float32),
                         seeds=np.array([s.seed for s in strokes], np.int64), layer=np.array([s.layer for s in strokes], np.int32),
                         region=np.array([s.region for s in strokes], np.int32),
                         params=np.array([json.dumps({k: (float(v) if isinstance(v, (np.floating, float)) else v) for k, v in s.params.items()}) for s in strokes]),
@@ -47,6 +50,7 @@ def save_strokes(path, strokes, ranges):
 
 def load_strokes(path):
     d = np.load(path, allow_pickle=False)
+    _check_format(d, mix.backend())
     # read each array exactly once: NpzFile decompresses a fresh copy on every key access, and slices would
     # keep every copy alive
     pts, off, zcol, dz = d["pts"], d["offsets"], d["zcol"], d["dz"]
@@ -56,17 +60,53 @@ def load_strokes(path):
     for i in range(len(off) - 1):
         strokes.append(Stroke(pts[off[i]:off[i + 1]].copy(), zcol[i].copy(), dz[i].copy(), json.loads(str(params[i])),
                               int(seeds[i]), int(layer[i]), int(region[i]), zcol2=zcol2[i].copy()))
+        strokes[-1].validate(mix.backend())
     return strokes, [tuple(int(v) for v in r) for r in ranges]
 
 
+def _material_format(backend):
+    if backend == "mixbox-material":
+        return "mixbox-2.0-lat7-padded85-v1"
+    return "ochrell-0.2-ks41-f32-v1" if backend.startswith("ochrell") else "legacy-7"
+
+
+def _check_format(d, backend):
+    if "backend" in d.files and str(d["backend"]) != backend:
+        raise ValueError(f"saved mixer {str(d['backend'])} does not match {backend}")
+    if "format_version" in d.files and int(d["format_version"]) != 2:
+        raise ValueError("unsupported saved format version")
+    if mix.is_material(backend):
+        if "material_format" not in d.files or str(d["material_format"]) != _material_format(backend):
+            raise ValueError("Ochrell requires matching, versioned material states; regenerate from authored RGB inputs")
+
+
 def save_state(path, cv):
+    if cv.amount is not None:
+        np.savez_compressed(path, backend=cv.backend, format_version=2, material_format=_material_format(cv.backend),
+                            lat=cv.lat, rgb=cv.rgb, h=cv.h, wet=cv.wet, cover=cv.cover,
+                            amount=cv.amount, hblur=cv.hblur, region=cv.region)
+        return
     # plan-size proxy state after a layer (float16 is plenty for iteration; ~5 MB per layer at 600x750)
     np.savez_compressed(path, lat=cv.lat.astype(np.float16), rgb=cv.rgb.astype(np.float16), h=cv.h.astype(np.float16),
                         wet=cv.wet.astype(np.float16), cover=cv.cover.astype(np.float16))
 
 
 def load_state(path, cv):
-    d = np.load(path)
+    d = np.load(path, allow_pickle=False)
+    _check_format(d, cv.backend)
+    if cv.amount is not None:
+        from .ochrell import validate_state
+        arrays = {k: d[k] for k in ("lat", "rgb", "h", "wet", "cover", "amount", "hblur", "region")}
+        for k, a in arrays.items():
+            dest = getattr(cv, k)
+            if a.shape != dest.shape or a.dtype != dest.dtype or not np.isfinite(a).all():
+                raise ValueError(f"invalid saved {k} shape, precision or values")
+        validate_state(arrays["lat"], cv.backend)
+        if np.any(arrays["amount"] < 0) or np.any(arrays["wet"] < 0) or np.any(arrays["wet"] > 1):
+            raise ValueError("invalid saved paint amount or wetness")
+        for k, a in arrays.items():
+            getattr(cv, k)[:] = a
+        return
     cv.lat[:] = d["lat"]; cv.rgb[:] = d["rgb"]; cv.h[:] = d["h"]; cv.wet[:] = d["wet"]; cv.cover[:] = d["cover"]
 
 
@@ -110,9 +150,16 @@ def render(scene_path, size=None, preview=False, plan_width=600, seed=1907, out=
     # ---- plan
     t0 = time.perf_counter()
     pl = Planner(g_plan, S.styles, layers, seed=seed, ground_rgb=S.ground, verbose=verbose)
+    state_save_seconds = 0.
+
+    def save_proxy(path):
+        nonlocal state_save_seconds
+        start = time.perf_counter()
+        save_state(path, pl.proxy)
+        state_save_seconds += time.perf_counter() - start
 
     def hook(li, layer, planner):
-        save_state(os.path.join(out, "states", f"after_L{li+1:02d}.npz"), planner.proxy)
+        save_proxy(os.path.join(out, "states", f"after_L{li+1:02d}.npz"))
         if layer_hook:
             layer_hook(li, layer, planner)
 
@@ -130,14 +177,14 @@ def render(scene_path, size=None, preview=False, plan_width=600, seed=1907, out=
         a, b = old_ranges[li]
         pl.strokes = list(old_strokes[:a]); pl.layer_ranges = list(old_ranges[:li])
         pl.plan_layer(li, layers[li])
-        save_state(os.path.join(out, "states", f"after_L{li+1:02d}.npz"), pl.proxy)
+        save_proxy(os.path.join(out, "states", f"after_L{li+1:02d}.npz"))
         shift = len(pl.strokes) - b
         for lj in range(li + 1, len(old_ranges)):
             a2, b2 = old_ranges[lj]
             _prep_layer(pl.proxy, layers[lj], Wp)
             pl.proxy.render(old_strokes[a2:b2]); _finish_layer(pl.proxy, layers[lj])
             pl.strokes.extend(old_strokes[a2:b2]); pl.layer_ranges.append((a2 + shift, b2 + shift))
-            save_state(os.path.join(out, "states", f"after_L{lj+1:02d}.npz"), pl.proxy)
+            save_proxy(os.path.join(out, "states", f"after_L{lj+1:02d}.npz"))
         # copy the earlier states so this run is self-contained for the next --only
         for lj in range(0, li):
             src = os.path.join(from_run, "states", f"after_L{lj+1:02d}.npz")
@@ -147,6 +194,8 @@ def render(scene_path, size=None, preview=False, plan_width=600, seed=1907, out=
     else:
         pl.plan(upto=upto, layer_hook=hook)
     timings["plan"] = time.perf_counter() - t0
+    timings["state_save"] = state_save_seconds
+    timings["plan_excluding_state_save"] = timings["plan"] - state_save_seconds
     n = len(pl.strokes)
     save_strokes(os.path.join(out, "strokes.npz"), pl.strokes, pl.layer_ranges)
     ranges = pl.layer_ranges
@@ -219,7 +268,8 @@ def render(scene_path, size=None, preview=False, plan_width=600, seed=1907, out=
     timings["total"] = time.perf_counter() - t_all
     per_layer = [(layers[li]["name"], b - a) for li, (a, b) in enumerate(ranges)]
     run = dict(scene=os.path.abspath(scene_path), size=[W, H], plan_width=Wp, seed=seed, mixer=mixer, strokes=n,
-               layers=per_layer, timings=timings, attribution=MIXBOX_ATTRIBUTION,
+               layers=per_layer, timings=timings, attribution=(MIXBOX_ATTRIBUTION if mixer.startswith("mixbox") else
+                   "Ochrell: MIT OR Apache-2.0 code; derived CIE assets CC BY-SA 4.0; see sibling ochrell/data/README.md" if mixer.startswith("ochrell") else "sRGB interpolation"),
                light=dict(L.LIGHT_DEFAULTS, **(light_kw or {})), metrics=m, only=only, from_run=from_run,
                timelapse=timelapse)
     with open(os.path.join(out, "run.json"), "w") as f:

@@ -36,18 +36,39 @@ class CCanvas(ctypes.Structure):
     ]
 
 
+class OchrellCanvas(ctypes.Structure):
+    _fields_ = CCanvas._fields_ + [("amount", ctypes.POINTER(ctypes.c_float)), ("mixing_mode", ctypes.c_int)]
+
+
 _lib = None
 
 
-def build_and_load():
+def build_and_load(backend="mixbox"):
     global _lib
+    if backend.startswith("ochrell") or backend == "mixbox-material":
+        from .ochrell import library
+        lib = library(backend == "mixbox-material")
+        fp = ctypes.POINTER(ctypes.c_float)
+        lib.render_stroke.argtypes = [ctypes.POINTER(OchrellCanvas), fp, ctypes.c_int, fp, fp, fp,
+                                      ctypes.POINTER(BrushParams), fp]
+        lib.render_stroke.restype = ctypes.c_int
+        lib.render_strokes.argtypes = [ctypes.POINTER(OchrellCanvas), fp, ctypes.POINTER(ctypes.c_int), ctypes.c_int,
+                                       fp, fp, fp, ctypes.POINTER(BrushParams)]
+        lib.render_strokes.restype = ctypes.c_int
+        return lib
     if _lib is not None:
         return _lib
     with open(SRC, "rb") as f:
         digest = hashlib.sha1(f.read()).hexdigest()[:12]
     ext = ".dll" if sys.platform == "win32" else (".dylib" if sys.platform == "darwin" else ".so")
     so = os.path.join(HERE, "csrc", f"brush_{digest}{ext}")
-    if not os.path.exists(so):
+    if os.environ.get("OILPAINT_KERNEL") == "rust":
+        crate = os.path.abspath(os.path.join(HERE, "..", "spikes", "oilcore"))
+        target = os.path.join(crate, "target")
+        subprocess.run([os.environ.get("CARGO", "cargo"), "build", "--release", "--offline", "--lib",
+                        "--manifest-path", os.path.join(crate, "Cargo.toml"), "--target-dir", target], check=True)
+        so = os.path.join(target, "release", "oilcore.dll" if sys.platform == "win32" else "liboilcore" + ext)
+    elif not os.path.exists(so):
         cc = os.environ.get("CC") or next((c for c in ("gcc", "clang", "cc") if shutil.which(c)), None)
         if cc is None:
             raise RuntimeError("oilpaint needs a C compiler (gcc or clang) to build csrc/brush.c; "
