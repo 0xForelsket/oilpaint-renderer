@@ -1,0 +1,25 @@
+[workspace]
+resolver = "2"
+members = ["crates/*"]
+# Separate crates with their own lockfiles (Ochrell bridge, spikes); the Python renderer builds them itself.
+exclude = ["native", "spikes"]
+
+[workspace.package]
+version = "2.0.0-dev.0"
+edition = "2021"
+license = "MIT"
+rust-version = "1.85"
+publish = false
+
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+
+[workspace.lints.clippy]
+# clippy.toml lists the platform-libm methods that must never reach an output (spec/README.md, rule 1).
+disallowed_methods = "deny"
+
+[profile.release]
+opt-level = 3
+codegen-units = 1
+lto = true
+debug = false

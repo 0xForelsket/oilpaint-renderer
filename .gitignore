@@ -10,3 +10,5 @@ spikes/**/target/
 spikes/**/target_*/
 spikes/**/node_modules/
 spikes/planspike/data/
+/target/
+node_modules/

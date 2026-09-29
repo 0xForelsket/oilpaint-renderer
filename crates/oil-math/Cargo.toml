@@ -1,0 +1,11 @@
+[package]
+name = "oil-math"
+description = "The engine's one maths library: transcendentals built from IEEE-754 basic operations, identical on every target"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
