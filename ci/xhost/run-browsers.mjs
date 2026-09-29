@@ -1,5 +1,5 @@
 // Browser side of the cross-host check, through Playwright:
-//   node ci/xhost/run-browsers.mjs [--browsers chromium,firefox,webkit] [--wasm FILE] [--out-dir DIR]
+//   node ci/xhost/run-browsers.mjs [--browsers chromium,firefox,webkit,msedge,chrome] [--wasm FILE] [--out-dir DIR]
 // Serves page.html, wasm-host.mjs and the WASM from 127.0.0.1 (a secure context, so crypto.subtle exists), loads
 // the WASM with instantiateStreaming as a CDN build would, and hashes with WebCrypto. WebKit is best-effort: a
 // launch failure is reported and skipped; a hash difference in any browser that ran is not.
@@ -25,12 +25,14 @@ await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const url = `http://127.0.0.1:${server.address().port}/page.html`;
 
 const pw = await import("playwright");
-const bestEffort = new Set(["webkit"]);
+// "msedge" and "chrome" drive the installed Edge / Chrome through Playwright's Chromium channels.
+const channels = new Set(["msedge", "chrome"]);
+const bestEffort = new Set(["webkit", "msedge", "chrome"]);
 let failed = false;
 for (const name of opt.browsers.split(",").filter(Boolean)) {
   let browser;
   try {
-    browser = await pw[name].launch();
+    browser = channels.has(name) ? await pw.chromium.launch({ channel: name }) : await pw[name].launch();
   } catch (err) {
     console.error(`xhost: ${name} did not launch: ${String(err.message).split("\n")[0]}`);
     if (!bestEffort.has(name)) failed = true;
