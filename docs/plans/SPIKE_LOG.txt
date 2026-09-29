@@ -1,0 +1,67 @@
+oilpaint library spikes, 2026-09-29, this container (2 vCPU Xeon @2.1 GHz, Node 22.22, Chromium 141 headless, rustc 1.95 stable).
+Other-process CPU was checked for each run; the numbers below were taken with it under ~0.5 CPU-s unless noted.
+
+== Rust port of brush.c (oilcore/src/kernel.rs, all 4 modes, bristle lanes, height, pick-up) + relight (light.rs, imgops.rs)
+corpus: stroke-file-v2 prototype written by export_corpus.py: sheet (210 strokes, eval swatches), storm (12,495 strokes)
+kernel-only parity through Python/ctypes, hblur from cv2 for all libraries (parity.py):
+  sheet 1600x2400: rust(libm) == C strict (-O3 -march=x86-64-v2 -ffp-contract=off): BIT-IDENTICAL (rgb,h,lat,wet,cover)
+                   rust(detmath) vs C strict: rgb 0.000/255, h max 3.6e-6;  C fast-math vs strict: rgb 0.006/255
+  storm 600x750:   rust(libm) == C strict BIT-IDENTICAL; rust(detmath) h max 1.9e-6, rgb 0.000/255
+                   C fast-math (today's build) vs C strict: max 110/255, 9.7% px > 1/255, 2.0% > 8/255  (chaotic)
+  storm 1200x1500: rust(libm) == C strict BIT-IDENTICAL; C fast vs strict: max 124/255, 9.9% px > 1/255
+kernel seconds, Storm Light (single thread):
+                          600x750      1200x1500     2400x3000
+  C fast-math (today)     2.66         9.89          ~36 (earlier bench)
+  C strict                3.27         11.37
+  Rust native libm        3.08-3.78    11.9-12.0
+  Rust native detmath     4.04         13.3          50.4 (partly contended)
+  WASM Node det           5.47         15.80
+  WASM Node det+simd128   5.02         15.73         57.2 (647 MB heap)
+  WASM Node libm          5.10         16.37
+  WASM Chromium det+simd  4.2-4.8      16.2          59.9 (561 MB heap)
+bit parity across targets (SHA-256 / cmp of rgb and h planes, rust replay incl. Rust hblur):
+  native detmath == WASM Node == WASM Chromium (scalar and simd128) at 600, 1200, 2400 (storm) and 1600 (sheet)
+relight (light_parity.py, weave passed from Python): rust vs Python max 0.002/255;  600: py 0.18-0.47 s rust 0.05 s;
+  1200: py 0.50-1.48 s rust 0.21-0.23 s;  WASM 1200: 0.38-0.50 s, 2400: 1.55 s (Node)
+wasm size 71-75 KB; exports: oc_alloc/oc_free/oc_replay/oc_relight + brush.c ABI; single import now_ms
+Chromium page served with COOP/COEP headers: crossOriginIsolated = true, hardwareConcurrency 2
+toolchain: stable 1.95 has wasm32-unknown-unknown (no atomics std); `rustup target add wasm32-wasip1-threads` and
+  `rustup toolchain install nightly` both worked here (rustup self-updated to 1.29.1) -> a threaded WASM build is possible
+  (not built in this spike)
+
+== Planner hot loops at 600x750 (planspike/): Storm Light inputs (sky mask/flow, real proxy canvas, 729-colour palette,
+   13,795 path jobs from the real stroke list)
+                          error map x27    snap x12,500    paths x13,795 (147k points)
+  Python (repo code)      1.52 s           2.72 s          1.30 s
+  JS naive (V8)           5.30-5.66 s      0.035-0.044 s   0.026-0.031 s
+  JS + sRGB LUT           1.50-1.61 s      0.040-0.047 s   0.024-0.053 s
+  Rust -> WASM (Node)     1.29-1.30 s      0.021-0.071 s   0.014-0.026 s
+  Rust native             0.91-0.95 s      0.013-0.017 s   0.015-0.016 s
+  JS and Rust find the same 24,454 error cells
+
+== Open mixers (mixers/): libmypaint WGM-10 (ISC tables) and Kubelka-Munk on spectral.js 3.0 data (MIT), 38 and 12 bands,
+   latent = linear-mixable part + RGB residual (unmixed colours round-trip to <1e-4)
+50:50 mixes (L C h):  cobalt+cad.yellow  mixbox 54/60/142  wgm 42/29/163  km12 57/63/139  rgb 54/38/111
+                      ultramarine+cad.y   mixbox 46/49/137  wgm 33/5/81    km12 54/37/89   rgb 50/42/91
+                      cobalt+white        mixbox 59/54/278  wgm 45/45/280  km12 62/43/266  rgb 59/27/283
+mud stack C: mixbox 15.7, wgm 14.5, km 13.9, rgb 21.6
+Rust kernel with KM-12 (LAT 16) via feature mixer_km12; eval sheet (harness) Mixbox vs KM-12: 19 FAIL / 35 WARN, mostly
+  off-curve blend dE (measured against the Mixbox curve by design), paint C_mean 45 -> 36, mud_stack zone_mud_frac
+  0.04 -> 0.26; visible: yellow+ultramarine wet-in-wet olive instead of green, orange/blue pills brown, pale scumble over
+  blue lavender (mixers/sheet_mixbox_vs_km12.png)
+Storm Light preview with KM-12 (Python planner + Rust KM kernel): 13,528 strokes, chroma 24 (mixbox 25), mud 0.01 (0.00),
+  visually close (mixers/storm_mixbox_vs_km12.png)
+
+== Rust-planner revision spikes (planspike/spike_granularity.mjs, oilcore/src/bin/guidespike.rs)
+WASM boundary cost for a planner stage (Node): 13,795 path traces as one batched call 14-23 ms vs one call per stroke
+  16.5-20.9 ms -> <= 0.5 us per call (numbers + typed-array views; no JSON marshalling)
+Storm Light guide compile at 600x750, Python (S.guides): total 1.9-2.8 s = target painting 53 ops 0.91-1.10 s |
+  20 region rasters 0.05-0.07 s | 20 mask blurs (sigma 1.8-48 px) 0.18 s | structure tensor 0.10-0.11 s | 20 flows 0.38-0.44 s
+Rust native (imgops): the same 20 mask blurs 0.75-0.82 s direct separable (cv2 is SIMD-tuned), 0.10-0.13 s with the
+  downsample path for sigma >= 8 | 4-octave hashed-lattice bicubic value noise over the full 600x750 canvas 0.065 s
+  -> estimate for a Rust spec compile of Storm Light: ~0.5-1 s native (noise evaluated only inside each shape's bbox),
+     ~0.7-1.3 s WASM (x1.3); not measured end to end
+Math library check (storm 600): Rust native with platform libm (glibc) vs Rust WASM with its built-in libm port:
+  NOT identical (0.23% of pixels differ, rgb max 0.0001/255, h max 3.8e-6). With `detmath` (pure Rust, basic IEEE ops)
+  native == Node == Chromium bit for bit (above). -> cross-host bit parity needs ONE pure-Rust math implementation compiled
+  into every target (our detmath or the pure-Rust `libm` crate), never the platform libm; JS-side detmath is no longer needed.

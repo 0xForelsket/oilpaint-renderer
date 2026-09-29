@@ -1,0 +1,45 @@
+Tue Sep 29 19:29:41 2026    full.prof
+
+         4557420 function calls (4497353 primitive calls) in 111.869 seconds
+
+   Ordered by: cumulative time
+   List reduced from 4523 to 35 due to restriction <35>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+   1071/1    0.033    0.000  111.873  111.873 {built-in method builtins.exec}
+        1    0.000    0.000  111.873  111.873 <string>:1(<module>)
+        1    0.000    0.000  111.873  111.873 <frozen runpy>:201(run_module)
+        1    0.000    0.000  111.873  111.873 <frozen runpy>:65(_run_code)
+        1    0.000    0.000  111.873  111.873 oilpaint/__main__.py:1(<module>)
+        1    0.032    0.032  111.870  111.870 oilpaint/__main__.py:40(main)
+        1    0.092    0.092  110.222  110.222 oilpaint/render.py:89(render)
+       16   36.221    2.264   51.330    3.208 oilpaint/light.py:71(relight)
+       30   39.219    1.307   39.603    1.320 oilpaint/canvas.py:103(render)
+    13564    6.864    0.001    6.864    0.001 {method 'astype' of 'numpy.ndarray' objects}
+       20    0.001    0.000    6.612    0.331 oilpaint/light.py:136(save_png)
+       27    5.209    0.193    5.209    0.193 {imwrite}
+        1    0.737    0.737    4.084    4.084 oilpaint/metrics.py:14(compute)
+       16    1.940    0.121    3.953    0.247 oilpaint/light.py:36(weave)
+    12793    0.017    0.000    3.382    0.000 /usr/local/lib/python3.11/dist-packages/numpy/_core/fromnumeric.py:2207(clip)
+    12796    0.007    0.000    3.375    0.000 {method 'clip' of 'numpy.ndarray' objects}
+    12866    0.010    0.000    3.368    0.000 /usr/local/lib/python3.11/dist-packages/numpy/_core/fromnumeric.py:48(_wrapfunc)
+    12796    3.368    0.000    3.368    0.000 /usr/local/lib/python3.11/dist-packages/numpy/_core/_methods.py:96(_clip)
+       40    1.817    0.045    3.274    0.082 oilpaint/light.py:132(to8)
+    25466    2.497    0.000    2.497    0.000 {method 'reduce' of 'numpy.ufunc' objects}
+      114    0.000    0.000    2.295    0.020 {method 'mean' of 'numpy.ndarray' objects}
+      159    0.194    0.001    2.295    0.014 /usr/local/lib/python3.11/dist-packages/numpy/_core/_methods.py:115(_mean)
+        2    0.001    0.001    2.037    1.019 oilpaint/canvas.py:54(__init__)
+       16    1.229    0.077    1.853    0.116 oilpaint/light.py:24(value_noise)
+        1    0.072    0.072    1.849    1.849 oilpaint/scene.py:301(guides)
+        2    0.977    0.489    1.846    0.923 oilpaint/mix.py:101(rgb_to_lab)
+   1043/4    0.007    0.000    1.614    0.403 <frozen importlib._bootstrap>:1165(_find_and_load)
+   1003/4    0.005    0.000    1.614    0.403 <frozen importlib._bootstrap>:1120(_find_and_load_unlocked)
+    784/5    0.002    0.000    1.613    0.323 <frozen importlib._bootstrap_external>:934(exec_module)
+    977/4    0.005    0.000    1.613    0.403 <frozen importlib._bootstrap>:666(_load_unlocked)
+  2275/11    0.002    0.000    1.611    0.146 <frozen importlib._bootstrap>:233(_call_with_frames_removed)
+        1    0.000    0.000    1.607    1.607 oilpaint/render.py:1(<module>)
+      212    1.565    0.007    1.565    0.007 {resize}
+   708/33    0.002    0.000    1.555    0.047 <frozen importlib._bootstrap>:1207(_handle_fromlist)
+   204/67    0.000    0.000    1.355    0.020 /usr/lib/python3.11/importlib/__init__.py:108(import_module)
+
+

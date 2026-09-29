@@ -1,0 +1,27 @@
+cell 32px, W=2400; cost = measured seconds
+L01 n=   24 serial=  0.69 critpath=  0.31 (max speedup   2.2x) levels=   10 avg width   2.4 | P2: dag 1.73x bsp 1.69x P4: dag 2.22x bsp 1.98x P8: dag 2.22x bsp 1.98x P16: dag 2.22x bsp 1.98x
+L02 n= 1752 serial= 15.74 critpath=  7.96 (max speedup   2.0x) levels=  925 avg width   1.9 | P2: dag 1.89x bsp 1.45x P4: dag 1.98x bsp 1.51x P8: dag 1.98x bsp 1.51x P16: dag 1.98x bsp 1.51x
+L03 n=  462 serial=  4.68 critpath=  3.77 (max speedup   1.2x) levels=  362 avg width   1.3 | P2: dag 1.23x bsp 1.16x P4: dag 1.24x bsp 1.19x P8: dag 1.24x bsp 1.19x P16: dag 1.24x bsp 1.19x
+L04 n=  978 serial=  4.46 critpath=  3.88 (max speedup   1.1x) levels=  835 avg width   1.2 | P2: dag 1.15x bsp 1.13x P4: dag 1.15x bsp 1.13x P8: dag 1.15x bsp 1.13x P16: dag 1.15x bsp 1.13x
+L05 n= 1439 serial=  3.31 critpath=  2.88 (max speedup   1.1x) levels= 1183 avg width   1.2 | P2: dag 1.13x bsp 1.11x P4: dag 1.15x bsp 1.12x P8: dag 1.15x bsp 1.12x P16: dag 1.15x bsp 1.12x
+L06 n= 1330 serial=  3.65 critpath=  3.24 (max speedup   1.1x) levels= 1103 avg width   1.2 | P2: dag 1.12x bsp 1.09x P4: dag 1.12x bsp 1.10x P8: dag 1.12x bsp 1.10x P16: dag 1.12x bsp 1.10x
+L07 n=  823 serial=  0.61 critpath=  0.47 (max speedup   1.3x) levels=  594 avg width   1.4 | P2: dag 1.28x bsp 1.21x P4: dag 1.29x bsp 1.22x P8: dag 1.29x bsp 1.22x P16: dag 1.29x bsp 1.22x
+L08 n= 3541 serial=  1.19 critpath=  0.81 (max speedup   1.5x) levels= 2083 avg width   1.7 | P2: dag 1.45x bsp 1.35x P4: dag 1.46x bsp 1.39x P8: dag 1.46x bsp 1.39x P16: dag 1.46x bsp 1.39x
+L09 n= 1104 serial=  0.75 critpath=  0.22 (max speedup   3.3x) levels=  386 avg width   2.9 | P2: dag 1.85x bsp 1.69x P4: dag 2.84x bsp 2.09x P8: dag 3.29x bsp 2.19x P16: dag 3.33x bsp 2.19x
+L10 n=   15 serial=  0.02 critpath=  0.01 (max speedup   3.3x) levels=    3 avg width   5.0 | P2: dag 1.75x bsp 1.84x P4: dag 2.66x bsp 2.16x P8: dag 3.31x bsp 2.16x P16: dag 3.31x bsp 2.16x
+L11 n=  203 serial=  0.12 critpath=  0.08 (max speedup   1.4x) levels=   80 avg width   2.5 | P2: dag 1.41x bsp 1.18x P4: dag 1.41x bsp 1.19x P8: dag 1.41x bsp 1.19x P16: dag 1.41x bsp 1.19x
+L12 n=  181 serial=  0.14 critpath=  0.03 (max speedup   5.4x) levels=   30 avg width   6.0 | P2: dag 1.93x bsp 1.89x P4: dag 3.39x bsp 3.07x P8: dag 5.19x bsp 3.83x P16: dag 5.42x bsp 4.00x
+L13 n=   12 serial=  0.01 critpath=  0.00 (max speedup   5.4x) levels=    2 avg width   6.0 | P2: dag 1.80x bsp 1.95x P4: dag 3.16x bsp 3.50x P8: dag 5.39x bsp 4.69x P16: dag 5.39x bsp 4.69x
+L14 n=  377 serial=  0.18 critpath=  0.03 (max speedup   6.0x) levels=  130 avg width   2.9 | P2: dag 2.00x bsp 1.73x P4: dag 3.98x bsp 2.52x P8: dag 5.76x bsp 3.22x P16: dag 5.98x bsp 3.56x
+L15 n=  254 serial=  0.05 critpath=  0.02 (max speedup   2.6x) levels=   93 avg width   2.7 | P2: dag 2.00x bsp 1.59x P4: dag 2.35x bsp 2.02x P8: dag 2.52x bsp 2.11x P16: dag 2.61x bsp 2.13x
+TOTAL serial 35.60  critical path 23.73 (ideal speedup 1.5x)
+  P= 2: DAG list-schedule 1.45x  (24.57s)   level-sync BSP 1.28x (27.73s)
+  P= 4: DAG list-schedule 1.50x  (23.81s)   level-sync BSP 1.32x (26.93s)
+  P= 8: DAG list-schedule 1.50x  (23.74s)   level-sync BSP 1.32x (26.88s)
+  P=16: DAG list-schedule 1.50x  (23.73s)   level-sync BSP 1.32x (26.87s)
+L15 n=  254 serial=  0.05 critpath=  0.02 (max speedup   3.0x) levels=   82 avg width   3.1 | P2: dag 1.99x bsp 1.69x P4: dag 2.62x bsp 2.19x P8: dag 2.83x bsp 2.31x P16: dag 2.95x bsp 2.36x
+TOTAL serial 35.60  critical path 21.55 (ideal speedup 1.7x)
+  P= 2: DAG list-schedule 1.56x  (22.87s)   level-sync BSP 1.35x (26.31s)
+  P= 4: DAG list-schedule 1.65x  (21.63s)   level-sync BSP 1.41x (25.24s)
+  P= 8: DAG list-schedule 1.65x  (21.56s)   level-sync BSP 1.41x (25.17s)
+  P=16: DAG list-schedule 1.65x  (21.55s)   level-sync BSP 1.42x (25.15s)

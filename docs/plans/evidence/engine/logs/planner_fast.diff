@@ -1,0 +1,193 @@
+diff -ru -x __pycache__ -x '*.so' oilpaint-renderer/oilpaint/mix.py plan_fast/oilpaint/mix.py
+--- oilpaint-renderer/oilpaint/mix.py	2026-09-29 19:24:39.044978807 +0800
++++ plan_fast/oilpaint/mix.py	2026-09-29 19:44:54.993820674 +0800
+@@ -46,6 +46,8 @@
+ 
+ def rgb_to_latent(rgb):
+     """rgb float array (..., 3) in 0..1 -> latent (..., 7)."""
++    if getattr(rgb, "ndim", 1) == 1 and len(rgb) == 3:
++        return _rgb_to_latent1(rgb)
+     rgb = np.clip(np.asarray(rgb, np.float32), 0, 1)
+     if _MODE["backend"] == "rgb":
+         out = np.zeros(rgb.shape[:-1] + (LAT,), np.float32)
+@@ -67,6 +69,8 @@
+ 
+ 
+ def latent_to_rgb(lat):
++    if getattr(lat, "ndim", 1) == 1 and len(lat) == 7:
++        return _latent_to_rgb1(lat)
+     lat = np.asarray(lat, np.float32)
+     rgb = _eval_poly(lat[..., 0], lat[..., 1], lat[..., 2], lat[..., 3]) + lat[..., 4:7]
+     return np.clip(rgb, 0, 1).astype(np.float32)
+@@ -99,6 +103,8 @@
+ 
+ 
+ def rgb_to_lab(rgb):
++    if getattr(rgb, "ndim", 1) == 1 and len(rgb) == 3:
++        return _rgb_to_lab1(rgb)
+     lin = srgb_to_linear(rgb)
+     xyz = lin @ _M_RGB2XYZ.T / _WHITE
+     f = np.where(xyz > 0.008856, np.cbrt(xyz), 7.787 * xyz + 16 / 116)
+@@ -112,6 +118,8 @@
+ 
+ 
+ def lab_to_rgb(lab):
++    if getattr(lab, "ndim", 1) == 1 and len(lab) == 3:
++        return _lab_to_rgb1(lab)
+     lab = np.asarray(lab, np.float32)
+     fy = (lab[..., 0] + 16) / 116
+     fx = fy + lab[..., 1] / 500
+@@ -180,10 +188,111 @@
+     return latent_to_rgb(lat)
+ 
+ 
++_SPEC_CACHE = {}
++
++
+ def color_spec_to_rgb(spec):
+-    """Accepts '#hex', 'tube_name', ('a', 'b', t) meaning lerp a->b by t, or an rgb triple."""
++    """Accepts '#hex', 'tube_name', ('a', 'b', t) meaning lerp a->b by t, or an rgb triple.
++    String and (a, b, t) specs are memoised per backend (identical results, no repeated Mixbox conversions)."""
++    if isinstance(spec, (str, tuple)):
++        key = (_MODE["backend"], spec)
++        try:
++            return _SPEC_CACHE[key].copy()
++        except (KeyError, TypeError):
++            pass
++        out = _color_spec_to_rgb(spec)
++        try:
++            _SPEC_CACHE[key] = np.array(out, np.float32, copy=True)
++        except TypeError:
++            pass
++        return out
++    return _color_spec_to_rgb(spec)
++
++
++def _color_spec_to_rgb(spec):
+     if isinstance(spec, str):
+         return tube(spec)
+     if isinstance(spec, (tuple, list)) and len(spec) == 3 and isinstance(spec[0], str):
+         return mix_rgb(tube(spec[0]), tube(spec[1]), float(spec[2]))
+     return np.asarray(spec, np.float32)
++
++
++# ---------------- scalar fast paths (planner calls these once per stroke on single colours) ----------------
++import math as _m
++_COEF_T = [tuple(float(v) for v in row) for row in COEF]
++_LUTL = None
++
++
++def _lut_list():
++    global _LUTL
++    if _LUTL is None:
++        _LUTL = _LUT.tolist()
++    return _LUTL
++
++
++def _poly_scalar(c0, c1, c2, c3):
++    c00, c11, c22, c33 = c0 * c0, c1 * c1, c2 * c2, c3 * c3
++    c01, c02, c12 = c0 * c1, c0 * c2, c1 * c2
++    t = (c0 * c00, c1 * c11, c2 * c22, c3 * c33, c00 * c1, c01 * c1, c00 * c2, c02 * c2, c00 * c3,
++         c0 * c33, c11 * c2, c1 * c22, c11 * c3, c1 * c33, c22 * c3, c2 * c33, c01 * c2, c01 * c3, c02 * c3, c12 * c3)
++    r = g = b = 0.0
++    for w, (a0, a1, a2) in zip(t, _COEF_T):
++        r += w * a0; g += w * a1; b += w * a2
++    return r, g, b
++
++
++def _rgb_to_latent1(rgb):
++    r, g, b = (min(max(float(v), 0.0), 1.0) for v in rgb)
++    if _MODE["backend"] == "rgb":
++        return np.array([0, 0, 0, 0, r, g, b], np.float32)
++    lut = _lut_list()
++    x, y, z = r * 63, g * 63, b * 63
++    ix, iy, iz = min(int(x), 62), min(int(y), 62), min(int(z), 62)
++    tx, ty, tz = x - ix, y - iy, z - iz
++    base = ix + iy * 64 + iz * 4096
++    c0 = c1 = c2 = 0.0
++    for dx, dy, dz in ((0, 0, 0), (1, 0, 0), (0, 1, 0), (1, 1, 0), (0, 0, 1), (1, 0, 1), (0, 1, 1), (1, 1, 1)):
++        w = (tx if dx else 1 - tx) * (ty if dy else 1 - ty) * (tz if dz else 1 - tz)
++        i = base + dx + dy * 64 + dz * 4096
++        c0 += w * lut[i + 192]; c1 += w * lut[i + 262336]; c2 += w * lut[i + 524480]
++    c0 /= 255.0; c1 /= 255.0; c2 /= 255.0
++    c3 = 1 - c0 - c1 - c2
++    pr, pg, pb = _poly_scalar(c0, c1, c2, c3)
++    return np.array([c0, c1, c2, c3, r - pr, g - pg, b - pb], np.float32)
++
++
++def _latent_to_rgb1(l):
++    pr, pg, pb = _poly_scalar(float(l[0]), float(l[1]), float(l[2]), float(l[3]))
++    return np.array([min(max(pr + float(l[4]), 0.0), 1.0), min(max(pg + float(l[5]), 0.0), 1.0),
++                     min(max(pb + float(l[6]), 0.0), 1.0)], np.float32)
++
++
++def _s2l(c):
++    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
++
++
++def _l2s(c):
++    c = min(max(c, 0.0), 1.0)
++    return c * 12.92 if c <= 0.0031308 else 1.055 * c ** (1 / 2.4) - 0.055
++
++
++_MR = [[float(v) for v in row] for row in np.array([[0.4124564, 0.3575761, 0.1804375], [0.2126729, 0.7151522, 0.0721750],
++                                                     [0.0193339, 0.1191920, 0.9503041]])]
++_MI = [[float(v) for v in row] for row in np.linalg.inv(np.array(_MR))]
++_WH = (0.95047, 1.0, 1.08883)
++
++
++def _rgb_to_lab1(rgb):
++    lr, lg, lb = (_s2l(float(v)) for v in rgb)
++    xyz = [(_MR[i][0] * lr + _MR[i][1] * lg + _MR[i][2] * lb) / _WH[i] for i in range(3)]
++    f = [(v ** (1 / 3) if v > 0 else -((-v) ** (1 / 3))) if v > 0.008856 else 7.787 * v + 16 / 116 for v in xyz]
++    return np.array([116 * f[1] - 16, 500 * (f[0] - f[1]), 200 * (f[1] - f[2])], np.float32)
++
++
++def _lab_to_rgb1(lab):
++    L, a, b = (float(v) for v in lab)
++    fy = (L + 16) / 116; fx = fy + a / 500; fz = fy - b / 200
++    fi = lambda f: f ** 3 if f ** 3 > 0.008856 else (f - 16 / 116) / 7.787
++    X, Y, Z = fi(fx) * _WH[0], fi(fy) * _WH[1], fi(fz) * _WH[2]
++    lin = [min(max(_MI[i][0] * X + _MI[i][1] * Y + _MI[i][2] * Z, 0.0), 1.0) for i in range(3)]
++    return np.array([_l2s(v) for v in lin], np.float32)
+diff -ru -x __pycache__ -x '*.so' oilpaint-renderer/oilpaint/render.py plan_fast/oilpaint/render.py
+--- oilpaint-renderer/oilpaint/render.py	2026-09-29 19:24:39.044997496 +0800
++++ plan_fast/oilpaint/render.py	2026-09-29 19:43:07.140698277 +0800
+@@ -59,8 +59,27 @@
+     return strokes, [tuple(int(v) for v in r) for r in ranges]
+ 
+ 
++_SAVER = None
++
++
+ def save_state(path, cv):
+-    # plan-size proxy state after a layer (float16 is plenty for iteration; ~5 MB per layer at 600x750)
++    """Snapshot now (float16 copies), compress + write on a background thread (zlib releases the GIL)."""
++    global _SAVER
++    from concurrent.futures import ThreadPoolExecutor
++    if _SAVER is None:
++        _SAVER = ThreadPoolExecutor(max_workers=1)
++    snap = dict(lat=cv.lat.astype(np.float16), rgb=cv.rgb.astype(np.float16), h=cv.h.astype(np.float16),
++                wet=cv.wet.astype(np.float16), cover=cv.cover.astype(np.float16))
++    return _SAVER.submit(np.savez_compressed, path, **snap)
++
++
++def flush_states():
++    if _SAVER is not None:
++        _SAVER.shutdown(wait=True)
++        globals()["_SAVER"] = None
++
++
++def _save_state_sync(path, cv):
+     np.savez_compressed(path, lat=cv.lat.astype(np.float16), rgb=cv.rgb.astype(np.float16), h=cv.h.astype(np.float16),
+                         wet=cv.wet.astype(np.float16), cover=cv.cover.astype(np.float16))
+ 
+@@ -147,6 +166,8 @@
+     else:
+         pl.plan(upto=upto, layer_hook=hook)
+     timings["plan"] = time.perf_counter() - t0
++    flush_states()
++    timings["plan_flush"] = time.perf_counter() - t0 - timings["plan"]
+     n = len(pl.strokes)
+     save_strokes(os.path.join(out, "strokes.npz"), pl.strokes, pl.layer_ranges)
+     ranges = pl.layer_ranges

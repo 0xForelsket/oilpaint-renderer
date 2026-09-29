@@ -1,0 +1,45 @@
+Tue Sep 29 19:25:33 2026    plan.prof
+
+         16715970 function calls (16655969 primitive calls) in 48.758 seconds
+
+   Ordered by: cumulative time
+   List reduced from 4571 to 35 due to restriction <35>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+   1071/1    0.057    0.000   48.762   48.762 {built-in method builtins.exec}
+        1    0.000    0.000   48.762   48.762 <string>:1(<module>)
+        1    0.000    0.000   48.762   48.762 <frozen runpy>:201(run_module)
+        1    0.000    0.000   48.760   48.760 <frozen runpy>:65(_run_code)
+        1    0.000    0.000   48.760   48.760 oilpaint/__main__.py:1(<module>)
+        1    0.032    0.032   48.759   48.759 oilpaint/__main__.py:40(main)
+        1    0.037    0.037   46.982   46.982 oilpaint/render.py:89(render)
+        1    0.001    0.001   35.407   35.407 oilpaint/planner.py:470(plan)
+       15    0.314    0.021   27.450    1.830 oilpaint/planner.py:389(plan_layer)
+    13794    0.831    0.000   22.855    0.002 oilpaint/planner.py:240(_emit)
+    69579    5.097    0.000    8.647    0.000 oilpaint/mix.py:47(rgb_to_latent)
+       15    0.000    0.000    7.956    0.530 oilpaint/render.py:114(hook)
+       15    0.011    0.001    7.956    0.530 oilpaint/render.py:62(save_state)
+       16    0.000    0.000    7.834    0.490 /usr/local/lib/python3.11/dist-packages/numpy/lib/_npyio_impl.py:681(savez_compressed)
+       16    0.002    0.000    7.834    0.490 /usr/local/lib/python3.11/dist-packages/numpy/lib/_npyio_impl.py:756(_savez)
+       87    0.014    0.000    7.796    0.090 /usr/local/lib/python3.11/dist-packages/numpy/lib/_format_impl.py:702(write_array)
+      171    0.004    0.000    7.689    0.045 /usr/lib/python3.11/zipfile.py:1180(write)
+      171    7.221    0.042    7.221    0.042 {method 'compress' of 'zlib.Compress' objects}
+    12495    0.338    0.000    7.198    0.001 oilpaint/planner.py:203(_color)
+   111567    2.118    0.000    4.286    0.000 oilpaint/mix.py:38(_eval_poly)
+    12495    3.373    0.000    3.905    0.000 oilpaint/canvas.py:92(render_stroke)
+    12495    0.145    0.000    3.902    0.000 oilpaint/strokes.py:36(streak_vector)
+    12275    0.599    0.000    3.855    0.000 oilpaint/planner.py:96(snap)
+    53108    1.514    0.000    3.478    0.000 oilpaint/mix.py:101(rgb_to_lab)
+        1    0.069    0.069    3.023    3.023 oilpaint/scene.py:301(guides)
+       15    2.810    0.187    2.997    0.200 oilpaint/canvas.py:103(render)
+   190376    1.349    0.000    2.889    0.000 /usr/local/lib/python3.11/dist-packages/numpy/_core/shape_base.py:378(stack)
+    13794    1.451    0.000    2.747    0.000 oilpaint/planner.py:148(_path)
+       27    0.152    0.006    2.078    0.077 oilpaint/planner.py:335(_error_cells)
+    41988    0.177    0.000    2.045    0.000 oilpaint/mix.py:69(latent_to_rgb)
+  2291/15    0.001    0.000    1.748    0.117 <frozen importlib._bootstrap>:233(_call_with_frames_removed)
+    784/5    0.002    0.000    1.748    0.350 <frozen importlib._bootstrap_external>:934(exec_module)
+   1043/4    0.005    0.000    1.743    0.436 <frozen importlib._bootstrap>:1165(_find_and_load)
+   1003/4    0.004    0.000    1.742    0.436 <frozen importlib._bootstrap>:1120(_find_and_load_unlocked)
+    977/4    0.004    0.000    1.742    0.436 <frozen importlib._bootstrap>:666(_load_unlocked)
+
+

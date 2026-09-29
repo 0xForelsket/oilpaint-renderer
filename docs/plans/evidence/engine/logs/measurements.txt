@@ -1,0 +1,79 @@
+oilpaint engine-planning measurements, 2026-09-29, this container (2 vCPU Xeon 2.1 GHz, no GPU).
+CPU was shared with another agent; "other-procs" = CPU seconds used by other processes during a run.
+Only samples with low other-procs are quoted as clean. All numbers are wall seconds unless noted.
+
+== Baseline: scenes/storm_v3.py, 12,495 strokes, seed 1907 ==
+preview 600x750 (unprofiled, 2 runs): total 47.0 / 41.5 s; plan 37.1 (incl. first-time gcc build) / 32.4 s; replay 4.7 / 4.9 s
+  two runs -> bit-identical strokes.npz and final_unlit.png
+full 2400x3000 --strokes (+ real-painting light flags): total 109.9 s, render phase 94.5 s (load ~2)
+full 2400x3000 --strokes --no-layers:                   total 57.0 s, render phase 38.8 s
+  => the 15 per-layer lit PNGs cost ~56 s, more than the paint kernel
+my 2400x3000 render is bit-identical to deliver/storm_light_2400x3000.png
+
+== Preview profile (cProfile, 48.8 s incl. overhead) - logs/preview_profile_top.txt ==
+plan 35.4: _emit 22.9 [_color 7.2 (snap 3.9), streak_vector 3.9, proxy kernel render_stroke 3.9, _path 2.7],
+  save_state (np.savez_compressed x15) 7.96, _error_cells 2.1, rgb_to_latent 69,579 scalar calls 8.6 s total,
+  rgb_to_lab 53,108 calls 3.5 s; guides 3.0; gcc build 1.7 (first run only)
+
+== Planner cheap fixes (plan_fast/, diff: logs/planner_fast.diff) ==
+memoised colour specs + background state compression: plan 32.4 -> 28 s (contended), strokes bit-identical
++ scalar (pure-Python) fast paths for 1-colour rgb<->latent/Lab: plan 12.0-13.0 s (+2.2 s background flush)
+  same stroke count and layer ranges; final_unlit max diff 1/255, mean 0.0001/255
+  scalar conversion 7 us vs numpy 136 us per call; max abs diff vs numpy: latent 2.9e-7, Lab 7e-5
+
+== Kernel at 2400x3000 (exp/bench_replay.py per-stroke) ==
+kernel 35.9 s; 234 Mpix painted; 6.6 Mpix/s; ~150 ns per painted pixel (148-173 ns by layer, 285 for glaze/rain)
+L02 "Ebauche dark masses": 1752 strokes, 105.5 Mpix (= 14.6 canvas areas), 15.8 s = 44% of kernel time
+L02+L03 = 20.5 s; L08 tower (3541 strokes, 28% of strokes) only 1.2 s
+top 10% of strokes = 45% of kernel time
+segment bbox scan visits 1434 Mpix to paint 234 Mpix; exact row spans (exp/brush_mt_span.c): bit-identical, no speed-up (36.0 vs 36.25 s)
+per-layer relight at 2400x3000: 1.65-1.8 s warm (6.1 s cold) + 0.4 s PNG
+
+== Stroke-level parallelism in the real stroke list (logs/parallelism_dag_bsp.txt) ==
+conflict = overlapping footprints (segment bbox grown by the kernel's hwmax), layers are barriers
+32 px cells: critical path 23.7 of 35.6 s -> ideal speed-up 1.5x with unlimited cores
+   DAG list schedule: 1.45x on 2 cores, 1.50x on 16; level-synchronous (GPU-style): 1.28x / 1.32x
+8 px cells:  ideal 1.7x; DAG 1.56x (2 cores), 1.65x (16); BSP 1.35x / 1.42x
+big-stroke layers L3-L6: 1.1-1.2x at best (painterly sweep: consecutive strokes overlap)
+
+== Intra-segment row-chunk parallelism (exp/brush_mt.c, OpenMP, fixed 16-row chunks, fixed-order reduction) ==
+1 vs 2 threads: bit-identical digests (c99e3ece4ad1202e at 2400); vs repo kernel max diff < 0.001/255
+chunk size changes bits (d11566... vs b673c3... at 1200) -> chunk size is part of the contract (or use integer accumulation)
+full 2400 replay (clean-ish, passive wait): 36.3 s -> 30.3/30.6 s (1.2x) using 1.9 cores
+full 2400, OMP_WAIT_POLICY=active: 28.1 s (1.29x)
+per layer (clean samples, other-procs <= 1 s): L02 16.9 -> 12.6-12.9 s dynamic, 10.6 s static (1.33-1.59x);
+  L05 3.5 -> 2.7-3.0 s (1.2-1.3x); L08 1.2 -> 1.25 s (1.0x)
+compute-bound spin test: 1 proc 0.70 s, 2 concurrent 0.73/0.75 s (the 2 vCPUs do scale)
+
+== FP-flag sensitivity (1200x1500 full replay, exp/bench_flags.py) ==
+-O3 -march=native -ffast-math 9.7-9.9 s; -O3 -march=x86-64-v2 -ffp-contract=off 11.3 s (contended)
+strict vs fast-math images: max 124/255, 9.9% of pixels differ by > 1/255  (chaotic amplification)
+cause: along-sample count ns = ceil(total_s*6)+3; planner steps are exactly 0.5 width, so total_s*6 is an integer
+  +-rounding for 12,181 of 12,495 strokes; ns decides how many xorshift draws each lane consumes -> whole bristle
+  pattern of the stroke changes when ns flips.
+ns differs from the 600 px value for 0 strokes at 1200/2400 (power-of-two scale is exact), but for
+  3484 (1000 px), 3450 (1800), 3618 (3000), 3450 (3600) of 12,495 strokes
+real replay, downsampled to 600: 1200 vs 2400 mean 0.88/255, 0.5% px > 8/255; 1800 vs 2400 mean 2.85/255, 10.3% px > 8/255
+
+== Levelling prototypes at 2400 (exp/replay_level.py, crops look/lv_*_2400/, metrics = my quick proxies) ==
+hair = share of px in a thin dark shading dip (black-hat > 0.06); bristle = band-pass shading energy outside hairlines
+variant                          sky_strata   sky_top     rock        sea         tower_base
+base (default sharp light)       .079/.0063   .094/.0070  .137/.0186  .219/.0200  .127/.0055
+edge taper 0.3 (kernel)          .051/.0055   .046/.0052  .114/.0156  .185/.0162  .071/.0041
+edge-weighted levelling s300     .040/.0053   .030/.0044  .053/.0103  .084/.0099  .024/.0024   (+14.7 s, over-softens)
+taper + fresh-only lvl s400 i12  .045/.0054   .030/.0046  .088/.0132  .143/.0133  .036/.0031   (+7.4 s in numpy/C prototype)
+(values are hair/bristle)
+global post-pass yield-slope s300 i20 on final h: sky .041/.0054, rock .048/.0101 (ridges soften)
+taper + fresh-only lvl s150 i20  .014/.0042   .011/.0034  .041/.0088  .064/.0085  .020/.0021   (+11.7 s; still visible strata at 900 px)
+taper + displace 0.7 (all hadd)  .0003/.0025  .0005/.0024 .029/.0090  .052/.0084  .011/.0020   (strata gone, texture too smooth)
+taper + displace 0.7 BODY ONLY   .027/.0049   .018/.0041  .083/.0122  .134/.0120  .027/.0027   (+6.5 s; best: evidence/BEFORE_AFTER_settle_900.png)
+  + fresh-only lvl s300 i12
+NB: my bristle proxy also counts the edge-line shading that the fixes remove, so part of its drop is the fix itself.
+
+== Dabs (exp/dab_test.py; evidence/dabs_dense_detail.png) ==
+rounded end caps alone: little visible change; caps + replay-time spline densification (x5 points): facets gone
+== Glaze (exp/glaze_km.py; evidence/glaze_km_vs_alpha.png) ==
+madder, current latent alpha 0.3: dark L* 18.9->20.9 (lightens), light L* 95.2->71.0 C* 11->34 (pastel)
+madder, KM transparent film d=0.5: dark L* 18.9->16.6 (deepens), light L* 95.2->53.5 C* 11->45 (saturated)
+latent alpha glaze of cadmium yellow+white over dark blue turns it green (mixes like opaque paint)
+== Knife (exp/knife.py; evidence/knife_proto.png) == reads as knife work (flat streaked planes, crisp edges, skips); too geometric
