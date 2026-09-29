@@ -1,0 +1,729 @@
+{
+ "_doc": [
+  "Thresholds for `python -m oilpaint eval compare A B`.  A is the reference run (baseline), B the candidate.",
+  "rules: first match wins; `match` is an fnmatch pattern on the flattened metric key, e.g. sheet.strata_sky.hairline, scenes.storm_v3@1600.regions.sky.bristle_L (a `*` also matches dots).",
+  "direction: lower = smaller is better; higher = larger is better; match = any drift is bad; true = must be true in B; info = never reported.",
+  "warn / fail: how much WORSE than A is tolerated, as {abs, rel}; the tolerance is max(abs, rel*|A|).  Worse than warn -> WARN, worse than fail -> FAIL, better by more than warn -> better.",
+  "`eval compare` exits 1 if any FAIL (or any WARN with --strict), 2 if the runs have different widths (use --force to override).  Metrics with no matching rule are not compared.",
+  "Copy this file, edit the numbers and pass --thresholds my.json.  Tolerances were set from run-to-run noise (same seed: 0) and from the size of the visible effect of the known flaws, see README 'Evaluating changes'."
+ ],
+ "rules": [
+  {
+   "match": "system.determinism.strokes_identical",
+   "direction": "true",
+   "why": "same seed must give bit-identical strokes"
+  },
+  {
+   "match": "system.determinism.seed_changes_strokes",
+   "direction": "true",
+   "why": "a different seed must give different strokes"
+  },
+  {
+   "match": "system.determinism.image_near_identical",
+   "direction": "true",
+   "why": "same strokes must replay to the same image"
+  },
+  {
+   "match": "system.determinism.planner_identical",
+   "direction": "true",
+   "why": "a tiny planned scene must plan identically twice"
+  },
+  {
+   "match": "system.determinism.replay_max_abs_diff_*",
+   "direction": "lower",
+   "fail": {
+    "abs": 0.001,
+    "rel": 0.0
+   },
+   "why": "replay of the same strokes twice"
+  },
+  {
+   "match": "system.speed.strokes_per_s",
+   "direction": "higher",
+   "warn": {
+    "abs": 0,
+    "rel": 0.2
+   },
+   "fail": {
+    "abs": 0,
+    "rel": 0.5
+   },
+   "why": "explicit-stroke replay speed; noisy on a shared machine, re-run before believing a WARN"
+  },
+  {
+   "match": "system.speed.light_seconds",
+   "direction": "lower",
+   "warn": {
+    "abs": 0,
+    "rel": 0.3
+   },
+   "fail": {
+    "abs": 0,
+    "rel": 0.8
+   },
+   "why": "relight time of the sheet"
+  },
+  {
+   "match": "system.memory.engine_mb_per_mpx",
+   "direction": "lower",
+   "warn": {
+    "abs": 0,
+    "rel": 0.1
+   },
+   "fail": {
+    "abs": 0,
+    "rel": 0.3
+   },
+   "why": "peak RSS of paint+light, fresh process, per megapixel"
+  },
+  {
+   "match": "scenes.*.speed.strokes_per_s",
+   "direction": "higher",
+   "warn": {
+    "abs": 0,
+    "rel": 0.25
+   },
+   "fail": {
+    "abs": 0,
+    "rel": 0.6
+   },
+   "why": "scene replay speed (single run)"
+  },
+  {
+   "match": "scenes.*.plan_seconds",
+   "direction": "lower",
+   "warn": {
+    "abs": 0,
+    "rel": 0.3
+   },
+   "fail": {
+    "abs": 0,
+    "rel": 1.0
+   },
+   "why": "planning time of the scene (single run)"
+  },
+  {
+   "match": "sheet.strata_sky.seam_hairline_deep",
+   "direction": "lower",
+   "warn": {
+    "abs": 0.02,
+    "rel": 0.0
+   },
+   "fail": {
+    "abs": 0.05,
+    "rel": 0.0
+   },
+   "why": "flaw 1: deep thin dark lines along stroke outlines of overlapping long strokes"
+  },
+  {
+   "match": "sheet.strata_sky.seam_hairline",
+   "direction": "lower",
+   "warn": {
+    "abs": 0.03,
+    "rel": 0.15
+   },
+   "fail": {
+    "abs": 0.07,
+    "rel": 0.35
+   },
+   "why": "flaw 1: share of stroke-outline pixels drawn as a dark line by the light"
+  },
+  {
+   "match": "sheet.strata_sky.seam_depth_p90",
+   "direction": "lower",
+   "warn": {
+    "abs": 0.5,
+    "rel": 0.15
+   },
+   "fail": {
+    "abs": 1.5,
+    "rel": 0.35
+   },
+   "why": "flaw 1: depth of those lines, percent luminance"
+  },
+  {
+   "match": "sheet.strata_sky.seam_over_inside",
+   "direction": "info",
+   "why": "ratio, unstable when the interior is smooth"
+  },
+  {
+   "match": "*.hairline_deep",
+   "direction": "lower",
+   "warn": {
+    "abs": 0.01,
+    "rel": 0.2
+   },
+   "fail": {
+    "abs": 0.03,
+    "rel": 0.5
+   },
+   "why": "deep thin dark lines in the lighting term (fraction of painted px)"
+  },
+  {
+   "match": "*.hairline_p99",
+   "direction": "lower",
+   "warn": {
+    "abs": 0.8,
+    "rel": 0.15
+   },
+   "fail": {
+    "abs": 2.5,
+    "rel": 0.4
+   },
+   "why": "99th percentile depth of thin dark lines, percent luminance"
+  },
+  {
+   "match": "*.hairline",
+   "direction": "lower",
+   "warn": {
+    "abs": 0.02,
+    "rel": 0.15
+   },
+   "fail": {
+    "abs": 0.05,
+    "rel": 0.35
+   },
+   "why": "fraction of painted px where the light draws a thin dark line (>3 percent luminance)"
+  },
+  {
+   "match": "*.hairline_lit",
+   "direction": "lower",
+   "warn": {
+    "abs": 0.03,
+    "rel": 0.15
+   },
+   "fail": {
+    "abs": 0.07,
+    "rel": 0.35
+   },
+   "why": "same, from the lit image alone (includes albedo streaks); weak generic variant"
+  },
+  {
+   "match": "*.bristle_L",
+   "direction": "higher",
+   "warn": {
+    "abs": 0.0,
+    "rel": 0.1
+   },
+   "fail": {
+    "abs": 0.0,
+    "rel": 0.25
+   },
+   "why": "flaw 2: bristle-band RMS of lit L*; falling = silkier (compare with the reference band)"
+  },
+  {
+   "match": "*.bristle_h",
+   "direction": "higher",
+   "warn": {
+    "abs": 0.0,
+    "rel": 0.1
+   },
+   "fail": {
+    "abs": 0.0,
+    "rel": 0.25
+   },
+   "why": "flaw 2: bristle-band RMS of paint height (lighting independent)"
+  },
+  {
+   "match": "*.bristle_relief",
+   "direction": "higher",
+   "warn": {
+    "abs": 0.0,
+    "rel": 0.15
+   },
+   "fail": {
+    "abs": 0.0,
+    "rel": 0.35
+   },
+   "why": "flaw 2: bristle-band RMS of the lighting term"
+  },
+  {
+   "match": "*.bristle_frac",
+   "direction": "info",
+   "why": "bristle band share of stroke-scale variance"
+  },
+  {
+   "match": "sheet.dabs.facet_ellipse_dev",
+   "direction": "lower",
+   "warn": {
+    "abs": 0.01,
+    "rel": 0.0
+   },
+   "fail": {
+    "abs": 0.03,
+    "rel": 0.0
+   },
+   "why": "flaw 3: 1-IoU of a dab and its best-fit ellipse (0.01 round, 0.11 pentagon)"
+  },
+  {
+   "match": "sheet.dabs.facet_straight_frac",
+   "direction": "lower",
+   "warn": {
+    "abs": 0.05,
+    "rel": 0.0
+   },
+   "fail": {
+    "abs": 0.12,
+    "rel": 0.0
+   },
+   "why": "flaw 3: share of a dab outline that is straight (0 for a round dab, 0.4 hexagon)"
+  },
+  {
+   "match": "sheet.*.edge_rough",
+   "direction": "lower",
+   "warn": {
+    "abs": 0.005,
+    "rel": 0.3
+   },
+   "fail": {
+    "abs": 0.015,
+    "rel": 0.8
+   },
+   "why": "stroke edge raggedness in widths (0 = ruler)"
+  },
+  {
+   "match": "sheet.*.edge_kink",
+   "direction": "lower",
+   "warn": {
+    "abs": 0.02,
+    "rel": 0.3
+   },
+   "fail": {
+    "abs": 0.06,
+    "rel": 0.8
+   },
+   "why": "99th percentile edge kink in widths"
+  },
+  {
+   "match": "sheet.*.width_cv",
+   "direction": "lower",
+   "warn": {
+    "abs": 0.01,
+    "rel": 0.3
+   },
+   "fail": {
+    "abs": 0.03,
+    "rel": 0.8
+   },
+   "why": "stroke width variation along a stroke"
+  },
+  {
+   "match": "sheet.*.width_ratio",
+   "direction": "match",
+   "warn": {
+    "abs": 0.05,
+    "rel": 0.0
+   },
+   "fail": {
+    "abs": 0.15,
+    "rel": 0.0
+   },
+   "why": "painted width over nominal width (1 = as authored)"
+  },
+  {
+   "match": "*.edge_step_p99",
+   "direction": "match",
+   "warn": {
+    "abs": 0.0,
+    "rel": 0.25
+   },
+   "fail": {
+    "abs": 0.0,
+    "rel": 0.6
+   },
+   "why": "99th percentile height step across stroke edges (hgain units); diagnostic, direction unknown"
+  },
+  {
+   "match": "*.mud_frac",
+   "direction": "lower",
+   "warn": {
+    "abs": 0.01,
+    "rel": 0.3
+   },
+   "fail": {
+    "abs": 0.03,
+    "rel": 1.0
+   },
+   "why": "grey-brown mud share of the region"
+  },
+  {
+   "match": "*.zone_mud_frac",
+   "direction": "lower",
+   "warn": {
+    "abs": 0.05,
+    "rel": 0.0
+   },
+   "fail": {
+    "abs": 0.15,
+    "rel": 0.0
+   },
+   "why": "mud share of a two-colour overlap"
+  },
+  {
+   "match": "*.C_mean",
+   "direction": "match",
+   "warn": {
+    "abs": 2.0,
+    "rel": 0.0
+   },
+   "fail": {
+    "abs": 5.0,
+    "rel": 0.0
+   },
+   "why": "mean chroma"
+  },
+  {
+   "match": "*.C_p90",
+   "direction": "match",
+   "warn": {
+    "abs": 3.0,
+    "rel": 0.0
+   },
+   "fail": {
+    "abs": 8.0,
+    "rel": 0.0
+   },
+   "why": "90th percentile chroma"
+  },
+  {
+   "match": "*.L_p50",
+   "direction": "match",
+   "warn": {
+    "abs": 3.0,
+    "rel": 0.0
+   },
+   "fail": {
+    "abs": 8.0,
+    "rel": 0.0
+   },
+   "why": "median lightness"
+  },
+  {
+   "match": "*.L_p05",
+   "direction": "match",
+   "warn": {
+    "abs": 3.0,
+    "rel": 0.0
+   },
+   "fail": {
+    "abs": 8.0,
+    "rel": 0.0
+   },
+   "why": "5th percentile lightness"
+  },
+  {
+   "match": "*.L_p95",
+   "direction": "match",
+   "warn": {
+    "abs": 3.0,
+    "rel": 0.0
+   },
+   "fail": {
+    "abs": 8.0,
+    "rel": 0.0
+   },
+   "why": "95th percentile lightness"
+  },
+  {
+   "match": "*.hue_lobes",
+   "direction": "match",
+   "warn": {
+    "abs": 1.0,
+    "rel": 0.0
+   },
+   "fail": {
+    "abs": 2.0,
+    "rel": 0.0
+   },
+   "why": "number of hue lobes"
+  },
+  {
+   "match": "sheet.blend_wet_in_wet.pk060.green_excursion",
+   "direction": "higher",
+   "warn": {
+    "abs": 4.0,
+    "rel": 0.0
+   },
+   "fail": {
+    "abs": 10.0,
+    "rel": 0.0
+   },
+   "why": "blue over wet yellow must go green (a* below both parents)"
+  },
+  {
+   "match": "sheet.blend_wet_in_wet.*.green_excursion",
+   "direction": "info",
+   "why": ""
+  },
+  {
+   "match": "sheet.blend_*.off_curve_dE",
+   "direction": "lower",
+   "warn": {
+    "abs": 1.5,
+    "rel": 0.0
+   },
+   "fail": {
+    "abs": 4.0,
+    "rel": 0.0
+   },
+   "why": "distance of the overlap colour from the Mixbox mixing curve"
+  },
+  {
+   "match": "sheet.blend_*.chroma_vs_curve",
+   "direction": "higher",
+   "warn": {
+    "abs": 0.04,
+    "rel": 0.0
+   },
+   "fail": {
+    "abs": 0.1,
+    "rel": 0.0
+   },
+   "why": "overlap chroma relative to the mixing curve at the same position (mud = low)"
+  },
+  {
+   "match": "sheet.blend_*.mix_t",
+   "direction": "match",
+   "warn": {
+    "abs": 0.06,
+    "rel": 0.0
+   },
+   "fail": {
+    "abs": 0.15,
+    "rel": 0.0
+   },
+   "why": "how far the overlap sits towards the under colour on the mixing curve"
+  },
+  {
+   "match": "sheet._derived.wet_dry_mix_contrast*",
+   "direction": "higher",
+   "warn": {
+    "abs": 0.05,
+    "rel": 0.0
+   },
+   "fail": {
+    "abs": 0.12,
+    "rel": 0.0
+   },
+   "why": "wet-in-wet mixes more than wet-on-dry"
+  },
+  {
+   "match": "sheet._derived.pickup_monotonic",
+   "direction": "true",
+   "why": "more pickup, more mixing"
+  },
+  {
+   "match": "sheet.mud_stack.chroma_k8_ratio",
+   "direction": "higher",
+   "warn": {
+    "abs": 0.05,
+    "rel": 0.0
+   },
+   "fail": {
+    "abs": 0.12,
+    "rel": 0.0
+   },
+   "why": "chroma kept after 8 alternating complementary strokes"
+  },
+  {
+   "match": "sheet.mud_stack.chroma_drop_2_to_8",
+   "direction": "lower",
+   "warn": {
+    "abs": 0.05,
+    "rel": 0.0
+   },
+   "fail": {
+    "abs": 0.12,
+    "rel": 0.0
+   },
+   "why": "chroma lost between 2 and 8 strokes"
+  },
+  {
+   "match": "sheet.mud_stack.k*.chroma_ratio",
+   "direction": "info",
+   "why": ""
+  },
+  {
+   "match": "sheet.dry_tail.tail_over_mid",
+   "direction": "match",
+   "warn": {
+    "abs": 0.08,
+    "rel": 0.0
+   },
+   "fail": {
+    "abs": 0.2,
+    "rel": 0.0
+   },
+   "why": "dry-brush tail coverage against the body"
+  },
+  {
+   "match": "sheet.gradient.step_dE_p95",
+   "direction": "lower",
+   "warn": {
+    "abs": 1.0,
+    "rel": 0.1
+   },
+   "fail": {
+    "abs": 3.0,
+    "rel": 0.3
+   },
+   "why": "visible steps in a smooth ramp (Delta E per 0.003 cw)"
+  },
+  {
+   "match": "sheet.gradient.ramp_rmse",
+   "direction": "lower",
+   "warn": {
+    "abs": 1.0,
+    "rel": 0.1
+   },
+   "fail": {
+    "abs": 3.0,
+    "rel": 0.3
+   },
+   "why": "ramp error against the intended colours (Delta E)"
+  },
+  {
+   "match": "sheet.cylinder.form_corr_lit",
+   "direction": "higher",
+   "warn": {
+    "abs": 0.01,
+    "rel": 0.0
+   },
+   "fail": {
+    "abs": 0.03,
+    "rel": 0.0
+   },
+   "why": "lit tone follows the intended form"
+  },
+  {
+   "match": "sheet.sphere.form_corr_lit",
+   "direction": "higher",
+   "warn": {
+    "abs": 0.01,
+    "rel": 0.0
+   },
+   "fail": {
+    "abs": 0.03,
+    "rel": 0.0
+   },
+   "why": "lit tone follows the intended form"
+  },
+  {
+   "match": "sheet.*.relief_leak",
+   "direction": "lower",
+   "warn": {
+    "abs": 0.05,
+    "rel": 0.1
+   },
+   "fail": {
+    "abs": 0.15,
+    "rel": 0.3
+   },
+   "why": "relief noise on a form relative to its tonal range"
+  },
+  {
+   "match": "sheet.*.tone_range_ratio",
+   "direction": "match",
+   "warn": {
+    "abs": 0.08,
+    "rel": 0.0
+   },
+   "fail": {
+    "abs": 0.2,
+    "rel": 0.0
+   },
+   "why": "tonal range of the lit form over the intended one"
+  },
+  {
+   "match": "sheet.pile_up.pile_h_p95",
+   "direction": "match",
+   "warn": {
+    "abs": 0,
+    "rel": 0.25
+   },
+   "fail": {
+    "abs": 0,
+    "rel": 0.6
+   },
+   "why": "height of ten stacked strokes"
+  },
+  {
+   "match": "*.coh_local",
+   "direction": "match",
+   "warn": {
+    "abs": 0.08,
+    "rel": 0.0
+   },
+   "fail": {
+    "abs": 0.2,
+    "rel": 0.0
+   },
+   "why": "local direction coherence"
+  },
+  {
+   "match": "*.dir_R",
+   "direction": "match",
+   "warn": {
+    "abs": 0.08,
+    "rel": 0.0
+   },
+   "fail": {
+    "abs": 0.2,
+    "rel": 0.0
+   },
+   "why": "regional direction consistency"
+  },
+  {
+   "match": "*.stroke_stats.*.width_med",
+   "direction": "match",
+   "warn": {
+    "abs": 0,
+    "rel": 0.25
+   },
+   "fail": {
+    "abs": 0,
+    "rel": 0.6
+   },
+   "why": "median stroke width"
+  },
+  {
+   "match": "*.stroke_stats.*.length_med",
+   "direction": "match",
+   "warn": {
+    "abs": 0,
+    "rel": 0.25
+   },
+   "fail": {
+    "abs": 0,
+    "rel": 0.6
+   },
+   "why": "median stroke length"
+  },
+  {
+   "match": "*.acf_minor",
+   "direction": "match",
+   "warn": {
+    "abs": 0.004,
+    "rel": 0.25
+   },
+   "fail": {
+    "abs": 0.01,
+    "rel": 0.6
+   },
+   "why": "tonal patch width proxy"
+  },
+  {
+   "match": "*.acf_major",
+   "direction": "match",
+   "warn": {
+    "abs": 0.01,
+    "rel": 0.25
+   },
+   "fail": {
+    "abs": 0.03,
+    "rel": 0.6
+   },
+   "why": "tonal patch length proxy"
+  }
+ ]
+}

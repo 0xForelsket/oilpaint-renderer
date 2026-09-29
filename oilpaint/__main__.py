@@ -7,6 +7,7 @@
   python -m oilpaint crop out/run --box 0.55,0.30,0.80,0.60 [--out file.png] [--unlit]
   python -m oilpaint info out/run
   python -m oilpaint test [t1 t2 ... | all]
+  python -m oilpaint eval run|compare|reference ...   (measuring stick; see README "Evaluating changes")
 """
 import argparse
 import os
@@ -80,7 +81,13 @@ def main(argv=None):
     t = sub.add_parser("test")
     t.add_argument("which", nargs="*", default=["all"])
 
+    ev = sub.add_parser("eval", add_help=False, help="evaluation harness: run | compare | reference")
+    ev.add_argument("rest", nargs=argparse.REMAINDER)
+
     a = ap.parse_args(argv)
+    if a.cmd == "eval":
+        from .eval import main as eval_main
+        sys.exit(eval_main(a.rest))
     if a.cmd == "render":
         from .render import render
         out = a.out or ("out/preview" if (a.preview or a.size is None) else f"out/render_{a.size[0]}")
