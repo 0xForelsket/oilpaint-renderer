@@ -1,0 +1,29 @@
+# Every text file is stored and checked out with LF, whatever core.autocrlf says on the machine
+# (Windows Git defaults to autocrlf=true). Hashes, golden files and shell scripts depend on exact bytes.
+* text=auto eol=lf
+
+# Binary data: never converted, never diffed or merged as text.
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.webp   binary
+*.mp4    binary
+*.npz    binary
+*.npy    binary
+*.bin    binary
+*.lut    binary
+*.wasm   binary
+*.oilstrokes binary
+*.dll    binary
+*.so     binary
+*.dylib  binary
+
+# Golden files: regression hashes are taken over their exact bytes.
+golden/**            -text
+tests/golden/**      -text
+spec/examples/**     -text
+
+# Third-party files kept byte-for-byte as received.
+spikes/mixers/LICENSE_spectral.js -text
+spikes/mixers/spectral_data.json  -text
