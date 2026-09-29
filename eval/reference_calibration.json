@@ -4,7 +4,7 @@
  "synthetic": false,
  "analysed_width": 1600,
  "n_images": 4,
- "directory": "/tmp/claude-0/-home-claude/cd4531f6-3314-512b-9953-4f74d55c5a55/scratchpad/reference_images",
+ "directory": "reference_images",
  "images": {
   "monet_Claude_Monet_Houses_of_Parliament.jpg": {
    "width_px": 1600,

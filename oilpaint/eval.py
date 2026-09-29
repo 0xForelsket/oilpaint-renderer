@@ -685,7 +685,7 @@ def cmd_reference(args):
         if s:
             sugg[ck] = [round(s["p10"], 2), round(s["p90"], 2)] if ck in ("L_p50", "chroma_mean", "chroma_p90") else round(s["mean"], 2)
     doc = dict(harness_version=HARNESS_VERSION, kind="reference_calibration", synthetic=bool(args.synthetic), analysed_width=args.width,
-               n_images=len(imgs), directory=os.path.abspath(args.dir), images=imgs, summary=summary, suggested_calib_targets=sugg,
+               n_images=len(imgs), directory=os.path.basename(os.path.abspath(args.dir)), images=imgs, summary=summary, suggested_calib_targets=sugg,
                notes=("Metrics of the LIT image only (a scan or photograph has no albedo or height), at the analysed width; JPEG artefacts, glare and "
                       "the varnish/photography of each source are included.  calib.TARGETS keys: L_p50, chroma_mean and chroma_p90 take the p10..p90 range "
                       "over the images, L_p01 and L_p99 the mean.  Nothing here has been written into calib.py."))
