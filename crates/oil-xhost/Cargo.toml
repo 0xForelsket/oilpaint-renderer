@@ -1,0 +1,25 @@
+[package]
+name = "oil-xhost"
+description = "Cross-host determinism cases: the same Rust code run natively and as WASM in Node and browsers (ci/xhost)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "xhost"
+path = "src/bin/xhost.rs"
+
+[dependencies]
+oil-math = { path = "../oil-math" }
+oil-kernel = { path = "../oil-kernel" }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+sha2 = "0.10"
+
+[lints]
+workspace = true

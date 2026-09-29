@@ -1,0 +1,100 @@
+# Cross-host determinism (docs/plans/LIBRARY_PLAN.md, section 5, check G1): the same engine version must produce
+# byte-identical outputs natively on Windows, Linux and macOS and as WASM in Node, Chromium, Firefox and WebKit.
+# Local equivalent on one machine: npm run xhost (see ci/xhost/README.md).
+#
+# Skeleton written in L0; the repo has no GitHub remote yet, so it has not run on GitHub. From L1 the engine
+# depends on the sibling Ochrell checkout (../ochrell): set the repository variable OCHRELL_REPO and pin the
+# revision in ci/ochrell.rev, then enable the "Ochrell" steps below.
+name: determinism
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  RUST_TOOLCHAIN: "1.91.1"
+  CARGO_TERM_COLOR: never
+
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: oilpaint-renderer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: oilpaint-renderer
+      # Ochrell (from L1):
+      # - uses: actions/checkout@v4
+      #   with:
+      #     repository: ${{ vars.OCHRELL_REPO }}
+      #     ref: <contents of ci/ochrell.rev>
+      #     path: ochrell
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          components: clippy
+      - run: cargo clippy --workspace --release --all-targets -- -D warnings
+      - run: cargo test --workspace --release
+      - run: cargo run --release -q -p oil-xhost --bin xhost -- --out out/xhost/native-${{ runner.os }}-${{ runner.arch }}.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xhost-native-${{ runner.os }}
+          path: oilpaint-renderer/out/xhost/*.json
+
+  wasm:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: oilpaint-renderer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: oilpaint-renderer
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: cargo build --release -p oil-xhost --lib --target wasm32-unknown-unknown
+      - run: node ci/xhost/run-node.mjs
+      - run: node ci/xhost/run-browsers.mjs --browsers chromium,firefox,webkit
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xhost-wasm
+          path: oilpaint-renderer/out/xhost/*.json
+
+  compare:
+    needs: [native, wasm]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: oilpaint-renderer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: oilpaint-renderer
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: xhost-*
+          merge-multiple: true
+          path: oilpaint-renderer/out/xhost
+      - run: node ci/xhost/compare.mjs --dir out/xhost --min-hosts 7
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: xhost-report
+          path: oilpaint-renderer/out/xhost/report.*
