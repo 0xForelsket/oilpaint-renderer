@@ -38,5 +38,6 @@ add a LICENSE file before sharing the repo.
 Nothing below is published yet. See `docs/plans/LIBRARY_PLAN.md`, section 10.
 - Ochrell (default mixer): code MIT OR Apache-2.0. Its generated optical tables are CC BY-SA 4.0 (derived from
   CIE 2019 data), so any build with the default mixer is "MIT AND CC-BY-SA-4.0" and must carry the attribution
-  listed in `../ochrell/data/README.md`. The publishing choice is Sean's (plan section 10, options A-D).
+  listed in `../ochrell/data/README.md`. Sean chose to ship it as is (plan section 10, option A): the package
+  licence is `(MIT AND CC-BY-SA-4.0)`, with the CIE attribution and licence text shipped alongside.
 - Mixbox: only in the opt-in `oil-mix-mixbox` crate and `@oilpaint/mixbox` package (CC BY-NC 4.0, non-commercial).

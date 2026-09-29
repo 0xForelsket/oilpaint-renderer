@@ -395,16 +395,17 @@ no GPL code; libmypaint and Krita are for ideas only.
 - **Consequence for "an MIT library".** It is not a pure-MIT artefact. Some corporate licence policies flag
   BY-SA, even though the obligations are mostly attribution.
 - **Options:**
-  - **(A) Ship as is (recommended for the alpha).** The package licence is `(MIT AND CC-BY-SA-4.0)`, the tables
-    stay isolated inside the Ochrell crate, and the notices are exposed.
+  - **(A) Ship as is. Chosen by Sean on 2026-09-30.** The package licence is `(MIT AND CC-BY-SA-4.0)`, the
+    tables stay isolated inside the Ochrell crate, and the notices are exposed (licence file, NOTICE, and
+    `oil.notices()` at runtime). L6 packages it.
   - **(B)** Move the tables to a separately shipped data file. The code artefacts become pure MIT; the
     obligations for the data do not change, and Ochrell needs an API change.
   - **(C)** Regenerate the tables from permissive sources, for example an analytic CMF fit. That is a
     model-changing Ochrell project with its own evaluation.
   - **(D)** Ship Ochrell as `@oilpaint/ochrell`, separate from an MIT core whose default is rgb. That contradicts
     "Ochrell is the default".
-- **Nothing is published** (npm, crates.io, public repo) with the tables inside until Sean chooses. Today
-  `../ochrell` is a path dependency, so nothing is vendored into this repo.
+- **Publishing** follows option A, with clear licence and notices. Until L6 nothing is published at all.
+  `../ochrell` stays a path dependency, so nothing is vendored into this repo.
 
 **Packages:**
 - `oilpaint`: API, hosts and CLI. The name was free on npm on 2026-09-30.
@@ -472,9 +473,15 @@ settling-paint and glaze physics, which v3 placed after its alpha at 26 days.
 4. **Threads are optional.** Single-thread works everywhere; the threaded build needs `crossOriginIsolated`.
 5. **npm name `oilpaint`.**
 6. **The browser size limit follows the memory finding** (section 7).
+7. **Ochrell data licence: option A** (section 10). Ship as is, `(MIT AND CC-BY-SA-4.0)`, with a clear licence
+   and notices.
+8. **The engine waits for the Ochrell optimisation agent to finish** before it uses Ochrell.
+   - L1 builds everything else first: the kernel, the mixer trait with rgb and Mixbox, maths, codec, lighting,
+     CLI, shim and port check P1.
+   - L1 then plugs Ochrell in (P2) against a clean, pinned Ochrell commit, together with the one additive API
+     (`encode_linear`).
 
 **Open for Sean:**
-1. **Ochrell data licence** (section 10): A, B, C or D, before anything is published. I recommend A.
-2. **Visual sign-offs:** the level E side-by-side (L3), and the sky fluidity setting (L7, three settings shown).
-3. **Carried from ENGINE_PLAN** (decide by L8): halve the block-in strokes (a 44% kernel-time layer), and
+1. **Visual sign-offs:** the level E side-by-side (L3), and the sky fluidity setting (L7, three settings shown).
+2. **Carried from ENGINE_PLAN** (decide by L8): halve the block-in strokes (a 44% kernel-time layer), and
    1200-px layer images by default.

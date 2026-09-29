@@ -47,11 +47,15 @@ State of the repo:
 5. **Licences.**
    - No GPL code. libmypaint and Krita are for ideas only. Keep `NOTICE.md` accurate.
    - Mixbox (CC BY-NC) is only an opt-in plug-in.
-   - Ochrell's CIE-derived data is CC BY-SA 4.0. Do not embed it in anything published (npm, crates.io,
-     a public repo) until Sean has decided; see the licence section of the plan.
+   - Ochrell's CIE-derived data is CC BY-SA 4.0. Sean chose option A: ship it as is, with the package licence
+     `(MIT AND CC-BY-SA-4.0)` and clear licence and notice files (plan section 10). Nothing is published before
+     L6.
 6. **Ochrell edits.** Keep its invariants: no `unsafe`, no dependencies, and its own tests green. It has its own
-   git repo. Another agent may be working there (for example the optimisation hill-climb in
-   `docs/optimization-plan.md`), so check `git status` there first and never touch files you did not write.
+   git repo. Another agent may be working there (for example the optimisation rounds in
+   `docs/optimization-*.md`), so check `git status` there first and never touch files you did not write.
+   - Sean's decision: the engine does not use Ochrell until that agent is done (a clean tree and its round
+     committed).
+   - Then pin a commit and build against a clean checkout of it, never the live folder.
 7. **Git.**
    - Small commits with clear messages, and no attribution trailers.
    - Never rewrite history, never force-push, never delete Sean's outputs (`out/`, renders, stroke files).
