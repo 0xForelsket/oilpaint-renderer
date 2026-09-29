@@ -434,11 +434,15 @@ def m_mud_stack(ctx):
         zl = np.median(ctx.lab[z], axis=0)
         nom = ctx.lab_of_stroke(top)
         Cn = float(np.hypot(nom[1], nom[2]))
+        zz = ctx.lab[z]
+        zC = np.hypot(zz[:, 1], zz[:, 2])
         out[f"k{k}"] = dict(chroma_ratio=float(np.hypot(zl[1], zl[2]) / max(Cn, 1e-6)), dE_from_top=float(np.linalg.norm(zl - nom)),
-                            zone_C=float(np.hypot(zl[1], zl[2])))
+                            zone_C=float(np.hypot(zl[1], zl[2])), zone_hue=float(np.degrees(np.arctan2(zl[2], zl[1])) % 360),
+                            zone_mud_frac=float(((zz[:, 0] > 20) & (zz[:, 0] < 65) & (zC < 12)).mean()))
     ks = [out[f"k{k}"]["chroma_ratio"] for k in (2, 4, 6, 8) if f"k{k}" in out]
     if len(ks) >= 2:
         out["chroma_k8_ratio"] = ks[-1]
+        out["mud_frac_k8"] = out["k8"]["zone_mud_frac"]
         out["chroma_drop_2_to_8"] = ks[0] - ks[-1]
     return out
 
@@ -537,7 +541,7 @@ def swatch_metrics(ctx, kind, lit, unlit, h):
     paint = EM.erode(EM.dilate(ctx.h > EM.PAINT_H, 2), 1)
     if paint.sum() < 200:      # glaze / scumble on bare ground: fall back to Delta E from the ground
         paint = ctx.dE > DE_PAINT
-    m = EM.image_metrics(ctx.lit, ctx.unlit, ctx.h, mask=paint, lab=ctx.lab_lit, detail=False)
+    m = EM.image_metrics(ctx.lit, ctx.unlit, ctx.h, mask=paint, lab=ctx.lab_lit, detail=False, cw_px=ctx.W)
     m["kind"] = kind
     fn = KIND_FUNCS.get(kind)
     if fn:

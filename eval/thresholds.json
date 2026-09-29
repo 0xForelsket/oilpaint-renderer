@@ -523,7 +523,7 @@
     "abs": 0.12,
     "rel": 0.0
    },
-   "why": "chroma kept after 8 alternating complementary strokes"
+   "why": "chroma kept after 8 alternating complementary strokes (a duller mix scores lower; read with blend_* off_curve_dE, which tells a plausible dull mix from a wrong-hue one)"
   },
   {
    "match": "sheet.mud_stack.chroma_drop_2_to_8",
@@ -539,7 +539,18 @@
    "why": "chroma lost between 2 and 8 strokes"
   },
   {
-   "match": "sheet.mud_stack.k*.chroma_ratio",
+   "match": "sheet.mud_stack.mud_frac_k8",
+   "direction": "lower",
+   "warn": {
+    "abs": 0.05
+   },
+   "fail": {
+    "abs": 0.15
+   },
+   "why": "grey-brown share of the 8-stroke complementary stack"
+  },
+  {
+   "match": "sheet.mud_stack.k*",
    "direction": "info",
    "why": ""
   },

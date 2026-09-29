@@ -172,11 +172,13 @@ def acf_scales(lab_L, mask, W_full):
 
 
 # ------------------------------------------------------------------ image-level metrics
-def image_metrics(lit, unlit=None, h=None, mask=None, lab=None, maps=None, detail=True):
-    """All image-level metrics of `lit` inside `mask`.  Returns a flat dict of floats / bools (missing = not computable)."""
-    H, W = lit.shape[:2]
+def image_metrics(lit, unlit=None, h=None, mask=None, lab=None, maps=None, detail=True, cw_px=None):
+    """All image-level metrics of `lit` inside `mask`.  Returns a flat dict of floats / bools (missing = not computable).
+    `cw_px` = width of the whole canvas in pixels when `lit` is only a crop of it (all scales are canvas-width units)."""
+    H, Wimg = lit.shape[:2]
+    W = int(cw_px) if cw_px else Wimg
     if mask is None:
-        mask = np.ones((H, W), bool)
+        mask = np.ones((H, Wimg), bool)
     m = dict(width_px=int(W))
     npx = int(mask.sum())
     m["area_cw2"] = npx / float(W * W)

@@ -269,6 +269,9 @@ def main(which):
     if "t7" in which or "all" in which:
         from t7_surface import t7
         items += t7(OUT, gate)
+    if "t8" in which or "all" in which:
+        from t8_eval import t8
+        items += t8(OUT, gate)
     with open(os.path.join(OUT, "gates.json"), "w") as f:
         json.dump(RESULTS, f, indent=2)
     if items:

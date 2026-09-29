@@ -491,8 +491,9 @@ def cmd_run(args):
     scene_docs = {}
     targets = []
     for scene in (args.scene or []):
-        rd, sname = render_scene(scene, os.path.join(out, "scenes"), args.scene_width, args.reuse)
-        targets.append((rd, sname))
+        for i, wd in enumerate(int(v) for v in str(args.scene_width).split(",")):
+            rd, sname = render_scene(scene, os.path.join(out, "scenes"), wd, args.reuse or i > 0)      # the 600 px plan is made once
+            targets.append((rd, sname))
     for rd in (args.run or []):
         if not os.path.exists(os.path.join(rd, "run.json")):
             raise SystemExit(f"--run {rd}: not a scene run directory (no run.json); use --sheet-run for a swatch-sheet run")
@@ -510,6 +511,8 @@ def cmd_run(args):
         del limg
     if scene_docs:
         doc["scenes"] = scene_docs
+        if args.no_sheet:
+            doc["config"]["width"] = int(next(iter(scene_docs.values()))["size"][0])
     # ---- system checks
     if not args.no_sheet:
         if not args.no_checks and not args.sheet_run:
@@ -717,7 +720,7 @@ def build_parser():
     r.add_argument("--no-sheet", action="store_true", help="skip the swatch sheet (scenes only)")
     r.add_argument("--sheet-run", default=None, help="re-evaluate a saved sheet run directory (relight only, no painting)")
     r.add_argument("--scene", action="append", help="render this scene's preview and evaluate it (repeatable)")
-    r.add_argument("--scene-width", type=int, default=600, help="replay the scene's strokes at this width (600 = the preview itself)")
+    r.add_argument("--scene-width", default="1600", help="width(s) to evaluate the scene at, comma separated: 600 = the preview itself, others = replay of its strokes (default 1600; the bristle and hairline scales are unresolved below 1250)")
     r.add_argument("--run", action="append", help="evaluate an existing render directory (repeatable)")
     r.add_argument("--reuse", action="store_true", help="reuse scene renders already in the output directory")
     r.add_argument("--no-speed", action="store_true", help="skip the repeated replays that measure speed")
