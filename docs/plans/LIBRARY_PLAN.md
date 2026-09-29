@@ -1,59 +1,71 @@
-# LIBRARY_PLAN v3: Rust engine and planner, agent-first TypeScript
+# LIBRARY_PLAN v4: Rust engine and planner, Ochrell mixer, agent-first TypeScript
 
-`SP=/tmp/claude-0/-home-claude/cd4531f6-3314-512b-9953-4f74d55c5a55/scratchpad`. Earlier versions:
-`SP/plans/LIBRARY_PLAN_v2_jsplanner.md` (JS planner) and `SP/plans/ENGINE_PLAN_v1.md` (physics).
-- Spikes: `SP/work_lib/` (`oilcore/` Rust crate, `planspike/`, `mixers/`).
-- Numbers: `SP/work_lib/SPIKE_LOG.txt`; images: `SP/work_lib/evidence/`.
-- Nothing is implemented; the repo and `work_eval` are untouched. Oil only.
+Written 2026-09-30, and it supersedes v3 (`LIBRARY_PLAN_v3_cparity.md`). Oil painting only.
 
-**Changed from v2:** the planner and the scene compiler move into Rust ("policy in TS, mechanism in Rust"). TS becomes
-the authoring, hosting and agent layer. The JS detmath and the JS-vs-Rust planner parity work disappear.
+**Changed from v3:**
+- **Hard break with v1.** There is no legacy mode, no frozen strict-C kernel, and no parity level defined relative
+  to C. The v1 renderer lives on as git tag `v1-python-c`, which is the only way to reproduce Storm Light.
+- **Ochrell is the default mixer.** It replaces the Kubelka-Munk mixer on spectral.js data and its 3-day
+  calibration. Mixbox stays an opt-in, non-commercial plug-in for comparison.
+- **Memory, timings and the browser size limit** are reworked around Ochrell's measured cost: 373 B/px and about
+  4x the paint time of Mixbox.
+- **Physics moves before the hosts.** It goes straight into the Rust kernel after the planner port.
+
+**Where the numbers come from.** Every number is labelled *measured* or *projected*.
+- *Measured* numbers come from `docs/plans/SPIKE_LOG.txt`, on a 2 vCPU Xeon VM at 2.1 GHz under Linux with
+  rustc 1.95 (called "the VM" below).
+- They also come from `../ochrell/docs/integration-results.md`, on this Windows laptop (Core Ultra 7 258V,
+  rustc 1.91.1 MSVC; called "the laptop").
+- Projections name the numbers they scale from.
+
+Spike code paths: `spikes/oilcore` (Rust kernel port), `native/ochrell-brush` (Ochrell bridge),
+`spikes/mixers`, `spikes/engine-prototypes`. Physics details: `ENGINE_PLAN_v1.md`.
 
 ## 1. Architecture and layering
 
 | Rust `oilcore` (WASM + native) | TypeScript `oilpaint` |
 |---|---|
-| scene-spec compiler: target, regions, flows, light map from primitives | scene authoring DSL that emits the spec; validation with fix hints |
-| planner: incremental error planes, site proposal, path tracing, palette snap, ordering, layering | orchestration: default pipeline call or a user-written loop over planner stages |
-| kernel (4 modes, later knife), mixers, lighting, image ops, metrics | Worker/canvas/OffscreenCanvas host, p5 add-on, progressive frames, time-lapse |
-| StrokeList v2 codec, counter RNG, one math library | headless Node API, CLI, JSON feedback, agent docs and tooling |
+| scene-spec compiler: target, regions, flows and light map from primitives | scene authoring DSL that emits the spec; validation with fix hints |
+| planner: incremental error planes, site proposal, path tracing, palette snap, ordering, layering | orchestration: the default pipeline call, or a user-written loop over planner stages |
+| kernel (4 modes, later the knife), mixers behind a trait, lighting, image ops, metrics | Worker/canvas/OffscreenCanvas host, p5 add-on, progressive frames, time-lapse |
+| StrokeList v2 codec with the engine-version gate, counter RNG, one pure-Rust maths library | headless Node API, CLI, JSON feedback, agent docs and tooling |
 
 **Canonical interface.**
-- Input: `SceneSpec` JSON (versioned, `"$schema": "https://…/scene-spec/1.json"`), with optional raw guide maps
-  (`Float32Array` target, masks, flows, light) as an escape hatch referenced by name.
-- Output: `StrokeList v2` (binary: header, packed points, per-stroke params, layer table, engine version, input hashes).
-- Everything between the two runs in Rust. A spec plus a seed is the whole reproducible description of a painting.
+- **Input:** `ScenePlan` JSON (versioned, `spec/sceneplan-1.schema.json`). Optional raw guide maps (`Float32Array`
+  target, masks, flows, light) can be referenced by name as an escape hatch.
+- **Output:** `StrokeList v2` (binary: header, packed points, per-stroke params, layer table, **engine version**,
+  input hashes). The spec is in `spec/STROKELIST_V2.md`.
+- Everything between the two runs in Rust. A spec plus a seed is the whole reproducible description of a
+  painting, for one engine version.
 
-**Declarative primitives** (all seeded, in canvas-width units):
+**Declarative primitives** (all seeded, in canvas-width units, and unchanged from v3):
 - shapes: `above/below/ellipse/disc/polygon/wedge/bandAround/union/intersect/noisy`
 - target ops: `fill` (solid, `gradientV`), `blob`, `polygon`, `bands`, `glow`, `beam`
-- flows: `constant/sweep/waves/swirlAround/radialFrom/upward/contour`, `facets` (new), and a structure-tensor fallback
+- flows: `constant/sweep/waves/swirlAround/radialFrom/upward/contour`, `facets`, and a structure-tensor fallback
 - light: `glow/beam/lamp`
-- palettes: tubes, hex and mixes; styles; layers; brush presets
+- palettes (tubes, hex and mixes), styles, layers and brush presets
 
 These cover every call in the three existing scenes.
 
-**Escape hatches:**
-1. **Sampled fields.** A JS function `(x, y) => [dx, dy]`, `(x, y) => mask` or `(x, y) => rgb` is sampled by TS at
-   guide resolution into a `Float32Array` before planning. Rust only ever sees numbers.
-2. **Pure-function hooks** in a user-written TS loop (section 3), for example a stroke filter or a colour tweak.
+**Escape hatches** (decided: declarative primitives plus pure-function hooks):
+1. **Sampled fields.** A JS function `(x, y) => [dx, dy] | mask | rgb` is sampled by TS at guide resolution into
+   a `Float32Array`, and the array is hashed into the StrokeList header.
+2. **Pure-function hooks** in a user-written TS loop (section 3).
 
-**Determinism.**
-- The Rust side is fully deterministic given its inputs. Sampled arrays and hook identities are hashed into the
-  StrokeList header.
-- Plans that used hooks or sampled fields carry `portable: false`: JS `Math.*` may differ between engines, so the same
-  scene could plan differently in Safari. Authors may assert `portable: true` for arithmetic-only hooks.
-- Painting a StrokeList is always portable.
+A plan that used either carries `portable: false`, because JS `Math.*` may differ between engines. Authors may
+assert `portable: true` for arithmetic-only hooks. Painting a StrokeList is always portable.
 
-## 2. API
+## 2. API (unchanged from v3)
 
-Level 1 is p5.brush-like immediate painting: `set`, `line`, `flowLine`, `beginStroke/move/endStroke`, `fill`, `field`,
-`mode`, `dry`, `render`. For agents:
+**Level 1** is p5.brush-like immediate painting: `set`, `line`, `flowLine`, `beginStroke/move/endStroke`, `fill`,
+`field`, `mode`, `dry`, `render`.
+
+For agents:
 - `createPainter({ width, height, units: "px" | "cw", seed })` returns an explicit object. Units and seed are
-  required; the global `oil.*` is only a default instance for sketches.
-- There is no hidden state: `p.state()` returns brush, field and mode as JSON, and `p.reset()` clears them.
-- Every call returns a stroke id and is recorded, so `p.strokes()` returns a StrokeList that replays at any size.
-- Rendering is explicit (no implicit frame loop), and errors use the structured format of section 5.
+  required.
+- There is no hidden state: `p.state()` returns JSON.
+- Every call returns a stroke id, and `p.strokes()` returns a StrokeList that replays at any size.
+- Rendering is explicit, and errors are structured (section 8).
 
 ```ts
 const p = await oil.createPainter({ width: 1200, height: 1500, units: "px", seed: 7, ground: "#e9e1d6" });
@@ -61,232 +73,400 @@ p.set("flat", ["cobalt_blue", "lead_white", 0.4], 24).paint({ pickup: 0.12, marb
 p.field("sea", { kind: "waves", angle: 0, amplitude: 9, wavelength: 0.18 }).flowLine(200, 900, 300);
 await p.render({ light: "painting" });
 ```
-Level 2 is the auto-painter. The TS DSL builds a ScenePlan whose `.spec` is plain JSON:
-```ts
-export default function build(S: Scene) {
-  S.canvas({ aspect: [4, 5], ground: "#e9e1d6" });
-  S.target.fill(gradientV([[0, "#232a58"], [0.4, "#66679e"], [HZ, "#e8cbb8"]]));
-  S.region("sky", above(HZ), { edge: 0.03 }).flow(sweep({ angle: -14, curl: 0.5, noise: 0.3 }));
-  S.style("sky", { colors: SKY, width: [0.025, 0.04], length: [0.10, 0.26], marble: 0.4 });
-  S.layer("Sky long strokes", { regions: ["sky", "glow"], placement: "error", T: 12 });
-}
-// -> {"version":1,"canvas":{"aspect":[4,5],"ground":"#e9e1d6"},"regions":[{"name":"sky","mask":{"above":0.6},"edge":0.03,
-//     "flow":{"sweep":{"angle":-14,"curl":0.5,"noise":0.3}}}], "styles":{...}, "layers":[...]}
-const strokes = await oil.plan(build, { planWidth: 600, seed: 1907 });       // one Rust call
-const job = oil.paint(strokes, { canvas, width: 2400, light: "painting" });   // Worker; frames(), done, toBlob(), timelapse()
-```
-The three Python scenes are hand-ported to TS modules (storm_v3.py is ~250 lines of DSL calls). The p5 add-on and the
-standalone host are as in v2: p5 is a peer dependency, painting runs in a Worker, and the time-lapse uses WebCodecs
-with mp4-muxer.
 
-## 3. Planner as a toolbox
+**Level 2** is the auto-painter. A TS DSL builds a ScenePlan whose `.spec` is plain JSON; `oil.plan(build,
+{ planWidth, seed })` is one Rust call, and `oil.paint(strokes, { canvas, width, light })` runs in a Worker. The
+three Python scenes are hand-ported to TS modules. p5 is a peer dependency (never bundled), and the time-lapse
+uses WebCodecs with mp4-muxer.
+
+## 3. Planner as a toolbox (unchanged from v3)
 
 `oil.plan(spec)` is one composed Rust call. The same stages are exported through WASM, with a TS wrapper in
-`oilpaint/plan`, so users can write their own loop:
-```ts
-const g = await plan.compile(spec, { width: 600 });            // Guides handle (+ g.debug() images)
-const cv = plan.canvas(g); const rng = plan.rng(1907);
-for (const [li, layer] of spec.layers.entries()) for (const region of layer.regions) {
-  const sites = plan.sites(cv, g, { layer: li, region });        // error | density | curve placement
-  for (const s of sites) {
-    const path = plan.tracePath(g, region, s, rng);               // flow-following, stop at mask edges
-    const color = plan.snapColor(g, region, plan.sampleRef(g, s), rng);
-    if (myFilter(path, color)) plan.paintStroke(cv, plan.makeStroke(path, color, layer, region, rng));  // hook
-  }
-}
-```
-- **Stable in 1.0:** `compile`, `canvas`, `rng`, `errorPlane`, `sites`, `order`, `tracePath`, `sampleRef`,
-  `snapColor`, `makeStroke`, `paintStroke`, `planLayer`, `plan`, `strokeList`.
-- **Experimental:** gap fill, palette piles, brush-memory state, knife placement.
-- **Internal:** lane evaluation and incremental error updates.
+`oilpaint/plan`, so users can write their own loop: `compile`, `canvas`, `rng`, `errorPlane`, `sites`, `order`,
+`tracePath`, `sampleRef`, `snapColor`, `makeStroke`, `paintStroke`, `planLayer`, `plan`, `strokeList`.
 
-Handles and typed arrays cross the boundary, never JSON per call. A spike measured ≤0.5 µs per WASM call: 13,795
-path traces took 16.5-20.9 ms as single calls vs 14-23 ms batched.
+- **Stable in 1.0:** the list above.
+- **Experimental:** gap fill, palette piles, brush-memory state, knife placement.
+- **Internal:** lane evaluation, incremental error updates.
+
+Handles and typed arrays cross the boundary, never JSON per call. The call cost was *measured* at ≤0.5 µs per WASM
+call (Node, the VM): 13,795 path traces took 16.5-20.9 ms as single calls and 14-23 ms batched.
 
 ## 4. Rust core
 
 ```
-oilcore/ (cargo workspace, MIT)
-  oil-kernel  canvas planes, bristle-lane brush, StrokeList v2 codec, counter RNG, math (one pure-Rust implementation)
-  oil-scene   ScenePlan spec types (serde + schemars -> JSON Schema -> TS types), spec compiler (guides)
-  oil-plan    planner stages + composed plan(); incremental error planes
-  oil-mix     km (default), rgb; mixbox in a separate crate/package (CC BY-NC)
-  oil-image   blur, resize, Sobel, EDT, structure tensor, polygon fill, value noise, marching squares
-  oil-light   relight, weave;  oil-metrics: agent feedback metrics (port of eval_metrics.py subset)
-  oil-wasm    C-ABI exports + hand-written TS glue;  oil-native: rayon, CLI, ctypes shim for the Python harness
+Cargo.toml (workspace)   crates/
+  oil-math     exp, sin/cos, atan2, pow, cbrt, sRGB transfer: pure Rust from IEEE basic ops; the only maths used
+  oil-mix      Mixer trait; ochrell (default), rgb; mixbox in the separate opt-in crate oil-mix-mixbox (CC BY-NC)
+  oil-kernel   canvas planes (row-span storage interface), bristle-lane brush, 4 modes, counter RNG, int64 pick-up sums
+  oil-strokes  StrokeList v2 codec, engine-version gate, input hashes
+  oil-image    blur, resize, Sobel, EDT, structure tensor, polygon fill, value noise, marching squares
+  oil-light    relight, weave            oil-metrics  agent feedback metrics (port of the eval_metrics.py subset)
+  oil-scene    ScenePlan types (serde + schemars -> JSON Schema -> TS types), spec compiler (guides)
+  oil-plan     planner stages and the composed plan(); incremental error planes
+  oil-wasm     C-ABI exports and hand-written TS glue    oil-cli  native CLI with JSON output; ctypes shim for the harness
 ```
-**Kernel spike** (`SP/work_lib/oilcore`, ~1,500 lines).
-- It ports all of `brush.c`, the Mixbox polynomial, `relight` and the image ops, and builds native and to WASM
-  (71-75 KB).
-- Parity: Rust with platform libm is bit-identical to strict-built C on the swatch sheet and on all 12,495 Storm Light
-  strokes at 600 and 1200 px. With `detmath`, native, Node and Chromium (scalar and SIMD128) give identical SHA-256 at
-  600, 1200 and 2400 px.
-- Today's fast-math C differs from strict C by up to 124/255 on 9.9% of pixels.
+
+The workspace depends on `../ochrell` as a sibling checkout pinned by commit. CI checks out the pinned revision.
+The golden hashes (section 5) catch any output change in Ochrell.
+
+**Mixer trait.** It lets a compact mixer coexist with Ochrell.
+- **Contract.**
+  - `ID` is a stable string, recorded in outputs.
+  - `LAT` is the floats per state (Ochrell 85, Mixbox 7, rgb 3).
+  - `encode(srgb) -> state` and `decode_linear(state) -> [f64; 3]`.
+  - `validate(state)`, plus the streak and interpolation rules.
+- **Generic kernel.** The kernel is generic over `M: Mixer` and monomorphised, so there is no dynamic dispatch
+  per pixel.
+- **Packaging.** One WASM build carries Ochrell and rgb. The Mixbox plug-in is a separate WASM build of the same
+  kernel, which keeps the licences apart.
+- **Colours in StrokeLists.** They are stored as authored sRGB, not latents. A StrokeList is mixer-independent
+  and small, and the engine encodes each colour once per replay.
+
+**Kernel, from the spike.** `spikes/oilcore`, about 1,500 lines, ports all of `brush.c`, `relight` and the image
+ops. It builds native and to WASM (71-75 KB). *Measured on the VM:*
+- Rust with platform libm is bit-identical to strict-built C on the swatch sheet and on all 12,495 Storm Light
+  strokes.
+- With pure-Rust maths (`detmath`), native, Node and Chromium (scalar and SIMD128) give identical SHA-256 at 600,
+  1200 and 2400 px.
 - Relight matches Python within 0.002/255 and is 2-6x faster.
 
-| Storm Light kernel, single thread | 600x750 | 1200x1500 | 2400x3000 |
-|---|---|---|---|
-| C fast-math (today) | 2.7 s | 9.9 s | ~36 s |
-| Rust native (libm / detmath) | 3.1-3.8 / 4.0 s | 11.9 / 13.3 s | – / ~50 s |
-| WASM Node (detmath+SIMD) | 5.0 s | 15.7 s | 57 s, 647 MB |
-| WASM headless Chromium 141 | 4.2-4.8 s | 16.2 s | 60 s, 561 MB |
+The Ochrell bridge `native/ochrell-brush` already compiles this kernel with an 85-float state. Its batched and
+single-stroke replays are exact, and so are snapshot-and-resume (*measured*, laptop).
 
-- **Threads:** native uses rayon (fixed 16-row chunks and a stroke dependency scheduler; 1.3-1.6x measured in C on
-  2 cores). In the browser, single-thread WASM in a Worker is the default. A threaded build (`wasm32-wasip1-threads` on
-  stable or nightly `build-std`, both installable here) loads only when `crossOriginIsolated` (reached in the spike);
-  results are identical either way.
-- **Memory:** 56 B/px (403 MB at 2400x3000, ~580 MB with the new planes). Desktop browsers allow 4 GB, while iOS
-  Safari kills tabs around 1-1.5 GB. Exact tiling is impossible, because pick-up reads whole segments across tiles, so
-  small devices get a compact mode (f16 latent, ~34 B/px) or a size cap; big prints use the native CLI.
+**Threads (optional).**
+- **Native:** rayon, with fixed 16-row chunks and a stroke-dependency scheduler (1.3-1.6x *measured* in C on 2
+  cores).
+- **Browser:** single-thread WASM in a Worker by default. A threaded build loads only when `crossOriginIsolated`.
+- Results are identical with or without threads (section 5).
 
-## 5. Determinism, parity, planner port
+## 5. Determinism: the engine's own guarantee
 
-**Parity.** Rust owns all numerics, so there is no JS detmath. Inside Rust, every target must compile the same
-pure-Rust maths (our `detmath` or the `libm` crate). Measured: platform glibc maths natively vs Rust's own maths in
-WASM already differ on 0.23% of pixels. The rules are: no FMA or fast-math, no relaxed-SIMD, integer PCG32 streams per
-layer/region, int64 pick-up sums, and `Vec`/`BTreeMap` iteration only.
+**Guarantee.** For one engine version, the same inputs give byte-identical outputs on every supported host:
+- Same ScenePlan, seed and plan options give the same StrokeList.
+- Same StrokeList and paint options (mixer, size, light) give the same canvas planes and PNGs.
 
-| Level | Requirement | Status |
+The supported hosts are native (Windows x64 MSVC, Linux x64, macOS arm64), Node ≥ 22, Chromium and Firefox; WebKit
+is best-effort. Nothing is promised across engine versions. Outputs are compared by SHA-256.
+
+**Engine version.**
+- A single string (`oil_kernel::ENGINE_VERSION`, for example `2.0.0-dev.1`), bumped by any change that can move an
+  output bit: kernel, planner, compiler, mixer (including the pinned Ochrell model), maths, RNG or codec.
+- It is written into every StrokeList and every JSON report.
+- Loading a StrokeList written by another engine version fails with `ENGINE_VERSION_MISMATCH`. The message names
+  both versions and says how to get the matching one (npm version, or git tag).
+- A v1 `strokes.npz` fails with `V1_STROKE_FILE` and points to the tag `v1-python-c`.
+- There is no loader or converter for v1 files.
+
+**Rules that make the guarantee hold:**
+- **One maths implementation.** Every transcendental that can reach a pixel or a stroke goes through `oil-math`:
+  exp, sin/cos, atan2, pow, cbrt and the sRGB transfer, all built from IEEE basic operations. Basic ops and `sqrt`
+  are correctly rounded on x86-64, aarch64 and wasm32.
+  - Platform libm is banned by clippy `disallowed-methods` (`f32/f64::exp/ln/powf/powi/sin/cos/atan2/cbrt/tanh`),
+    and so is `mul_add`.
+  - *Measured on the VM:* glibc libm natively vs Rust's own libm in WASM already differed on 0.23% of pixels.
+- **Ochrell's maths.** Code inspection found platform `powf` on the kernel path, in the sRGB transfer:
+  - `Color::linear` (encode);
+  - `Color::from_linear_gamut_mapped` (every `decode`);
+  - `conversion::srgb_to_linear` / `linear_to_srgb`, called by the bridge's per-pixel coverage composite
+    (`material::composite`).
+
+  `cbrt` (OKLab) and `powi` appear only in diagnostics, and the K/S optics use only `+ - * / sqrt`.
+
+  **Fix:** the engine never calls those functions. It converts sRGB to and from linear with `oil-math`, calls
+  Ochrell's existing `decode_linear`, and needs one additive Ochrell API, `encode_linear(&self, [f64; 3])`.
+  `encode(c)` becomes `encode_linear(c.linear())`, bit-identical for existing callers. There are no dependencies
+  and no `unsafe`, and Ochrell's tests stay green. This lands in L1, coordinated with the Ochrell optimisation
+  round in progress (`../ochrell/docs/optimization-plan.md`).
+- **No FMA, fast-math or relaxed SIMD.** SIMD128 is allowed only for lane-wise IEEE ops with a fixed reduction
+  order that the scalar path shares.
+- **Order-free state.** RNG is by counter (a hash of seed, stroke, lane, sample and purpose), so the sample count
+  moves only the array end, never the pattern. Pick-up sums accumulate in int64 fixed point. Collections that feed
+  outputs are `Vec`/`BTreeMap` only.
+- **No NaN in state.** WASM NaN payloads are not deterministic. Validation happens at every boundary, with debug
+  assertions in the kernel.
+
+**Checks** (continuous from L1):
+
+| Check | Requirement | Status |
 |---|---|---|
-| A: Rust engine on every host | identical SHA-256 of StrokeList and canvas planes for the same spec, seed, size, version (native, Node, Chromium, Firefox, Safari) | kernel shown on native/Node/Chromium; planner by construction, CI to prove |
-| B: legacy v1 replay | bit-identical to frozen strict C (Linux, platform libm) | shown |
-| C: portable kernel vs C reference | rgb ≤ 1/255, h ≤ 1e-4 on the golden corpus | shown (h 2e-6) |
-| D: size consistency (v2 RNG) | 1800 vs 2400 at 600 px: ≤ 1% of pixels > 8/255 | today 10.3%; expected fixed |
-| E: Rust planner vs Python | metric-based, see below; host-to-host is level A, bit-exact | to do |
+| G1 cross-host | identical SHA-256 of StrokeList bytes and of every canvas plane on native, Node, Chromium and Firefox (WebKit reported) | spike kernel shown on native, Node and Chromium (*measured*, VM); new engine: kernel in L1, planner in L3 |
+| G2 invariance | identical output across 1 vs N threads, batched vs single-stroke replay, snapshot and resume vs straight through, and every memory mode (contiguous, tiled, cold) | batch/single and snapshot/resume exact in the Ochrell bridge (*measured*); threads L8; tiles L8 |
+| G3 size consistency | replay at 1800 and 2400, downsampled to 600: ≤ 1% of pixels > 8/255 | v1: 10.3% (*measured*); counter RNG in L1 is expected to fix it, then measured |
+| G4 version gate | wrong-version StrokeList gives `ENGINE_VERSION_MISMATCH`; v1 npz gives `V1_STROKE_FILE` | L1 unit tests |
+| G5 golden regression | `golden/<engine-version>.json` holds hashes of fixed corpora; any change without a version bump fails CI | from L1; regression only, generated by the new engine |
 
-**Level E acceptance:**
-- `eval run --scene` on Storm Light at 600 and 1600 stays within `eval/thresholds.json` of the Python baseline on every
-  region metric (`hairline`, `bristle_L`, `edge_step_p99`, `C_mean`, `L_p50`, `coh_local`, `orient`, `acf_*`).
-- Per-layer stroke count ±10%, width/length medians ±5%, angle-histogram distance ≤0.1.
-- Sean signs off a side-by-side. The harness scores Rust StrokeLists through its ctypes shim.
+**One-off port checks.** These are sanity checks, run once and then retired, not guarantees.
 
-| Python call | Replacement (all Rust) |
+| Check | Requirement | When |
+|---|---|---|
+| P1 kernel port | step 1: bit-exact against the spike kernel (same maths feature, Mixbox, same latents); step 2, after the engine changes (counter RNG, int64 sums, `oil-math`): the new kernel against the C kernel through the eval harness, within the warn tolerances of `eval/thresholds.json`. There is no C compiler on the laptop, so step 2 uses the spike Rust kernel (`OILPAINT_KERNEL=rust`, shown bit-identical to strict C) | L1 |
+| P2 Ochrell port | new kernel with Ochrell against the `native/ochrell-brush` bridge: the 17 gates of `tools/check_ochrell.py`, plus harness deltas reported | L1 |
+| E planner port | Rust planner against the Python planner, both painted by the new kernel with Mixbox; criteria below | L3 |
+
+Level E acceptance is unchanged from v3:
+- `eval run --scene` on Storm Light at 600 and 1600 stays within `eval/thresholds.json` of the Python planner on
+  every region metric.
+- Per-layer stroke count within ±10%, width and length medians within ±5%, angle-histogram distance ≤ 0.1.
+- Sean signs off a side-by-side.
+
+After E passes, one dedicated commit removes the C kernel, the Python kernel wrapper and the Python planner (the
+tag keeps them). The Python eval harness stays until the Rust metrics replace it (L5).
+
+**Python calls and their replacements** (all in Rust):
+
+| Python call | Replacement |
 |---|---|
-| `cv2.GaussianBlur`, `light.blur` | `oil-image` Gaussian, downsampled for sigma ≥ 8 (the 20 Storm Light mask blurs: Python 0.18 s, Rust 0.10-0.13 s) |
+| `cv2.GaussianBlur`, `light.blur` | `oil-image` Gaussian, downsampled for sigma ≥ 8: the 20 Storm Light mask blurs took Python 0.18 s and Rust 0.10-0.13 s (*measured*, VM) |
 | `cv2.resize` (area, linear, nearest) | ported in the spike (matches cv2 within 0.002/255 in relight) |
-| `cv2.remap` cubic + `np.random` lattice (`noise.fbm`) | hashed-lattice bicubic noise, evaluated per shape bbox (full-canvas 4-octave field: 0.065 s) |
+| `cv2.remap` cubic + `np.random` lattice (`noise.fbm`) | hashed-lattice bicubic noise, per shape bbox: 0.065 s for a full 600x750 4-octave field (*measured*, VM) |
 | `cv2.distanceTransform` + `Sobel`, `skimage structure_tensor` | exact EDT + Sobel + Gaussian |
 | `cv2.fillPoly`, `dilate/erode`, `findContours` | scanline fill, min/max filter, marching squares |
-| `scipy cKDTree` | brute force over ≤3k Lab candidates (0.015 s for 12,500 snaps) |
-| `np.random` uniform/normal/integers/shuffle | PCG32 + Box-Muller on the shared math |
-| Mixbox LUT, Lab, `np.interp/cumsum` | Rust (`oil-mix`, `oil-plan`) |
-| `cv2.line/putText` | TS Canvas2D debug views |
+| `scipy cKDTree` | brute force over ≤ 3k Lab candidates (0.015 s for 12,500 snaps, *measured*, VM) |
+| `np.random` | PCG32 + Box-Muller on `oil-math` |
+| Mixbox LUT, Lab, `np.interp/cumsum` | `oil-mix`, `oil-plan` |
 
-**Spike numbers** (600 px, Storm Light inputs):
+## 6. The mixer: Ochrell by default
 
-| Stage | Python | JS | Rust → WASM | Rust native |
-|---|---|---|---|---|
-| error map ×27 | 1.52 s | 1.5 s (with LUT) | 1.3 s | 0.9 s |
-| palette snap ×12,500 | 2.72 s | 0.04 s | 0.02 s | 0.015 s |
-| path tracing ×13,795 | 1.30 s | 0.03 s | 0.015-0.026 s | 0.015 s |
+**Ochrell 0.2** (`../ochrell`, code MIT OR Apache-2.0) does spectral Kubelka-Munk mixing on synthetic pigments.
+- **State:** 41 bands of K and S plus an RGB residual, 85 f32 = 340 B.
+- **What persists:** the material history in each pixel. An RGB round trip loses it: *measured* mean/max ΔE2000
+  of 1.02/12.8 on four-colour mixes.
+- **Limits:** no real-paint calibration, no physical glazing. Height does not affect reflectance.
+- **Why it replaces the v3 plan:** it replaces "our KM mixer on spectral.js data + 3-day calibration". The
+  calibration step is dropped; Ochrell's own evaluation is the evidence (`../ochrell/docs/revision-report.md`).
 
-- Spec compile: Python 1.9-2.8 s. Estimated Rust ~0.5-1 s native and 0.7-1.3 s WASM; not measured end to end.
-- **Projected full planning at 600 px** in WASM, single thread: 5.5-7 s. That is proxy painting 4.2-5.0 s + compile
-  ~1 s + error planes 0.2-1.3 s + planner logic ~0.1 s, against 32 s in Python.
+**Cost, measured** (laptop, single thread; `integration-results.md`):
 
-## 6. Agent-first deliverables
+| | Mixbox (v1 renderer) | Mixbox, 85-float control | Ochrell |
+|---|---:|---:|---:|
+| state interpolation / decode / cached mix + decode, ns | 4.70 / 18.76 / 39.64 | – | 36.22 / 183.07 / 222.65 |
+| Storm Light replay at 600 px (13,988 strokes, median of 3), s | 4.55 | 14.77 | 18.03 |
+| canvas bytes per pixel | 57 | 373 | 373 |
+| peak working set at 600x690, paint + light, MB | 147.6 | 277.9 | 273.7 |
 
-1. **Headless Node API + CLI** (same WASM, no browser): `oilpaint render scene.ts --preview --json`. It writes PNGs and
-   one JSON document an agent can read without looking at pixels:
-   - size, seed, engine version and portable flag;
+Reading the table:
+- Most of the slowdown (4.5 → 14.8 s) comes from moving an 85-float state per painted pixel. Decode accounts for
+  the smaller remaining part (14.8 → 18.0 s). L8 therefore targets state traffic first.
+- Naive f16 storage was *measured* and rejected: 0.0001 pick-ups vanish (mean/max ΔE2000 10.9/41.8 on
+  `tiny_pickup_4096`). Keeping the residual in f32 does not rescue it.
+
+**Mixbox** (CC BY-NC 4.0) is an opt-in plug-in: crate `oil-mix-mixbox` and package `@oilpaint/mixbox`, a separate
+WASM build. It is used for comparisons and for the P1 and E port checks, which compare like with like. The
+default builds never contain it.
+
+**Compact mixer slot.** The trait keeps room for a cheaper state (rgb today; later, for example, a reduced-band
+Ochrell variant or a recipe-weight state). Any compact mixer is a different mixer ID, so outputs differ by
+definition. It must be measured against Ochrell f32 on the ochrell storage-error cases before it is offered.
+
+## 7. Memory and size limits
+
+**Canvas planes per pixel:**
+- latent: 340 B
+- display RGB: 12 B
+- height, wet, coverage, amount and height-blur: 20 B
+- region mask: 1 B
+
+That is 373 B/px, *measured* and verified in the ochrell report. L7 and L11 add about 26 B/px (edge and fresh
+planes, age, glaze film), so about 400 B/px (*projected*). These totals exclude planner proxies, lighting
+temporaries and snapshots.
+
+| Canvas | Mpx | Ochrell planes | Mixbox v1 (57 B/px) |
+|---|---:|---:|---:|
+| 600x750 | 0.45 | 168 MB (*measured*) | 26 MB |
+| 800x1000 | 0.80 | 298 MB | 46 MB |
+| 1200x1500 | 1.80 | 671 MB | 103 MB |
+| 1600x2000 | 3.20 | 1.19 GB | 182 MB |
+| 2400x3000 | 7.20 | 2.69 GB (*measured*) | 410 MB |
+
+Rows without a label are arithmetic from the *measured* 373 B/px.
+
+**Browser size limit** (decided: it follows the memory finding):
+- wasm32 memory tops out at 4 GiB in desktop Chromium and Firefox. iOS Safari kills tabs at about 1-1.5 GB.
+  These are reported limits, *not measured* here.
+- The host checks `width x height x bytesPerPixel(mixer)` against a budget before allocating, and refuses with
+  `CANVAS_TOO_LARGE`. The error carries the largest allowed size at the requested aspect, and the CLI command.
+- The defaults below are *projected*; L4 measures real peak memory in Chromium and Firefox and adjusts them.
+
+| Host | Default budget for canvas planes | Largest 4:5 canvas | Notes |
+|---|---|---|---|
+| desktop browser | 1.2 GB | 1600x2000 | a `maxCanvasBytes` option raises it at the author's risk |
+| mobile browser (touch UA) | 0.3 GB | 800x1000 | |
+| Node / native CLI | machine RAM | 2400x3000 (2.69 GB) and above | |
+
+**Memory modes.** v3's compact f16 mode is dropped because it was measured and rejected.
+1. **Contiguous** (default) keeps full f32 planes.
+2. **Tiled lossless storage** (L8), which Ochrell names as its next step.
+   - Canvas planes live in 64x64 tiles.
+   - A tile is *unallocated* until first touched (it reads as ground), *hot* (f32), or *cold* (compressed
+     losslessly: XOR-delta against the left neighbour, byte-plane shuffle, then an LZ-class coder under a
+     permissive licence).
+   - Before a segment is painted, every tile its bbox and pick-up can reach is made hot. An LRU keeps the hot set
+     under budget.
+   - Output is bit-identical to contiguous by construction (G2).
+   - Sparse allocation helps only while regions stay unpainted, and a finished scene touches everything. The win
+     therefore depends on the compression ratio of painted K/S data, which is **unknown**. L8 starts with a
+     half-day probe on the final 2400x3000 Storm Light canvas.
+   - If the ratio is at least 2.5x, desktop browsers can reach 2400x3000 in about 1.1 GB cold plus the hot set
+     (*projected*). Otherwise the browser limit stays as above, and big prints use the native CLI.
+3. **Compact mixer** (section 6). It changes the output, so it is a different mixer, not a memory mode.
+
+## 8. Timings
+
+| Storm Light, single thread | 600x750 | 1200x1500 | 2400x3000 |
+|---|---|---|---|
+| paint, Mixbox, laptop (Python dispatch + native) | 4.5 s (*measured*) | – | – |
+| paint, Ochrell, laptop, native | 18.0 s (*measured*) | ~59 s | ~225 s |
+| paint, Ochrell, WASM (Node / Chromium) | ~22 s | ~74 s | not in a browser without L8 tiling |
+| L8 target: halve the Ochrell pixel path | ≤ 10 s native, ≤ 12 s WASM | ~30 / ~37 s | ~110 s native |
+| relight, Rust | 0.05 s (*measured*, VM) | 0.21 s (*measured*, VM) | 1.55 s WASM (*measured*, VM) |
+
+How the unlabelled cells are projected:
+- Size scaling uses the spike kernel's ratios on the VM: 600 → 1200 was 3.3x, and 600 → 2400 was 12.5x.
+- WASM/native is 1.25x (Node det+SIMD 5.02 s against native detmath 4.04 s, VM).
+- The VM and the laptop are different machines. Ratios transfer; absolute numbers only roughly.
+
+**Planning at 600 px (WASM, single thread).**
+- v3 *projected* 5.5-7 s with a Mixbox proxy canvas: proxy painting 4.2-5.0 s, compile about 1 s, error planes
+  0.2-1.3 s, logic about 0.1 s.
+- With an Ochrell proxy, proxy painting is about 4x, so planning is about 18-22 s (*projected*).
+- Planning at plan width 320 (as the Ochrell integration run did) brings that to about 7-8 s (*projected*).
+
+**Agent loop** (*projected*):
+- A draft is 300 px paint plus plan width 300, about 10 s.
+- A 600 px preview is about 25-30 s in WASM, and about halved after L8.
+- `--draft` may also select the rgb mixer, for layout-only iterations, and says so in its JSON.
+- v3's "600 px in about 6 s" is not reachable with Ochrell.
+
+## 9. Agent-first deliverables (unchanged from v3 except for the timings)
+
+1. **Headless Node API and CLI** (same WASM, no browser): `oilpaint render scene.ts --preview --json`. It writes
+   PNGs and one JSON document an agent can read without looking at pixels:
+   - size, seed, **engine version**, mixer ID and portable flag;
    - timing per stage;
-   - per-layer strokes, coverage and metrics (`hairline`, `bristle_L`, `edge_step_p99`, `C_mean`, `L_p50`: the
-     eval-harness subset ported to `oil-metrics`);
-   - per-region coverage and stroke counts;
-   - warnings with codes, for example `REGION_NO_FLOW` (falls back to structure tensor), `REGION_UNPAINTED`,
-     `LAYER_OVERDRAW` (block-in >10 canvas areas), `BLACK_PIXELS`, `CLIPPING`;
-   - paths to the layer contact sheet and the guide sheet.
-2. **Short loops.**
-   - Draft render: 600 px in about 6 s (projected), 300 px in about 2 s.
-   - `--only-layer N` / `--only-region R` re-plans one layer from the cached canvas state before it and replays later
-     layers (today's `--only`, extended to regions).
-   - `--compare A.json B.json` reports metric deltas (the harness `compare` logic).
+   - per-layer strokes, coverage and metrics (`hairline`, `bristle_L`, `edge_step_p99`, `C_mean`, `L_p50`);
+   - per-region coverage;
+   - warnings with codes (`REGION_NO_FLOW`, `REGION_UNPAINTED`, `LAYER_OVERDRAW`, `BLACK_PIXELS`, `CLIPPING`,
+     `CANVAS_TOO_LARGE`);
+   - paths to the contact sheets.
+2. **Short loops:** draft and preview (section 8); `--only-layer N` / `--only-region R`; `--compare A.json B.json`.
 3. **Typed API and schema.**
-   - Rust spec types generate the JSON Schema, which generates the TS types: one source of truth.
-   - Brush presets, tubes, flows and style keys are shipped as a catalogue in data (name, description, units, range,
-     "raise it → / lower it →", taken from STYLE_REFERENCE.md).
-   - Validation errors are actionable. Example:
-     `{code: "UNITS", path: "/styles/sky/width", got: 25, expected: "[min,max] in canvas widths 0.001-0.2", fix: "25 px at 1200 px = 0.021; or set units: 'px'"}`.
-4. **Guide debug view:** `oilpaint guides scene.ts` renders region, flow, light and target sheets plus JSON stats
-   (region areas, overlaps, flow coherence), so an agent can check the scene before painting.
-5. **Docs for agents:**
-   - `AGENTS.md` plus a skill file: the workflow, the edit-render loop, and reading the JSON.
-   - A gallery of ~12 small scenes (5-15 lines each: sky gradient, sea, rock, tower, glow) plus Storm Light as the
-     full example.
-   - A recipe cookbook: lost edges, broken colour, glaze a glow, cut in an edge.
-6. **No Rust toolchain for authors:** prebuilt WASM in npm (and optional prebuilt native binaries for the CLI).
+   - Rust types generate the JSON Schema, which generates the TS types.
+   - A data catalogue of brush presets, tubes, flows and style keys (name, units, range, "raise it → / lower it →").
+   - Actionable validation errors, for example `{code, path, got, expected, fix}`.
+4. **Guide debug view:** `oilpaint guides scene.ts` renders the sheets plus JSON stats.
+5. **Docs for agents:** `AGENTS.md` and a skill file, a gallery of about 12 small scenes plus Storm Light, and a
+   recipe cookbook.
+6. **No Rust toolchain needed by authors:** prebuilt WASM in npm, with optional prebuilt native CLI binaries.
 
-## 7. Licence and packaging
+## 10. Licence and packaging
 
-MIT throughout. The default mixer is our Kubelka-Munk mixer on spectral.js data (MIT):
-- Tested: blue+yellow gives a vivid green, tints stay clean, and Storm Light looks nearly the same as with Mixbox.
-- Differences: ultramarine+yellow goes olive, and the harness sheet shows chroma 45 → 36 and a muddier mud stack.
-- It needs a 3-day calibration against real paint charts (`evidence/sheet_mixbox_vs_km12.png`). The libmypaint WGM
-  mixer was rejected as too dull.
-- Mixbox becomes an optional `@oilpaint/mixbox` package (CC BY-NC).
+**Code.** MIT throughout. New dependencies are serde, serde_json and schemars, plus optional rayon (all MIT or
+Apache), `json-schema-to-typescript` and mp4-muxer (MIT). p5 (LGPL) is a peer dependency, never bundled. There is
+no GPL code; libmypaint and Krita are for ideas only.
 
-New dependencies: serde, serde_json, schemars, optional `libm` and rayon (all MIT/Apache); `json-schema-to-typescript`
-and mp4-muxer (MIT). p5 (LGPL) is a peer dependency, never bundled. No GPL.
+**Ochrell's data is CC BY-SA 4.0.** This is my reading, not legal advice.
+- **What is covered.** The runtime needs Ochrell's generated tables (`src/optical_generated.rs`: the basis
+  spectra and the CIE-derived quadrature weights). Ochrell licenses these, conservatively, as CC BY-SA 4.0 derived
+  data, because they derive from CIE 2019 datasets under that licence (`../ochrell/data/README.md`). Any build
+  with the default mixer, WASM or native, therefore contains CC BY-SA material.
+- **Attribution.** Anyone who shares it, including every app that bundles oilpaint, must:
+  - credit CIE (and the Colour transport notice), with the DOIs;
+  - name the licence, with a link;
+  - keep the disclaimer;
+  - say that the data was modified.
 
-Packages:
-- `oilpaint`: API, hosts and CLI.
-- `@oilpaint/core`: WASM.
-- `@oilpaint/mixbox`: the optional Mixbox plug-in.
+  A licences file in the package, plus a runtime `oil.notices()`, satisfies "reasonable to the medium".
+- **ShareAlike.** It binds the *adapted data*. Changed tables must be shared under BY-SA 4.0, or GPLv3 as the
+  compatible licence. It does not, on the usual reading and CC's own FAQ, turn the engine code that uses the data
+  into BY-SA.
+  - The combined artefact is **"MIT AND CC-BY-SA-4.0"**, the position Ochrell's README already takes for itself.
+  - Commercial use is allowed (unlike Mixbox).
+  - No terms or DRM may be added on top of the data.
+  - Paintings rendered with it are computed results, not adaptations of the tables.
+- **Consequence for "an MIT library".** It is not a pure-MIT artefact. Some corporate licence policies flag
+  BY-SA, even though the obligations are mostly attribution.
+- **Options:**
+  - **(A) Ship as is (recommended for the alpha).** The package licence is `(MIT AND CC-BY-SA-4.0)`, the tables
+    stay isolated inside the Ochrell crate, and the notices are exposed.
+  - **(B)** Move the tables to a separately shipped data file. The code artefacts become pure MIT; the
+    obligations for the data do not change, and Ochrell needs an API change.
+  - **(C)** Regenerate the tables from permissive sources, for example an analytic CMF fit. That is a
+    model-changing Ochrell project with its own evaluation.
+  - **(D)** Ship Ochrell as `@oilpaint/ochrell`, separate from an MIT core whose default is rgb. That contradicts
+    "Ochrell is the default".
+- **Nothing is published** (npm, crates.io, public repo) with the tables inside until Sean chooses. Today
+  `../ochrell` is a path dependency, so nothing is vendored into this repo.
 
-Delivery: ESM plus an IIFE build, `instantiateStreaming` with a single-file inlined build for CDNs. Tests: cargo
-(golden digests); Node vitest; Playwright on Chromium and Firefox checking StrokeList and plane SHA-256 across hosts.
-CI: GitHub Actions, plus a nightly Python harness run. Python stays the reference and golden generator; its planner
-retires after level E, and the frozen C after L1.
+**Packages:**
+- `oilpaint`: API, hosts and CLI. The name was free on npm on 2026-09-30.
+- `@oilpaint/core`: the WASM.
+- `@oilpaint/mixbox`: the non-commercial plug-in. The `@oilpaint` scope needs an npm org and is unverified.
 
-## 8. Milestones
+**Delivery.** ESM plus an IIFE build, and `instantiateStreaming` with a single-file inlined build for CDNs.
+- Tests: cargo (goldens), Node vitest, and Playwright on Chromium and Firefox checking the G1 hashes.
+- CI: GitHub Actions matrix (Windows, Linux, macOS native, plus Node and the browsers). While the harness lives, a
+  nightly Python harness run.
 
-| L | Content | Days | Depends | Ends with |
-|---|---|---|---|---|
-| L0 | freeze strict C, golden corpus, StrokeList v2 + ScenePlan spec drafts, parity CI | 2 | – | parity table |
-| L1 | Rust kernel, lighting, image ops, mixers, math, CLI, ctypes shim | 3 | L0 | harness report Rust vs C |
-| L2 | ScenePlan v1 + JSON Schema + Rust spec compiler + TS DSL + validation | 4 | L1 | Storm Light guide sheets from TS; compile time measured |
-| L3 | Rust planner port + composed `plan` + toolbox exports + incremental error planes | 5 | L2 | level E on Storm Light; identical StrokeList SHA in Node and Chromium |
-| L4 | WASM host: Worker, Level-1 API, standalone and p5 adapters, frames, time-lapse | 4 | L3 | demo pages: brush playground, Storm Light painting live |
-| L5 | agent tooling: headless API/CLI JSON, `oil-metrics`, partial re-render, catalogue, guide view, AGENTS.md, gallery, cookbook | 5 | L3 (L4 for docs) | agent runs the gallery from AGENTS.md alone |
-| L6 | calibrated open mixer default, Mixbox plug-in | 3 | L1 | swatch comparison; **public alpha** |
-| L7 | paint that settles (taper, displacement, fresh-paint levelling, spline outlines) | 3 | L1 | A/B/C strip (v1 evidence) |
-| L8 | speed: threads native + WASM, per-pixel work, lighting worker | 4 | L4 | timing table, threads identical |
-| L9 | planner fixes: cut-in edges, rock facets, halo glaze, tube palettes | 3 | L3, L11 for halo | tower/rock/halo crops |
-| L10 | brush memory, flat/filbert/round, twist and speed | 4 | L1 | brush demo |
-| L11 | wet/dry stages, optical glazes | 3 | L1 | glow/haze before/after |
-| L12 | palette knife | 3 | L1 | knife demo |
-| L13 | 1.0: docs site, CI hardening, release | 2 | all | published package |
+## 11. Milestones (re-cut)
 
-Total **≈48 agent-days**, against 41 in v2. The public alpha lands after L6, at ~26 days.
-- **Cheaper (−2):** no JS detmath, no JS-vs-Rust planner parity tests, no marshalling split between JS logic and WASM
-  pixel ops, one numeric implementation.
-- **More expensive (+9):** Rust port of the planner heuristics (+1 over TS), the Rust spec compiler with schema and TS
-  DSL (+2), agent tooling (+5, new), and metrics in Rust (+1, inside L5).
+Milestone IDs are kept from v3 so that references stay valid; the **Order** column is the execution order. The
+physics milestones run straight after the planner port and its retirement commit, so that:
+- the Python planner never has to drive new physics;
+- the plane layout (memory design) is final before the hosts;
+- the brush-parameter catalogue and the gallery are written once.
 
-**Browser expectations for Storm Light:**
-- Single thread, on this 2.1 GHz VM: plan ~6-7 s (projected); paint 1200x1500 ~16 s and 2400x3000 ~60 s (measured).
-- With threads (projected): 1.3-1.6x on 2 cores, and perhaps 2-3x on 8 cores for big strokes.
+| Order | L | Content | Days | Depends | Ends with |
+|---|---|---|---|---|---|
+| 1 | L0 | v1 tag; StrokeList v2 and ScenePlan v1 spec drafts (engine version, mixer ID, error codes); golden layout; cross-host determinism CI skeleton; `.gitattributes` | 1.5 | – | specs, CI skeleton runnable locally |
+| 2 | L1 | Rust workspace: `oil-math` (pure-Rust maths, sRGB), `oil-mix` (Mixer trait, Ochrell default via `decode_linear`/`encode_linear`, rgb, Mixbox opt-in), kernel port (row-span storage, counter RNG, int64 sums), image ops, lighting, StrokeList v2 codec with version gate, CLI, ctypes shim, first goldens | 4 | L0 | P1 and P2 reports; G1 native = Node on the sheet; G4 tests |
+| 3 | L2 | ScenePlan v1 + JSON Schema + Rust spec compiler + TS DSL + validation | 4 | L1 | Storm Light guide sheets from TS; compile time measured |
+| 4 | L3 | Rust planner port + composed `plan` + toolbox exports + incremental error planes; then the retirement commit | 5 | L2 | level E; identical StrokeList SHA on native, Node, Chromium and Firefox |
+| 5 | L7 | paint that settles (height taper, wet displacement, fresh-paint levelling, spline outlines, default light) straight in the kernel, no v1 flags | 2.5 | L3 | A/B/C strip; harness strata, facet and hairline acceptance (ENGINE_PLAN 3.2) |
+| 6 | L11 | wet/tacky/dry stages and the optical KM glaze film (+16 B/px) | 2.5 | L7 | glow/haze before and after; glaze swatch acceptance |
+| 7 | L4 | WASM host: Worker, Level-1 API, standalone and p5 adapters, frames, time-lapse; memory budget and size limits, measured | 4 | L11 | demo pages; peak-memory table in Chromium and Firefox |
+| 8 | L5 | agent tooling: headless API/CLI JSON, `oil-metrics`, partial re-render, catalogue, guide view, AGENTS.md, gallery, cookbook; Python harness retired once `oil-metrics` matches it | 5 | L4 | agent runs the gallery from AGENTS.md alone |
+| 9 | L6 | mixers for release: Mixbox plug-in package, Ochrell-vs-Mixbox swatch sheet, harness mix metrics relative to the active mixer, licence packaging per Sean's choice (section 10) | 1.5 | L5 | swatch comparison; **public alpha** |
+| 10 | L8 | memory and speed: tile store with lossless cold tiles (probe first); Ochrell pixel path (state traffic, lane-order SIMD128, sRGB LUT); threads native + WASM; lighting worker | 7 | L6 | memory and timing tables; G2 across threads and memory modes |
+| 11 | L9 | planner fixes: cut-in edges, rock facets, halo glaze, tube palettes | 3 | L3, L11 | tower, rock and halo crops |
+| 12 | L10 | brush memory, flat/filbert/round, twist and speed | 3.5 | L1 | brush demo |
+| 13 | L12 | palette knife | 3 | L1 | knife demo |
+| 14 | L13 | 1.0: docs site, CI hardening, release | 2 | all | published package |
+
+Total **≈ 48.5 agent-days** (v3: 48). The public alpha lands after L6, at about 30 days. It now includes the
+settling-paint and glaze physics, which v3 placed after its alpha at 26 days.
+- **Cheaper (−3.5):**
+  - L0: no strict-C freeze or C-derived golden corpus (−0.5);
+  - L6: no 3-day calibration, and Ochrell is already integrated (−1.5);
+  - L7, L10, L11: no v1-default flags or v1 digests (−1.5).
+- **More expensive (+4):**
+  - L1: the Mixer trait for an 85-float state, pure sRGB/pow with `encode_linear`, the version gate (+1);
+  - L8: tiled lossless storage and the Ochrell pixel path (+3).
 
 **Risks:**
-- Planner heuristics that hide in numpy behaviour: level E catches them.
-- Spec expressiveness vs. hooks: portability flag.
-- Rust port verbosity: the toolbox stages double as test seams.
-- The threaded WASM toolchain: the single-thread default is unaffected.
-- iOS memory: compact mode.
-- Open-mixer look: calibration plus the Mixbox plug-in.
-- `detmath` cost ~10%: f32 polynomials.
-- Agent JSON drifting from the harness: a shared metric crate, and the harness calls it.
+- **Ochrell cost** (4x paint time and 6.5x memory, measured) is handled by L8 and the browser limits. A speed-parity
+  claim with Mixbox would be unsupported.
+- **Ochrell is under active development** (an optimisation round in progress). It is pinned by commit, its model
+  version goes into the engine version, and goldens catch drift.
+- **Tile compression ratio unknown.** It is measured before building; if it is poor, the browser limit stays.
+- **Level E needs Mixbox in Rust.** It comes from the opt-in crate, used only by the port check.
+- Planner heuristics that hide in numpy behaviour are caught by level E.
+- The threaded WASM toolchain does not affect the single-thread default.
+- `oil-math` costs about 10% (*measured* for detmath on the VM).
+- Agent JSON drifting from the harness is prevented by a shared metric crate.
 
-## 9. Questions for Sean (my default in brackets)
+## 12. Decisions and open questions
 
-1. **Old paintings:** must old stroke files keep repainting pixel-identical? [Yes, via the Rust legacy mode, already
-   bit-identical to strict C.]
-2. **Scene freedom:** how much scene-authoring freedom up front? Declarative only, or declarative plus JS functions?
-   [Declarative plus pure-function hooks, sampled or in custom loops; hooks mark a plan non-portable.]
-3. **Default colours:** is an open mixer that makes ultramarine+yellow olive until calibrated acceptable for the
-   alpha? [Yes, with Mixbox as an opt-in plug-in.]
-4. **Calibration data:** calibrate against real paint charts rather than Mixbox output? [Yes.]
-5. **Browser size:** what is the largest size the browser must reach? [2400x3000 on desktop; bigger via the CLI.]
-6. **Threads:** is the fast threaded mode only on pages that send two security headers acceptable? [Yes;
-   single-thread works everywhere.]
-7. **Name and order:** npm name `oilpaint`, alpha after L6, physics after? [Yes, if the name is free.]
+**Decided (Sean, 2026-09-30):**
+1. **Hard break.** Old stroke files are not repainted; tag `v1-python-c` reproduces Storm Light.
+2. **Ochrell is the default mixer.** Mixbox is an opt-in plug-in, and v3's calibration step is dropped.
+3. **Scene freedom:** declarative primitives plus pure-function hooks, with hooks marked non-portable.
+4. **Threads are optional.** Single-thread works everywhere; the threaded build needs `crossOriginIsolated`.
+5. **npm name `oilpaint`.**
+6. **The browser size limit follows the memory finding** (section 7).
+
+**Open for Sean:**
+1. **Ochrell data licence** (section 10): A, B, C or D, before anything is published. I recommend A.
+2. **Visual sign-offs:** the level E side-by-side (L3), and the sky fluidity setting (L7, three settings shown).
+3. **Carried from ENGINE_PLAN** (decide by L8): halve the block-in strokes (a 44% kernel-time layer), and
+   1200-px layer images by default.

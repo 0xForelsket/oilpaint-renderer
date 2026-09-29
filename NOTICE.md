@@ -30,4 +30,13 @@ add a LICENSE file before sharing the repo.
 - `spikes/mixers/helpers.c`, `helpers.h`: taken from **libmypaint** (c) Martin Renold and contributors, ISC licence
   (`spikes/mixers/COPYING_libmypaint`). Used only to test its spectral mixer against Mixbox; the plan does not ship it.
 - `spikes/mixers/spectral_data.json`: data tables from **spectral.js 3.0.0**, MIT licence
-  (`spikes/mixers/LICENSE_spectral.js`). The plan's default open mixer is built on these tables.
+  (`spikes/mixers/LICENSE_spectral.js`). Used by the KM-12 mixer spike only. The v3 plan's open mixer was built on
+  these tables; the current plan (v4) uses Ochrell instead and does not ship them.
+
+## Library plan (v4): what the new engine will ship
+
+Nothing below is published yet. See `docs/plans/LIBRARY_PLAN.md`, section 10.
+- Ochrell (default mixer): code MIT OR Apache-2.0. Its generated optical tables are CC BY-SA 4.0 (derived from
+  CIE 2019 data), so any build with the default mixer is "MIT AND CC-BY-SA-4.0" and must carry the attribution
+  listed in `../ochrell/data/README.md`. The publishing choice is Sean's (plan section 10, options A-D).
+- Mixbox: only in the opt-in `oil-mix-mixbox` crate and `@oilpaint/mixbox` package (CC BY-NC 4.0, non-commercial).
