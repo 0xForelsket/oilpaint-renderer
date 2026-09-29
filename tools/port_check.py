@@ -1,5 +1,6 @@
 """Port check P1 (docs/plans/LIBRARY_PLAN.md, section 5): paint the same strokes with two kernel libraries behind
-the brush.c ABI and compare every canvas plane.
+the brush.c ABI and compare every canvas plane. Historical: it served L1 steps 1-2 (commits a9c573a, 8c87223); since
+the material-transport switch the new kernel no longer serves this ABI and the script refuses to load it.
 
 Step 1 compares the new kernel (crates/oil-shim) with the Rust spike kernel (spikes/oilcore) built with `detmath`,
 which uses the same pure-Rust exp/sin as oil-math: the port must be bit-identical. The spike itself was shown
@@ -38,6 +39,10 @@ def cargo(*args):
 
 def load(path):
     lib = ctypes.CDLL(path)
+    if hasattr(lib, "ochrell_bridge_abi"):
+        raise SystemExit("port_check.py compares kernels behind v1's brush.c ABI (L1 steps 1-2, commits a9c573a and 8c87223). "
+                         "The new kernel now has only the material transport and serves the Ochrell bridge ABI: compare with "
+                         "`eval run --mixer mixbox-material` under OILPAINT_KERNEL=oil vs rust instead.")
     fp = ctypes.POINTER(ctypes.c_float)
     lib.render_stroke.argtypes = [ctypes.POINTER(CCanvas), fp, ctypes.c_int, fp, fp, fp, ctypes.POINTER(BrushParams), fp]
     lib.render_stroke.restype = ctypes.c_int
