@@ -14,6 +14,8 @@ was re-cut as v4 before any library code was written.
 | `evidence/engine/` | Images and logs behind `ENGINE_PLAN_v1.md` (before/after, flaw crops, glaze and knife prototypes, profiles). |
 | `evidence/library/` | Images behind the library plan (mixer ramps, Mixbox vs open mixer, Python vs Rust relight). |
 
+Milestone reports (measured results against this plan) are in `docs/reports/` (L1: `docs/reports/L1.md`).
+
 The Ochrell measurements that v4 relies on live in the sibling repo, in `../ochrell/docs/integration-results.md`
 (taken on the Windows laptop). `docs/OCHRELL.md` shows how to run the integration here.
 

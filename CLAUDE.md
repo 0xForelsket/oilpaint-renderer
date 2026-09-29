@@ -22,8 +22,9 @@ State of the repo:
   `native/ochrell-brush`. The Rust spike kernel is `spikes/oilcore`.
 - **Ochrell** (`../ochrell`, MIT OR Apache-2.0 code, CC BY-SA 4.0 data): the default mixer of the new engine.
   Its integration evidence is in `docs/OCHRELL.md` and `../ochrell/docs/integration-results.md`.
-- **The new engine:** the Rust workspace in `crates/`, the TypeScript packages in `packages/`, and the specs in
-  `spec/`, all built from L0 onwards.
+- **The new engine:** the Rust workspace in `crates/`, the TypeScript packages in `packages/` (from L2), and the
+  specs in `spec/`. Engine version `2.0.0-dev.1` since L1; Ochrell is pinned by commit (Cargo git dependency in
+  `crates/oil-mix/Cargo.toml`). Milestone reports: `docs/reports/`.
 
 ## Rules
 
@@ -53,9 +54,10 @@ State of the repo:
 6. **Ochrell edits.** Keep its invariants: no `unsafe`, no dependencies, and its own tests green. It has its own
    git repo. Another agent may be working there (for example the optimisation rounds in
    `docs/optimization-*.md`), so check `git status` there first and never touch files you did not write.
-   - Sean's decision: the engine does not use Ochrell until that agent is done (a clean tree and its round
-     committed).
-   - Then pin a commit and build against a clean checkout of it, never the live folder.
+   - The engine pins an Ochrell commit and Cargo builds a clean checkout of it, never the live folder. To move the
+     pin, wait for a clean Ochrell tree with its rounds committed, then update `rev` and re-run the goldens.
+   - An additive change there (like `encode_linear`, `ffd6ee9`) keeps existing results bit-identical, runs its
+     tests and regenerates `MANIFEST.sha256` exactly as `tools/package_release.py` does, without writing the zip.
 7. **Git.**
    - Small commits with clear messages, and no attribution trailers.
    - Never rewrite history, never force-push, never delete Sean's outputs (`out/`, renders, stroke files).
@@ -100,7 +102,19 @@ $env:PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"; npm install         # Playwright 1.
 npm run xhost          # cross-host check: native + Node + Chromium + Firefox + WebKit, then compare (ci/xhost)
 ```
 
-From L1: `cargo run --release -p oil-cli -- --help`.
+The `oil` CLI (build with `--features mixbox` for the opt-in Mixbox mixer):
+
+```powershell
+cargo build --release -p oil-cli --features mixbox
+.\target\release\oil.exe testsheet --out out\ts.oilstrokes
+.\target\release\oil.exe paint out\ts.oilstrokes --width 800 --mixer ochrell --light painting --out out\ts
+.venv\Scripts\python.exe tools\plan_to_strokelist.py scenes\storm_v3.py out\storm.oilstrokes   # Python planner -> StrokeList v2
+node ci/xhost/scene.mjs --strokes out\storm.oilstrokes --width 600 --hosts native,node,chromium   # timing + full-scene determinism
+```
+
+The Python harness can drive the new kernel through `crates/oil-shim`: set `OILPAINT_KERNEL=oil` and use a material
+mixer (`--mixer ochrell` or `mixbox-material`). Judge engine changes over several seeds (8 in L1): the harness's
+single-seed thresholds are tighter than the seed-to-seed spread of the mixing and outline metrics.
 
 ## Conventions
 
