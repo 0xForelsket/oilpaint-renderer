@@ -1,10 +1,14 @@
-# StrokeList v2 (draft)
+# StrokeList v2
 
 The planner's output and the painter's input: an ordered list of brush strokes in canvas-width units. It
 replays at any resolution and with any mixer.
 
-- **Status:** draft written in L0. L1 freezes it with the Rust codec (`crates/oil-strokes`). Until then field
-  lists may change; after that they change only together with an engine-version bump.
+- **Status:** implemented in L1 by the Rust codec `crates/oil-strokes` (reader, writer, validation) and a Python
+  writer for the port checks, `oilpaint/strokelist.py`. The layout below changes only together with an
+  engine-version bump.
+- **Changes from the L0 draft:** the per-stroke `arclen` field was dropped. The kernel measures the stroke length
+  in brush widths from the cw points itself, which makes the bristle sample count size-independent without
+  storing anything.
 - **File extension:** `.oilstrokes`. **Media type:** `application/x-oilpaint-strokes`.
 - **Replaces:** v1's `strokes.npz`. That format is refused (`V1_STROKE_FILE`); there is no converter.
 
@@ -98,46 +102,48 @@ count, and every stroke has at least 2 points.
 `x, y, w, p` as f32: position in cw, full brush width in cw (> 0), pressure in [0, 1]. L10 appends twist and speed
 columns.
 
-### `STRK`: stroke records (148 bytes per stroke for `2.0.0-dev.1`)
+### `STRK`: stroke records (144 bytes per stroke)
 
 All fields are 4 bytes. `u32` fields are marked; the rest are f32.
 
 | # | Field | Range | Meaning |
 |---:|---|---|---|
-| 0 | layer (u32) | < layer count | layer id |
+| 0 | layer (u32) | < layer count | layer id; the stroke must lie inside that layer's range |
 | 1 | region (u32) | < region count, or `0xFFFFFFFF` | region id; none for Level-1 strokes |
 | 2 | seed (u32) | any | per-stroke seed of the counter RNG |
 | 3 | mode (u32) | 0-3 | 0 paint, 1 scumble, 2 smudge, 3 glaze |
 | 4-6 | color | [0, 1] | main load, sRGB |
 | 7-9 | color2 | [0, 1] | second load for `marble` (equals `color` when there is none) |
 | 10 | streakAmount | ≥ 0 | scales the per-bristle colour variation. The painter derives the streak direction from `color` with the painting mixer. |
-| 11 | arclen | > 0 | polyline length in cw, computed by the writer in f64. It indexes the counter RNG, so a replay at any size draws the same bristle pattern. |
-| 12 | opacity | [0, 1] | |
-| 13 | pickup | [0, 1] | share of wet paint picked up from the canvas |
-| 14 | load | ≥ 0 | paint on the brush at the start |
-| 15 | deplete | ≥ 0 | load lost per unit length |
-| 16 | vdry | ≥ 0 | how fast the tail dries out |
-| 17 | hgain | ≥ 0 | paint thickness |
-| 18 | flatten | [0, 1] | share of the surface the stroke replaces |
-| 19 | streak | ≥ 0 | streak strength |
-| 20 | hardness | [0, 1] | edge crispness |
-| 21 | grain | ≥ 0 | canvas-grain catch |
-| 22 | dryThresh | ≥ 0 | load below which the brush skips |
-| 23 | dryWidth | > 0 | width of the dry transition |
-| 24 | nb (u32) | 3-72 | bristle lanes |
-| 25 | dropout | [0, 1] | |
-| 26 | ragged | ≥ 0 | outline raggedness |
-| 27 | body | [0, 1] | paint body between lanes |
-| 28 | release | [0, 1] | |
-| 29 | streakMix | [0, 1] | |
-| 30 | ridge | ≥ 0 | lane ridge relief |
-| 31 | levee | ≥ 0 | edge levees |
-| 32 | furrow | ≥ 0 | centre trough |
-| 33 | blob | ≥ 0 | start blob |
-| 34 | stiff | ≥ 0 | multi-scale roughness |
-| 35 | marble | [0, 1] | two-colour load share |
-| 36 | splay | [0, 3] | stray hairs |
+| 11 | opacity | [0, 1] | |
+| 12 | pickup | [0, 1] | share of wet paint picked up from the canvas |
+| 13 | load | ≥ 0 | paint on the brush at the start |
+| 14 | deplete | ≥ 0 | load lost per unit length |
+| 15 | vdry | > 0 | how fast the tail dries out |
+| 16 | hgain | ≥ 0 | paint thickness |
+| 17 | flatten | [0, 1] | share of the surface the stroke replaces |
+| 18 | streak | ≥ 0 | streak strength |
+| 19 | hardness | [0, 1] | edge crispness |
+| 20 | grain | ≥ 0 | canvas-grain catch |
+| 21 | dryThresh | ≥ 0 | load below which the brush skips |
+| 22 | dryWidth | > 0 | width of the dry transition |
+| 23 | nb (u32) | 2-68 | bristle lanes |
+| 24 | dropout | [0, 1] | |
+| 25 | ragged | ≥ 0 | outline raggedness |
+| 26 | body | [0, 1] | paint body between lanes |
+| 27 | release | [0, 1] | |
+| 28 | streakMix | [0, 1] | |
+| 29 | ridge | ≥ 0 | lane ridge relief |
+| 30 | levee | ≥ 0 | edge levees |
+| 31 | furrow | ≥ 0 | centre trough |
+| 32 | blob | ≥ 0 | start blob |
+| 33 | stiff | ≥ 0 | multi-scale roughness |
+| 34 | marble | [0, 1] | two-colour load share |
+| 35 | splay | [0, 3] | stray hairs |
 
+The bristle pattern depends only on `seed`, the lane and the sample index along the stroke (a counter-based hash).
+The sample count comes from the stroke's length in brush widths, measured from the cw points, so a stroke draws the
+same bristles at every canvas size.
 v1's `allow_mask` and `override_p` were never used by the kernel and are dropped, together with the canvas region
 plane. L7, L10, L11 and L12 append fields: `edgeTaper`, `displace`, `flow`, `smoothPath`, `brushId`, `shape`,
 blade parameters, and so on.
@@ -174,4 +180,4 @@ along the points scaled by W.
 ## Size
 
 Storm Light has about 14,000 strokes and 150,000 points (*projected* from the v1 list), so the file is about 2.4 MB of
-points, 2.1 MB of records and 1 KB of metadata. gzip typically halves it.
+points, 2.0 MB of records and 1 KB of metadata. gzip typically halves it.
