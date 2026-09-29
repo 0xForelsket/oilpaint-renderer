@@ -22,6 +22,7 @@ oil-mix = { path = "../oil-mix" }
 oil-mix-mixbox = { path = "../oil-mix-mixbox" }
 oil-paint = { path = "../oil-paint" }
 oil-light = { path = "../oil-light" }
+oil-strokes = { path = "../oil-strokes" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 sha2 = "0.10"

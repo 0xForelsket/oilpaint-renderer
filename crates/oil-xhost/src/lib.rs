@@ -136,6 +136,22 @@ fn control_exp() -> Vec<u8> {
     f64_bytes(grid(N, -80.0, 20.0).map(f64::exp))
 }
 
+/// Paint a StrokeList (the bytes of an `.oilstrokes` file) at `width` with mixer 0 = Ochrell, 1 = rgb, 2 = Mixbox and
+/// return the display (rgb) plane's bytes: `ci/xhost/scene.mjs` times this in WASM hosts and compares the digest with
+/// the native CLI's `sha256.rgb` for the same file.
+pub fn paint_strokelist(bytes: &[u8], width: u32, mixer: u32) -> Result<Vec<u8>, String> {
+    let list = oil_strokes::StrokeList::from_bytes(bytes).map_err(|e| e[0].to_string())?;
+    fn rgb<M: Mixer>(m: &M, list: &oil_strokes::StrokeList, width: u32) -> Vec<u8> {
+        let (cv, _) = oil_paint::paint(m, list, width, |_, _| {});
+        oil_paint::plane_bytes(&cv, "rgb")
+    }
+    match mixer {
+        0 => Ok(rgb(&OchrellMixer, &list, width)),
+        1 => Ok(rgb(&RgbMixer, &list, width)),
+        2 => Ok(rgb(&MixboxMixer, &list, width)),
+        _ => Err(format!("unknown mixer {mixer}")),
+    }
+}
 /// C-ABI exports for the WASM hosts (no bindgen: the JS side is `ci/xhost/wasm-host.mjs`). Results are returned
 /// through one buffer: a call returns a byte length, then `xhost_buf_ptr` gives its address in linear memory.
 #[cfg(target_arch = "wasm32")]
@@ -144,6 +160,7 @@ mod wasm_abi {
     use std::sync::Mutex;
 
     static BUF: Mutex<Vec<u8>> = Mutex::new(Vec::new());
+    static INPUT: Mutex<Vec<u8>> = Mutex::new(Vec::new());
 
     fn put(bytes: Vec<u8>) -> u32 {
         let len = bytes.len() as u32;
@@ -179,6 +196,28 @@ mod wasm_abi {
         put((super::cases()[i as usize].run)())
     }
 
+    /// Make room for `len` input bytes and return their address (the host copies a StrokeList there).
+    #[no_mangle]
+    pub extern "C" fn xhost_input(len: u32) -> u32 {
+        let mut input = INPUT.lock().unwrap();
+        input.clear();
+        input.resize(len as usize, 0);
+        input.as_ptr() as usize as u32
+    }
+
+    /// Paint the input StrokeList; returns the rgb plane's length in the result buffer, or 0 with an error message
+    /// in the result buffer.
+    #[no_mangle]
+    pub extern "C" fn xhost_paint(width: u32, mixer: u32) -> u32 {
+        let input = std::mem::take(&mut *INPUT.lock().unwrap());
+        match super::paint_strokelist(&input, width, mixer) {
+            Ok(rgb) => put(rgb),
+            Err(e) => {
+                put(e.into_bytes());
+                0
+            }
+        }
+    }
     #[no_mangle]
     pub extern "C" fn xhost_buf_ptr() -> u32 {
         BUF.lock().unwrap().as_ptr() as usize as u32
