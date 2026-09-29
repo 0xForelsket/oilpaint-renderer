@@ -8,7 +8,7 @@
 
 use oil_kernel::Canvas;
 use oil_light::LightParams;
-use oil_mix::{Mixer, RgbMixer};
+use oil_mix::{Mixer, OchrellMixer, RgbMixer};
 use oil_mix_mixbox::MixboxMixer;
 use oil_paint::testsheet::testsheet;
 use std::sync::OnceLock;
@@ -53,6 +53,7 @@ fn build_cases() -> Vec<Case> {
         case("control.libm.exp", Expect::MayDiffer, control_exp),
         case("strokes.testsheet", Expect::Identical, || testsheet().to_bytes()),
     ];
+    kernel_cases::<OchrellMixer>(&mut v, "ochrell", painted_ochrell);
     kernel_cases::<RgbMixer>(&mut v, "rgb", painted_rgb);
     kernel_cases::<MixboxMixer>(&mut v, "mixbox", painted_mixbox);
     v
@@ -65,6 +66,11 @@ fn paint_sheet<M: Mixer + Default>() -> Painted<M> {
     let (cv, _) = oil_paint::paint(&M::default(), &testsheet(), SHEET_WIDTH, |_, _| {});
     let lit = oil_light::relight(&cv.rgb, &cv.hgt, cv.w, cv.h, &LightParams::default());
     (cv, lit)
+}
+
+fn painted_ochrell() -> &'static Painted<OchrellMixer> {
+    static P: OnceLock<Painted<OchrellMixer>> = OnceLock::new();
+    P.get_or_init(paint_sheet::<OchrellMixer>)
 }
 
 fn painted_rgb() -> &'static Painted<RgbMixer> {

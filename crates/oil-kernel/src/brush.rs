@@ -750,7 +750,7 @@ pub fn render_stroke_len<M: Mixer>(
                     }
                     let a = alpha;
                     if mode == MODE_GLAZE {
-                        oil_mix::composite_srgb(&mut cv.rgb[idx], m.decode_srgb(&zpix), a);
+                        oil_mix::composite(&mut cv.rgb[idx], m.decode_linear_rgb(&zpix), a);
                     } else {
                         let incoming = a * source_amount;
                         if incoming > 0.0 {
@@ -763,7 +763,7 @@ pub fn render_stroke_len<M: Mixer>(
                                 lpix[k] = (1.0 - tm) * lpix[k] + tm * zp[k];
                             }
                             cv.amount[idx] = total;
-                            oil_mix::composite_srgb(&mut cv.rgb[idx], m.decode_srgb(&cv.lat[idx]), a);
+                            oil_mix::composite(&mut cv.rgb[idx], m.decode_linear_rgb(&cv.lat[idx]), a);
                         }
                     }
                     let base = hprev + (hcur - hprev) * t;

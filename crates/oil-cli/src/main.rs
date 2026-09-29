@@ -3,13 +3,13 @@
 //!   oil version                                   engine version and mixers in this build (JSON)
 //!   oil info FILE.oilstrokes                      header, counts and validation (JSON)
 //!   oil testsheet --out FILE.oilstrokes           write the procedural test sheet
-//!   oil paint FILE.oilstrokes --width W [--mixer ID] [--light default|painting|none] [--out DIR]
+//!   oil paint FILE.oilstrokes --width W [--mixer ochrell|rgb|mixbox] [--light default|painting|none] [--out DIR]
 //!                                                 paint; writes unlit.png, lit.png, height.png, report.json
 //!
 //! Every command prints one JSON document on stdout. Errors are JSON too ({"error": {...}}, spec/ERRORS.md) with
 //! exit code 1; usage errors exit with 2.
 use oil_light::LightParams;
-use oil_mix::{Mixer, RgbMixer};
+use oil_mix::{Mixer, OchrellMixer, RgbMixer};
 use oil_strokes::{Error, StrokeList};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -18,7 +18,7 @@ use std::time::Instant;
 
 fn mixers() -> Vec<&'static str> {
     #[cfg_attr(not(feature = "mixbox"), allow(unused_mut))]
-    let mut m = vec![RgbMixer::ID];
+    let mut m = vec![OchrellMixer::ID, RgbMixer::ID];
     #[cfg(feature = "mixbox")]
     m.push(oil_mix_mixbox::MixboxMixer::ID);
     m
@@ -144,8 +144,9 @@ fn main() {
             };
             let out = opt("--out").map(PathBuf::from);
             let list = read_list(path);
-            let mixer = opt("--mixer").unwrap_or("rgb");
+            let mixer = opt("--mixer").unwrap_or("ochrell");
             let report = match mixer {
+                "ochrell" | "ochrell-0.2" => paint_with(&OchrellMixer, &list, w, light, out.as_deref()),
                 "rgb" => paint_with(&RgbMixer, &list, w, light, out.as_deref()),
                 #[cfg(feature = "mixbox")]
                 "mixbox" | "mixbox-2.0" => paint_with(&oil_mix_mixbox::MixboxMixer, &list, w, light, out.as_deref()),

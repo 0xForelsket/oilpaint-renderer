@@ -9,6 +9,10 @@ publish.workspace = true
 
 [dependencies]
 oil-math = { path = "../oil-math" }
+# Ochrell, pinned by commit: Cargo builds a clean checkout of exactly this revision, never the live ../ochrell folder.
+# The URL is this machine's sibling repository; CI replaces it with the remote once one exists (ci/xhost/README.md).
+# Code MIT OR Apache-2.0, generated optical tables CC BY-SA 4.0 (docs/plans/LIBRARY_PLAN.md, section 10).
+ochrell = { git = "file:///C:/Users/sdhui/projects/ochrell", rev = "ffd6ee94361a6612d25530ec3777c9eab387e5b2" }
 
 [lints]
 workspace = true

@@ -151,6 +151,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "ochrell"
+version = "0.2.0"
+source = "git+file:///C:/Users/sdhui/projects/ochrell?rev=ffd6ee94361a6612d25530ec3777c9eab387e5b2#ffd6ee94361a6612d25530ec3777c9eab387e5b2"
+
+[[package]]
 name = "oil-cli"
 version = "2.0.0-dev.0"
 dependencies = [
@@ -196,6 +201,7 @@ version = "2.0.0-dev.0"
 name = "oil-mix"
 version = "2.0.0-dev.0"
 dependencies = [
+ "ochrell",
  "oil-math",
 ]
 

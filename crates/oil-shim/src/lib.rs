@@ -1,6 +1,6 @@
 //! ctypes shim: the new kernel behind the Ochrell bridge's C ABI (`native/ochrell-brush`, `oilpaint/ochrell.py`), so the
 //! Python renderer and eval harness can paint with it: `OILPAINT_KERNEL=oil` with a material backend
-//! (`--mixer mixbox-material`, and `ochrell` once it is wired in). It serves the port checks (L1) and level E (L3), and
+//! (`--mixer ochrell` or `mixbox-material`). It serves the port checks (L1) and level E (L3), and
 //! is retired together with the Python harness in L5.
 //!
 //! The kernel has one transport, the material transport, which needs the canvas `amount` plane; v1's `brush.c` ABI
@@ -9,7 +9,7 @@
 //! Safety contract (as for the bridge): every pointer is non-null, aligned, and addresses a live, disjoint buffer of
 //! the stated length for the duration of the call. The Python side checks shapes, dtypes and values.
 use oil_kernel::{render_stroke as kernel_stroke, BrushParams, Load, Planes};
-use oil_mix::Mixer;
+use oil_mix::{Mixer, OchrellMixer};
 use oil_mix_mixbox::MixboxMixer;
 
 /// Floats per state on the wire (the bridge's format: K[41], S[41], residual[3] for Ochrell).
@@ -145,7 +145,8 @@ pub extern "C" fn ochrell_state_len() -> usize {
     LAT
 }
 
-/// Encodes `n` sRGB colours into 85-float states. Returns 0, -1 for bad arguments, -3 for an unavailable mode.
+/// Encodes `n` sRGB colours into 85-float states (mode 0 Ochrell, 3 Mixbox). Returns 0, -1 for bad arguments, -3 for an
+/// unavailable mode.
 ///
 /// # Safety
 /// `rgb` addresses `n * 3` floats and `lat` `n * 85` writable floats.
@@ -160,13 +161,15 @@ pub unsafe extern "C" fn ochrell_encode(rgb: *const f32, lat: *mut f32, n: usize
     // SAFETY: caller contract.
     let (rgb, lat) = unsafe { (std::slice::from_raw_parts(rgb as *const [f32; 3], n), std::slice::from_raw_parts_mut(lat as *mut [f32; LAT], n)) };
     match mode {
+        MODE_OCHRELL => rgb.iter().zip(lat.iter_mut()).for_each(|(c, z)| *z = OchrellMixer.encode(*c)),
         MODE_MIXBOX_MATERIAL => rgb.iter().zip(lat.iter_mut()).for_each(|(c, z)| *z = Mixbox85.encode(*c)),
         _ => return -3,
     }
     0
 }
 
-/// Decodes `n` 85-float states to sRGB. Returns 0, -1 for bad arguments, -3 for an unavailable mode.
+/// Decodes `n` 85-float states to sRGB. Returns 0, -1 for bad arguments, -2 for an invalid Ochrell state, -3 for an
+/// unavailable mode.
 ///
 /// # Safety
 /// `lat` addresses `n * 85` floats and `rgb` `n * 3` writable floats.
@@ -181,6 +184,12 @@ pub unsafe extern "C" fn ochrell_decode(lat: *const f32, rgb: *mut f32, n: usize
     // SAFETY: caller contract.
     let (lat, rgb) = unsafe { (std::slice::from_raw_parts(lat as *const [f32; LAT], n), std::slice::from_raw_parts_mut(rgb as *mut [f32; 3], n)) };
     match mode {
+        MODE_OCHRELL => {
+            if lat.iter().any(|z| !OchrellMixer.is_valid(z)) {
+                return -2;
+            }
+            lat.iter().zip(rgb.iter_mut()).for_each(|(z, c)| *c = OchrellMixer.decode_srgb(z))
+        }
         MODE_MIXBOX_MATERIAL => lat.iter().zip(rgb.iter_mut()).for_each(|(z, c)| *c = Mixbox85.decode_srgb(z)),
         _ => return -3,
     }
@@ -253,6 +262,7 @@ pub unsafe extern "C" fn render_stroke(
         unsafe {
             let cv = &mut *cv;
             match cv.mixing_mode {
+                MODE_OCHRELL => paint(&OchrellMixer, cv, pts, n, zcol, zcol2, dz, bp, out_stats),
                 MODE_MIXBOX_MATERIAL => paint(&Mixbox85, cv, pts, n, zcol, zcol2, dz, bp, out_stats),
                 _ => -3,
             }

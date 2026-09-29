@@ -4,13 +4,16 @@
 //! sRGB colour becomes a state, and how a state is displayed. The kernel is generic over `M: Mixer` and
 //! monomorphised, so there is no dispatch per pixel.
 //!
-//! Mixers in the engine: `ochrell` (the default; added once the Ochrell optimisation work is finished), `rgb` (plain
-//! sRGB interpolation, a baseline). Mixbox (CC BY-NC 4.0) lives in the separate opt-in crate `oil-mix-mixbox`.
+//! Mixers in the engine: `ochrell` (the default; `ochrell.rs`), `rgb` (plain sRGB interpolation, a baseline).
+//! Mixbox (CC BY-NC 4.0) lives in the separate opt-in crate `oil-mix-mixbox`.
 #![forbid(unsafe_code)]
 // v1's clamp01 and range checks are kept verbatim (same results as f32::clamp, including NaN and signed zero).
 #![allow(clippy::manual_clamp, clippy::manual_range_contains)]
 
+pub mod ochrell;
 pub mod srgb;
+
+pub use ochrell::OchrellMixer;
 
 /// A paint state: a fixed-length f32 vector that mixes by linear interpolation.
 pub trait State: Copy + Send + Sync + 'static {
@@ -46,6 +49,13 @@ pub trait Mixer: Send + Sync + 'static {
 
     /// Display colour of a state, sRGB in [0, 1].
     fn decode_srgb(&self, z: &Self::State) -> [f32; 3];
+
+    /// Display colour of a state in linear light, [0, 1] (what the kernel composites with coverage). Mixers that
+    /// decode to linear light natively override it to skip the sRGB round trip.
+    #[inline(always)]
+    fn decode_linear_rgb(&self, z: &Self::State) -> [f32; 3] {
+        self.decode_srgb(z).map(srgb::to_linear)
+    }
 
     /// `base += amplitude * delta` (bristle colour streaks), keeping the state valid for this mixer.
     #[inline(always)]
@@ -91,14 +101,13 @@ pub fn clamp01(x: f32) -> f32 {
     }
 }
 
-/// Composite `new` over `old` (both sRGB) with coverage `a` in linear light, using the engine's sRGB transfer
-/// (`srgb`: table interpolation built from `oil-math`).
+/// Composite a colour given in linear light over `old` (sRGB, updated in place) with coverage `a`, in linear light,
+/// using the engine's sRGB transfer (`srgb`: table interpolation built from `oil-math`).
 #[inline]
-pub fn composite_srgb(old: &mut [f32; 3], new: [f32; 3], a: f32) {
+pub fn composite(old: &mut [f32; 3], new_linear: [f32; 3], a: f32) {
     for ch in 0..3 {
         let lo = srgb::to_linear(old[ch]);
-        let ln = srgb::to_linear(new[ch]);
-        old[ch] = srgb::from_linear(lo + a * (ln - lo));
+        old[ch] = srgb::from_linear(lo + a * (new_linear[ch] - lo));
     }
 }
 #[cfg(test)]
@@ -120,7 +129,7 @@ mod tests {
     #[test]
     fn composite_is_in_linear_light() {
         let mut c = [0.0f32, 1.0, 0.5];
-        composite_srgb(&mut c, [1.0, 0.0, 0.5], 0.5);
+        composite(&mut c, [1.0, 0.0, 0.5].map(srgb::to_linear), 0.5);
         // half-way in linear light is brighter than half-way in sRGB
         assert!((c[0] - 0.735_356).abs() < 1e-5 && (c[1] - 0.735_356).abs() < 1e-5, "{c:?}");
         assert!((c[2] - 0.5).abs() < 1e-6);
