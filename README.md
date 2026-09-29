@@ -20,7 +20,7 @@ Python 3.11, numpy, scipy, opencv-python, scikit-image, imageio + imageio-ffmpeg
 ## Quick start (run from this directory)
 
 ```
-python -m oilpaint test all                                          # checkpoints T1-T6, gates -> out/checkpoints/
+python -m oilpaint test all                                          # checkpoints T1-T8 (T8 = the evaluation harness), gates -> out/checkpoints/
 python -m oilpaint guides scenes/storm_light.py                      # target / regions / flow / light maps -> out/guides/
 python -m oilpaint render scenes/storm_light.py --preview --out out/preview           # 600x750, ~35 s
 python -m oilpaint render scenes/storm_light.py --size 2400x3000 --strokes out/preview/strokes.npz \
@@ -72,6 +72,8 @@ oilpaint/csrc/brush.c  the kernel     oilpaint/mix.py       Mixbox (vectorised),
 oilpaint/light.py      weave, normals, relighting            oilpaint/timelapse.py   frame capture + ffmpeg
 oilpaint/metrics.py    gates and diagnostics                 oilpaint/calib.py       diagnostic targets (guesses)
 scenes/storm_light.py  the picture   tests/checkpoints.py, tests/t5_coarse2fine.py   visual checkpoints + gates
+oilpaint/eval*.py      evaluation harness (see "Evaluating changes")     scenes/swatches.py   the standard swatch sheet
+tests/t8_eval.py       harness self-tests                                eval/                thresholds, baselines, reference calibration
 docs/STYLE_REFERENCE.md   PLAN.md   RESEARCH.md
 ```
 
@@ -114,6 +116,81 @@ Lessons from making this scene (details in `docs/STYLE_REFERENCE.md`): give each
 well defined at its start points (a radial flow is undefined at its centre, so beam strokes fanned out); keep the
 sky's `levee` at 0 and `ridge` ~0.4; put a light source's halo in the same layer as the object in front of it so
 the object paints over the halo; keep flecks low (<= 0.05) or small dabs turn into faceted crystals.
+
+## Evaluating changes
+
+A measuring stick for engine changes: paint a fixed swatch sheet (and optionally a real scene), measure it, and diff two
+runs.  Everything is defined in canvas-width (cw) units, so a number means the same at any resolution once the feature
+is resolvable (>= 1250 px wide; below that the bristle and hairline scales fall under one pixel and the run says so).
+
+```
+python -m oilpaint eval run --name mychange                          # sheet + checks: ~20 s -> out/eval/mychange/{eval.json,contact_sheet.png,summary.md}
+python -m oilpaint eval run --name mychange --scene scenes/storm_v3.py --scene-width 600,1600    # + Storm Light: plan once, evaluate the preview and a 1600 px replay (~100 s)
+python -m oilpaint eval compare eval/baseline_v1.json out/eval/mychange/eval.json               # per-metric deltas; exit 1 on regression, 2 if widths differ
+python -m oilpaint eval run --sheet-run out/eval/mychange/sheet --shade-blur 0.002 --name m2    # re-light a saved sheet, no repainting (~6 s)
+python -m oilpaint eval run --no-sheet --run out/storm_v3 --light run --name storm             # evaluate an existing render directory
+python -m oilpaint eval reference DIR                                # metrics of real paintings -> calibration JSON (never edits calib.py)
+python -m oilpaint test t8                                           # the harness's own checks (18 gates, ~30 s, offline)
+```
+
+**Read the numbers like this.** Compare like with like: same `--width`, same light (`--light default` = the engine defaults, which
+show every flaw; `--light painting` = the flags of the real painting, `--bump 0.95 --bump-fine 1.0 --shade-blur 0.002 --contrast 0.30
+--spec 0.10 --cavity 0.02`; any single light flag overrides the preset).  A change that helps under one light and hurts under the other
+is a trade, not a win.  Timings on a shared machine are noisy: repeat before believing a speed WARN.  Run the same seed twice and every
+number except speed is identical.
+
+**The sheet** (`scenes/swatches.py`, 17 swatches, ~210 explicit strokes, renders in ~1 s at 1600 px) uses hand-placed strokes, so only
+the kernel, the mixer and the lighting can move it, never the planner.  `python scenes/swatches.py` writes `strokes.npz` and
+`manifest.json` (name, box in cw units, what it tests).  Swatches: the four modes (paint, scumble, smudge, glaze) at three widths on a toned ground;
+dabs; a dry-brush tail; long straight and curved strokes; blue over yellow wet-in-wet (three pickups), the same wet-on-dry (`dry_after`),
+complementary pairs and an 8-stroke mud stack; a smooth gradient; overlapping rows of long sky strokes (the hairline test); a cylinder
+and a sphere (light on a form); ten strokes piled up (height).
+
+| metric | what it measures (scale in cw) | flaw it watches |
+|---|---|---|
+| `hairline`, `hairline_deep`, `hairline_p99` | share of painted pixels where the *lighting term* (log lit/unlit luminance, albedo cancels) has a thin dark valley deeper than 3 % / 8 %; valley = blur 0.0025 minus blur 0.0007 | 1 strata hairlines |
+| `seam_hairline`, `seam_hairline_deep` | the same, only on the outlines of the overlapping long strokes (strata swatch) | 1 |
+| `bristle_L`, `bristle_relief`, `bristle_h` | RMS of the band 0.0004..0.0012 of lit L*, of the lighting term, of paint height | 2 silky look |
+| `facet_ellipse_dev`, `facet_straight_frac` | dab silhouette against its best-fit ellipse (0.01 round, 0.11 pentagon); share of outline that is straight | 3 faceted dabs |
+| `edge_step_p90/p99`, `width_ratio`, `edge_rough`, `edge_kink`, `outline_step` | height step across stroke edges; painted vs authored width; edge raggedness in stroke widths | edges |
+| `mix_t`, `off_curve_dE`, `chroma_vs_curve`, `green_excursion`, `zone_mud_frac` | overlap colour against the Mixbox mixing curve between the measured top and under colours (works for any backend: an RGB mixer is off the curve); blue over wet yellow must go green | blends, mud |
+| `wet_dry_mix_contrast`, `pickup_monotonic` | wet-in-wet mixes more than wet-on-dry; more pickup mixes more | wet vs dry |
+| `C_*`, `L_*`, `hue_lobes`, `cool/warm/green_frac`, `mud_frac` | chroma and lightness percentiles, hue histogram (24 bins), grey-brown share | colour |
+| `coh_local`, `dir_R`, `orient_deg`, `acf_minor/major`, `stroke_stats` | structure-tensor coherence (sigma 0.002/0.012), regional direction consistency, autocorrelation patch size, stroke width / length from the stroke list | direction, stroke size |
+| `form_corr_lit`, `relief_leak`, `tone_range_ratio` | cylinder / sphere: lit tone against the intended form; relief noise on it | lighting on forms |
+| `gradient.step_dE_p95`, `dry_tail.tail_over_mid`, `mode_*` | visible steps in a ramp; dry-tail coverage; scumble, smudge and glaze descriptors | modes |
+| `system.*` | determinism (identical strokes and image for one seed, reproducible tiny plan), replay strokes/s, light seconds, peak MB per Mpx (fresh process) | speed, memory |
+
+**Thresholds** live in `eval/thresholds.json` (copy it and pass `--thresholds mine.json`).  Each rule has an fnmatch `match` on the
+flattened key (e.g. `sheet.strata_sky.hairline`, `scenes.storm_v3@1600.regions.sky.bristle_L`; `*` also matches dots; first matching rule wins),
+a `direction` (`lower` / `higher` is better, `match` = any drift is bad, `true` = must hold, `info` = ignored) and `warn` / `fail` tolerances
+`{abs, rel}` meaning how much worse than run A is tolerated, `max(abs, rel*|A|)`.  Keys with no rule are not compared.  A is the baseline, B the candidate.
+`--strict` makes WARN fail; `--all` prints every covered metric; `--json FILE` keeps all rows.
+
+**Baselines** (engine commit 8fad3fc): `eval/baseline_v1.json` (+ `baseline_v1_contact_sheet.png`) is the default light, sheet at 1600 px plus the Storm Light
+preview at 600 and its replay at 1600; `eval/baseline_v1_painting.json` is the same strokes under the painting light.  Regenerate with the commands above.
+
+Worked example, flaws 1 and 2 (same strokes, only `--shade-blur` differs; `eval compare` exits 1 for B = 0.0006 because hairlines appear):
+
+| metric (default light otherwise) | shade_blur 0.002 | 0.0006 |
+|---|---|---|
+| strata swatch `hairline` / `seam_hairline_deep` | 0.033 / 0.000 | 0.180 / 0.087 |
+| whole sheet `hairline` / `hairline_deep` | 0.119 / 0.009 | 0.247 / 0.100 |
+| whole sheet `bristle_L` / `bristle_relief` (silkier when blurred) | 1.79 / 1.65 | 2.96 / 4.73 |
+| Storm Light 1600, painting light: whole picture `hairline` / `hairline_deep`; sky `hairline` | 0.099 / 0.002; 0.044 | 0.182 / 0.044; 0.110 |
+
+`bristle_h` (height) does not change with light, so it separates "the engine made less bristle relief" from "the light hides it".  Real
+paintings (`eval/reference_calibration.json`, four Monet images from Wikimedia Commons, 1600 px, provenance in `eval/reference_provenance.json`,
+`eval/fetch_reference.py` re-downloads them) span `bristle_L` 0.9 (Houses of Parliament in the Fog) to 2.7 (a Belle-Ile storm), mean 1.9, and are far duller and darker than
+the guessed targets in `calib.py` (mean chroma 11..15, median L* 40..55).  `eval reference DIR` prints the values and `suggested_calib_targets`;
+`--synthetic` marks a directory of stand-ins.  A scan carries varnish, glare and JPEG artefacts, so treat it as a range, not a target.
+
+**What it cannot detect yet.** Flaw 3 (faceted flecks) is measured on the dab swatch only, not on the scene's flecks.  Flaw 4 (comb-like drips at region edges,
+concentric ribbon rings on the rock) and flaw 5 (petal-like radial halos) come from the planner and its flow fields; the sheet cannot exercise
+the planner, and on scenes there are only descriptors (`coh_local`, `dir_R`, `orient_deg`, `stroke_stats`, `edge_step_p99` per region) with no
+detector for a ring or petal pattern.  Also missing: overall composition and colour harmony against a target, and any perceptual comparison to
+a specific painting.  The reference set is four images: use it as a range.  Speed is the kernel replay only (planning time is recorded for scenes,
+single run).
 
 ## Platform notes
 

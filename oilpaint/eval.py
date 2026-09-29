@@ -316,7 +316,7 @@ def scene_run_metrics(run_dir, light_kw, speed=True, min_region=0.025):
     out["stroke_stats"] = EM.stroke_stats(strokes, g.names)
     rt = run.get("timings", {}).get("render")
     if speed and strokes and rt:         # kernel replay time the engine recorded for this run (no second replay: a 1600 px scene takes ~18 s)
-        out["speed"] = dict(replay_seconds=rt, strokes_per_s=len(strokes) / rt, mpix_per_s=W * H / rt / 1e6, note="single run, from run.json")
+        out["speed"] = dict(replay_seconds=rt, strokes_per_s=len(strokes) / rt, note="single run, from run.json")
     out["_lit"] = lit
     return out
 
@@ -417,7 +417,7 @@ def write_summary(path, doc):
         if not o.get("bristle_resolved", True):
             L.append(f"\n_Width {s['size'][0]} px is below {EM.RESOLVED_W}: bristle and hairline scales are not resolved (compare only against runs at the same width)._")
         if s.get("speed"):
-            L.append(f"\nReplay: {s['speed']['strokes_per_s']:.0f} strokes/s, {s['speed']['mpix_per_s']:.1f} Mpix/s.")
+            L.append(f"\nReplay: {s['speed']['strokes_per_s']:.0f} strokes/s (single run, includes the engine's per-layer work).")
     sysd = doc.get("system", {})
     if sysd:
         L.append("\n## System\n")
