@@ -118,7 +118,10 @@ export async function loadEngine(source?: string | URL | BufferSource): Promise<
   const bytes = (len: number) => new Uint8Array(e.memory.buffer, e.oil_buf_ptr() >>> 0, len >>> 0).slice();
   const text = (len: number) => new TextDecoder().decode(bytes(len));
   const json = (len: number) => JSON.parse(text(len));
-  const input = (data: Uint8Array) => new Uint8Array(e.memory.buffer, e.oil_input(data.length) >>> 0, data.length).set(data);
+  const input = (data: Uint8Array) => {
+    const ptr = e.oil_input(data.length) >>> 0; // may grow the memory: take the buffer only after the call
+    new Uint8Array(e.memory.buffer, ptr, data.length).set(data);
+  };
   const version = text(e.oil_engine_version());
   let generation = 0;
 

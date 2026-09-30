@@ -35,6 +35,13 @@ test("validation reports structured errors with fixes", () => {
   assert.equal(engine.validate(units).errors[0].code, "UNITS");
 });
 
+test("inputs larger than the current memory (the memory grows during the call)", async () => {
+  const fresh = await loadEngine();
+  const bytes = 64 << 20; // more than the module starts with
+  const v = fresh.validate(" ".repeat(bytes) + JSON.stringify(small().spec));
+  assert.equal(v.valid, true);
+});
+
 test("guides: sizes, planes and previews", () => {
   const g = engine.guides(small(), { width: 80 });
   assert.deepEqual(g.size, [80, 100]);
