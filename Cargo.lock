@@ -159,7 +159,7 @@ dependencies = [
 [[package]]
 name = "ochrell"
 version = "0.2.0"
-source = "git+file:///C:/Users/sdhui/projects/ochrell?rev=ffd6ee94361a6612d25530ec3777c9eab387e5b2#ffd6ee94361a6612d25530ec3777c9eab387e5b2"
+source = "git+file:///C:/Users/sdhui/projects/ochrell?rev=1d63f90b8f0e6d16d335df27a4ec28035169f8e3#1d63f90b8f0e6d16d335df27a4ec28035169f8e3"
 
 [[package]]
 name = "oil-cli"
@@ -236,6 +236,19 @@ dependencies = [
  "oil-math",
  "oil-mix",
  "oil-strokes",
+]
+
+[[package]]
+name = "oil-palette"
+version = "2.0.0-dev.0"
+dependencies = [
+ "oil-image",
+ "oil-kernel",
+ "oil-mix",
+ "oil-paint",
+ "oil-strokes",
+ "png",
+ "sha2",
 ]
 
 [[package]]

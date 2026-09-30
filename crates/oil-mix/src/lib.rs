@@ -11,6 +11,7 @@
 #![allow(clippy::manual_clamp, clippy::manual_range_contains)]
 
 pub mod ochrell;
+pub mod palette;
 pub mod srgb;
 
 pub use ochrell::OchrellMixer;

@@ -1,0 +1,8 @@
+[package]
+name = "palette-pin-check"
+version = "0.0.0"
+edition = "2021"
+[workspace]
+[dependencies]
+before = { package = "ochrell", git = "file:///C:/Users/sdhui/projects/ochrell", rev = "ffd6ee94361a6612d25530ec3777c9eab387e5b2" }
+after = { package = "ochrell", git = "file:///C:/Users/sdhui/projects/ochrell", rev = "1d63f90b8f0e6d16d335df27a4ec28035169f8e3" }

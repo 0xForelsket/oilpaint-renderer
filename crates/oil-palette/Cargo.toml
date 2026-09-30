@@ -1,0 +1,22 @@
+[package]
+name = "oil-palette"
+description = "Opt-in recipe painting and self-contained palette replay bundles"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+oil-mix = { path = "../oil-mix" }
+oil-kernel = { path = "../oil-kernel" }
+oil-image = { path = "../oil-image" }
+oil-strokes = { path = "../oil-strokes" }
+oil-paint = { path = "../oil-paint" }
+sha2 = "0.10"
+
+[dev-dependencies]
+png = "0.17"
+
+[lints]
+workspace = true
