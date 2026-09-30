@@ -118,15 +118,18 @@ fn scene_cases(v: &mut Vec<Case>) {
         f32_bytes(storm_guides().region_flows.iter().flatten().flatten().flatten().copied())
     }));
     v.push(case(name("light"), Expect::Identical, || f32_bytes(storm_guides().light.iter().copied())));
-    // every error of a broken plan, as JSON: the report's content and order must not depend on the host
-    v.push(case("scene.validate.errors", Expect::Identical, || {
+    // every error of a broken plan: codes, paths and offending values, in order, must not depend on the host
+    // (messages and fixes are free text that may change without an engine-version bump, so they are left out)
+    v.push(case("scene.validate.codes", Expect::Identical, || {
         let mut plan: serde_json::Value = serde_json::from_str(STORM_PLAN).expect("json");
         plan["styles"]["sky"]["width"] = serde_json::json!([25, 40]);
         plan["regions"][3]["name"] = serde_json::json!("sky");
         plan["layers"][1]["regions"][0] = serde_json::json!("stormy");
         plan["target"][1]["blob"]["color"] = serde_json::json!("cobalt_bleu");
         let plan: oil_scene::ScenePlan = serde_json::from_value(plan).expect("schema-valid");
-        serde_json::to_vec(&oil_scene::validate(&plan)).expect("json")
+        let r = oil_scene::validate(&plan);
+        let rows: Vec<_> = r.errors.iter().chain(&r.warnings).map(|e| (e.code, e.path.clone(), e.got.clone())).collect();
+        serde_json::to_vec(&rows).expect("json")
     }));
 }
 

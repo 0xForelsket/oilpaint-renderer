@@ -222,24 +222,34 @@ struct V<'a> {
     fields: &'a BTreeMap<String, FieldDecl>,
 }
 
+/// A readable name for the value at a JSON Pointer: its key, or `key[i]` for an array element.
+fn key_name(p: &str) -> String {
+    let mut it = p.rsplit('/');
+    let last = it.next().unwrap_or(p);
+    match (last.parse::<usize>(), it.next()) {
+        (Ok(i), Some(parent)) => format!("{parent}[{i}]"),
+        _ => last.to_string(),
+    }
+}
+
 const PX_FIX: &str = "coordinates and sizes are in canvas widths (cw): divide pixels by the canvas width in pixels";
 
 impl V<'_> {
     fn range(&mut self, p: &str, x: f64, lo: f64, hi: f64) {
         if !(lo..=hi).contains(&x) {
-            self.errs.push(Error::new("RANGE", format!("{} is out of range", p.rsplit('/').next().unwrap_or(p))).path(p).got(x).expected(format!("[{lo}, {hi}]")));
+            self.errs.push(Error::new("RANGE", format!("{} is out of range", key_name(p))).path(p).got(x).expected(format!("[{lo}, {hi}]")));
         }
     }
 
     fn positive(&mut self, p: &str, x: f64) {
         if x <= 0.0 {
-            self.errs.push(Error::new("RANGE", format!("{} must be positive", p.rsplit('/').next().unwrap_or(p))).path(p).got(x).expected("> 0"));
+            self.errs.push(Error::new("RANGE", format!("{} must be positive", key_name(p))).path(p).got(x).expected("> 0"));
         }
     }
 
     /// A size in cw, `0 < x <= hi` (`0 <= x` with `zero_ok`). Above `hi` it is probably pixels (UNITS).
     fn size(&mut self, p: &str, x: f64, zero_ok: bool, hi: f64) {
-        let key = p.rsplit('/').next().unwrap_or(p);
+        let key = key_name(p);
         let expected = format!("{}0, {hi}] cw", if zero_ok { "[" } else { "(" });
         if x > hi {
             let e = Error::new("UNITS", format!("{key} is too large for canvas widths")).path(p).got(x).expected(expected);
