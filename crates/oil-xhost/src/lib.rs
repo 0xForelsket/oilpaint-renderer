@@ -3,7 +3,8 @@
 //! Each case is a deterministic function that returns bytes. The same cases run natively (`xhost` binary) and as
 //! WASM in Node, Chromium and Firefox (exports below); the hosts hash the bytes with their own SHA-256 and
 //! `ci/xhost/compare.mjs` requires identical digests. Cases: maths (L0) with negative controls, the test sheet's
-//! StrokeList bytes and every canvas plane plus the lit image with each mixer (L1); planner cases come in L3.
+//! StrokeList bytes and every canvas plane plus the lit image with each mixer (L1); the scene compiler's guide
+//! planes for Storm Light and the validator's error report (L2); planner cases come in L3.
 #![deny(unsafe_code)]
 
 use oil_kernel::Canvas;
@@ -53,6 +54,7 @@ fn build_cases() -> Vec<Case> {
         case("control.libm.exp", Expect::MayDiffer, control_exp),
         case("strokes.testsheet", Expect::Identical, || testsheet().to_bytes()),
     ];
+    scene_cases(&mut v);
     kernel_cases::<OchrellMixer>(&mut v, "ochrell", painted_ochrell);
     kernel_cases::<RgbMixer>(&mut v, "rgb", painted_rgb);
     kernel_cases::<MixboxMixer>(&mut v, "mixbox", painted_mixbox);
@@ -93,6 +95,41 @@ fn kernel_cases<M: Mixer>(v: &mut Vec<Case>, id: &str, painted: fn() -> &'static
         f32_bytes(painted().1.iter().flatten().copied())
     }));
 }
+/// Storm Light's ScenePlan as the TS DSL writes it (scenes/storm_v3.ts).
+const STORM_PLAN: &str = include_str!("../../../spec/examples/storm_v3.sceneplan.json");
+/// Guide width for the compiler cases: the default plan width.
+const GUIDE_WIDTH: u32 = 600;
+
+fn storm_guides() -> &'static oil_scene::Guides {
+    static G: OnceLock<oil_scene::Guides> = OnceLock::new();
+    G.get_or_init(|| {
+        let (plan, _) = oil_scene::load(STORM_PLAN).expect("the example ScenePlan is valid");
+        oil_scene::compile(&plan, GUIDE_WIDTH, &OchrellMixer, &Default::default(), &|| 0.0).expect("it compiles").0
+    })
+}
+
+fn scene_cases(v: &mut Vec<Case>) {
+    let name = |plane: &str| format!("scene.storm_v3@{GUIDE_WIDTH}.{plane}");
+    v.push(case(name("target"), Expect::Identical, || f32_bytes(storm_guides().target.iter().flatten().copied())));
+    v.push(case(name("regionId"), Expect::Identical, || storm_guides().region_id.clone()));
+    v.push(case(name("masks"), Expect::Identical, || f32_bytes(storm_guides().masks.iter().flatten().copied())));
+    v.push(case(name("flow"), Expect::Identical, || f32_bytes(storm_guides().flow.iter().flatten().copied())));
+    v.push(case(name("regionFlows"), Expect::Identical, || {
+        f32_bytes(storm_guides().region_flows.iter().flatten().flatten().flatten().copied())
+    }));
+    v.push(case(name("light"), Expect::Identical, || f32_bytes(storm_guides().light.iter().copied())));
+    // every error of a broken plan, as JSON: the report's content and order must not depend on the host
+    v.push(case("scene.validate.errors", Expect::Identical, || {
+        let mut plan: serde_json::Value = serde_json::from_str(STORM_PLAN).expect("json");
+        plan["styles"]["sky"]["width"] = serde_json::json!([25, 40]);
+        plan["regions"][3]["name"] = serde_json::json!("sky");
+        plan["layers"][1]["regions"][0] = serde_json::json!("stormy");
+        plan["target"][1]["blob"]["color"] = serde_json::json!("cobalt_bleu");
+        let plan: oil_scene::ScenePlan = serde_json::from_value(plan).expect("schema-valid");
+        serde_json::to_vec(&oil_scene::validate(&plan)).expect("json")
+    }));
+}
+
 const N: usize = 200_000;
 
 /// x_i = lo + (hi - lo) * i / n, evaluated identically everywhere (basic ops only).

@@ -294,7 +294,9 @@ dependencies = [
  "oil-mix",
  "oil-mix-mixbox",
  "oil-paint",
+ "oil-scene",
  "oil-strokes",
+ "serde_json",
  "sha2",
 ]
 

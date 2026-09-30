@@ -31,6 +31,13 @@
   "math.exp.f64": "96c165b5039ad466d647fd6c7d11de58e1db28edc1749d0c2a41d2daeb4b614a",
   "math.expf.f32": "a422eb3d4f5b12121303655da5547361b5b33206d14467ca329e2d2a59e48b53",
   "math.sincos.f64": "95bef6dd8e069136656d63e9546b24417814a024cdc9d1f233cff98d1ac752ec",
+  "scene.storm_v3@600.flow": "3a54752c5b177920b1ced179487d03f42b2bd23a73e0c0fdd6ef60c568e3cc9b",
+  "scene.storm_v3@600.light": "e62f0cf3c6c391f78f488f37ebf9f3d71c65e5eedf4dd71dc1a6542fcc03d919",
+  "scene.storm_v3@600.masks": "57ce24dac1b7029a7b5813655525bbc5dd58cfe67f8347cb30de66ee13afe918",
+  "scene.storm_v3@600.regionFlows": "e52282526f554ee3801d0ddc1d16f11865521b0589097504e9bf9b3315dac522",
+  "scene.storm_v3@600.regionId": "f452cd527b8c4c96f705898ab9b943a3b53c01e0ea494fcfd53122b5475d8d60",
+  "scene.storm_v3@600.target": "a5acb829e61aab7278e231419ca66c6942b81c28fc905ed80085a3aa1a6c4a12",
+  "scene.validate.errors": "9f5ba3175c16bf3055e05015338aa09bf86ce49df89b59b498dd35b4b3199159",
   "strokes.testsheet": "9981ae72dc1f824bde88bf72b5fea920e14cb8cb79651d538b6f99e91a6abe6c"
  }
 }
