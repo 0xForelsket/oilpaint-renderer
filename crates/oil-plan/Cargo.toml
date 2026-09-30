@@ -1,0 +1,24 @@
+[package]
+name = "oil-plan"
+description = "The planner: a ScenePlan and plan options become a StrokeList (error-driven placement, flow-following paths, palette snapping, layers), painted on a proxy canvas as it plans"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+oil-errors = { path = "../oil-errors" }
+oil-image = { path = "../oil-image" }
+oil-kernel = { path = "../oil-kernel" }
+oil-math = { path = "../oil-math" }
+oil-mix = { path = "../oil-mix" }
+oil-paint = { path = "../oil-paint" }
+oil-scene = { path = "../oil-scene" }
+oil-strokes = { path = "../oil-strokes" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+sha2 = "0.10"
+
+[lints]
+workspace = true

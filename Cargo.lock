@@ -170,6 +170,7 @@ dependencies = [
  "oil-mix",
  "oil-mix-mixbox",
  "oil-paint",
+ "oil-plan",
  "oil-scene",
  "oil-strokes",
  "png",
@@ -248,6 +249,23 @@ dependencies = [
  "oil-paint",
  "oil-strokes",
  "png",
+ "sha2",
+]
+
+[[package]]
+name = "oil-plan"
+version = "2.0.0-dev.0"
+dependencies = [
+ "oil-errors",
+ "oil-image",
+ "oil-kernel",
+ "oil-math",
+ "oil-mix",
+ "oil-paint",
+ "oil-scene",
+ "oil-strokes",
+ "serde",
+ "serde_json",
  "sha2",
 ]
 

@@ -5,6 +5,10 @@
 //!   oil testsheet --out FILE.oilstrokes           write the procedural test sheet
 //!   oil paint FILE.oilstrokes --width W [--mixer ochrell|rgb|mixbox] [--light default|painting|none] [--out DIR]
 //!                                                 paint; writes unlit.png, lit.png, height.png, report.json
+//!   oil plan FILE.json --out FILE.oilstrokes [--width 600] [--seed 1907] [--mixer ID] [--strict-engine]
+//!            [--field NAME=FILE.f32] [--image NAME=FILE.png] [--report FILE.json]
+//!                                                 plan a ScenePlan into a StrokeList; prints the plan report (JSON)
+//!   oil field FILE.png                            the ScenePlan declaration of a picture as an rgb field
 //!   oil scene validate FILE.json                  validate a ScenePlan: every error with its JSON Pointer (JSON)
 //!   oil scene schema                              print the ScenePlan v1 JSON Schema
 //!   oil guides FILE.json [--width 600] [--mixer ID] [--field NAME=FILE.f32 ...] [--out DIR] [--npy]
@@ -37,11 +41,15 @@ pub(crate) fn fail(e: Error) -> ! {
 }
 
 pub(crate) fn usage(msg: &str) -> ! {
-    eprintln!("{msg}\nusage: oil version | info FILE | testsheet --out FILE | paint FILE --width W [--mixer ID] [--light default|painting|none] [--out DIR]");
+    eprintln!(
+        "{msg}\nusage: oil version | info FILE | testsheet --out FILE | paint FILE --width W [--mixer ID] [--light default|painting|none] [--out DIR]\n       \
+         | scene validate FILE | scene schema | guides FILE [--width W] [--mixer ID] [--field NAME=FILE.f32] [--image NAME=FILE.png] [--out DIR] [--npy]\n       \
+         | plan FILE --out FILE.oilstrokes [--width W] [--seed N] [--mixer ID] [--strict-engine] [--image NAME=FILE.png] [--report FILE] | field FILE.png"
+    );
     std::process::exit(2);
 }
 
-fn hex(bytes: &[u8]) -> String {
+pub(crate) fn hex(bytes: &[u8]) -> String {
     Sha256::digest(bytes).iter().map(|b| format!("{b:02x}")).collect()
 }
 
@@ -180,6 +188,8 @@ fn main() {
         }
         Some("scene") => scene::scene(&args[1..]),
         Some("guides") => scene::guides(&args[1..]),
+        Some("plan") => scene::plan(&args[1..]),
+        Some("field") => scene::field_decl(&args[1..]),
         _ => usage("unknown command"),
     }
 }
