@@ -467,26 +467,80 @@ physics milestones run straight after the planner port and its retirement commit
 - the plane layout (memory design) is final before the hosts;
 - the brush-parameter catalogue and the gallery are written once.
 
+### Realism roadmap (decided after L2)
+
+**The goal** (Sean, 2026-09-30):
+- oilpaint is a general oil-painting engine, specialised for oil paint but not for one style.
+- "Realistic" means the output reads as a photograph of real oil paint on canvas, in whatever style the scene asks
+  for.
+- Storm Light is one scene, in an Impressionist (Monet-ward) style.
+
+**Evidence:**
+- `docs/research/`: a market and science study, and a study of Krita's engines (ideas only).
+- 1:1 crops of Storm Light at 2400 px. The strokes read as wax or plastic: relief is uniform, and stroke ends are
+  capsules.
+- The relief light changes 12.6% of pixels by more than 20/255, with no cast shadows (*measured*).
+- Every product and paper that moved to physically based relief lighting cites flat "embossed" impasto as the main
+  failure.
+
+The work falls into three layers:
+
+1. **Engine: real oil paint, style-neutral.**
+   - Relief lighting: shadows cast by the relief and occlusion (exact horizon sweeps on the height field,
+     deterministic), plus sharper microfacet highlights (L7).
+   - Surface state: gloss that follows the paint (fresh and thick is glossy, thin or sunk-in is matte), and an
+     optional varnish layer (L7).
+   - Canvas tooth in the deposit: paint lands where pressure and load beat the canvas texture plus existing relief,
+     so a dry brush catches on ridges and the ground shows through (L7, with a tooth scale that resolves: real
+     threads are 0.63-0.75 mm).
+   - Smear transport: smudge drags colour and relief along the stroke instead of only flattening (L7; the knife in
+     L12 builds on it).
+   - Drying stages and glaze optics (L11). Glazes stay: old-master styles need them.
+   - Brush shapes from pressure-recruited bristles, a load life cycle where a dry brush drags paint instead of
+     fading, and stroke-end shapes (L10).
+   - Wet-into-wet as a paint film (F0).
+2. **Planner: mechanisms, not a style.**
+   - Stroke variety in size, shape and direction (L3).
+   - A photo as the target, via a new target op on a sampled rgb field (L3).
+   - "Thick lights, thin darks" as an option (L3).
+   - Pick-up rates per distance, not per path segment (L3, with its version bump).
+   - A focus/detail map, a value-first pass, and control of lost and found edges (L9).
+3. **Style presets: data, from L3.**
+   - Named bundles of style, layer, surface and lighting settings. Working names: Impressionist, old-master glazing,
+     alla prima realist, heavy impasto, knife. The final names are Sean's.
+   - v1's defaults carry Storm Light's taste: for example `L_floor` 20, "Monet: no real darks".
+   - L3 gives the engine neutral defaults and moves those values into the Impressionist preset, which must still
+     reproduce Storm Light.
+
+**Measurement.** L5's gallery holds one scene per preset. A realism test set compares renders with photos of real
+paintings in each style (open-access museum images). No published study provides one.
+
+**Not adopted:**
+- Neural refinement: it is hard to keep deterministic, and the code is restrictively licensed (FRIDA is GPL-3.0;
+  Stylized Neural Painting is non-commercial).
+- Krita's baked-in lighting and its spectral mixer: Ochrell is stronger.
+
 | Order | L | Content | Days | Depends | Ends with |
 |---|---|---|---|---|---|
 | 1 | L0 | v1 tag; StrokeList v2 and ScenePlan v1 spec drafts (engine version, mixer ID, error codes); golden layout; cross-host determinism CI skeleton; `.gitattributes` | 1.5 | – | specs, CI skeleton runnable locally |
 | 2 | L1 | Rust workspace: `oil-math` (pure-Rust maths, sRGB), `oil-mix` (Mixer trait, Ochrell default via `decode_linear`/`encode_linear`, rgb, Mixbox opt-in), kernel port (borrowed planes, counter RNG, chunked sums), image ops, lighting, StrokeList v2 codec with version gate, CLI, ctypes shim, first goldens | 4 | L0 | **done** (`docs/reports/L1.md`): P1 and P2 passed; G1 on 7 hosts; G3 0.03%; G4; goldens. Transport decided after L1: v1's, with Ochrell (engine `2.0.0-dev.2`) |
 | 3 | L2 | ScenePlan v1 + JSON Schema + Rust spec compiler + TS DSL + validation | 4 | L1 | **done** (`docs/reports/L2.md`): Storm Light guide sheets from TS; compile 0.69 s native, 1.16 s Chromium, 1.39 s Node (v1 4.1 s); guides identical on 7 hosts |
-| 4 | L3 | Rust planner port + composed `plan` + toolbox exports + incremental error planes; then the retirement commit | 5 | L2 | level E; identical StrokeList SHA on native, Node, Chromium and Firefox |
+| 4 | L3 | Rust planner port + composed `plan` + toolbox exports + incremental error planes; flows evaluated at stroke points; neutral defaults and style presets as data; stroke variety; photo target op; pick-up per distance; then the retirement commit | 6.5 | L2 | level E (with the Impressionist preset); identical StrokeList SHA on native, Node, Chromium and Firefox |
 | 5 | F0 | **film spike** (throwaway prototype, measured): a two-layer paint film per pixel (top layer + body), mixing only at the interface, driven by pressure, drag, wetness and paint stiffness; Kubelka-Munk layer optics from Ochrell's K/S; colour computed when viewed, not per dab | 1 | L3 | go/no-go: 8-seed harness mix metrics, a Storm Light side-by-side against v1's transport, memory and speed. If go, L7 and L11 are rebuilt around the film |
-| 6 | L7 | paint that settles (height taper, wet displacement, fresh-paint levelling, spline outlines, default light) straight in the kernel, no v1 flags | 2.5 | L3 | A/B/C strip; harness strata, facet and hairline acceptance (ENGINE_PLAN 3.2) |
-| 7 | L11 | wet/tacky/dry stages and the optical KM glaze film (+16 B/px) | 2.5 | L7 | glow/haze before and after; glaze swatch acceptance |
+| 6 | L7 | **the realism milestone:** paint that settles (height taper, wet displacement, fresh-paint levelling, spline outlines) straight in the kernel, no v1 flags; relief lighting (cast shadows, occlusion, microfacet highlights) as the new default light; surface state (gloss from paint state, optional varnish); canvas tooth in the deposit; smear transport | 7 | L3 | A/B/C strip; harness strata, facet and hairline acceptance (ENGINE_PLAN 3.2); before/after crops for each preset |
+| 7 | L11 | wet/tacky/dry stages (dry brush over dried relief) and the optical KM glaze film (+16 B/px; the old-master glazing preset) | 2.5 | L7 | glow/haze before and after; glaze swatch acceptance |
 | 8 | L4 | WASM host: Worker, Level-1 API, standalone and p5 adapters, frames, time-lapse; memory budget and size limits, measured | 4 | L11 | demo pages; peak-memory table in Chromium and Firefox |
-| 9 | L5 | agent tooling: headless API/CLI JSON, `oil-metrics`, partial re-render, catalogue, guide view, AGENTS.md, gallery, cookbook; Python harness retired once `oil-metrics` matches it | 5 | L4 | agent runs the gallery from AGENTS.md alone |
+| 9 | L5 | agent tooling: headless API/CLI JSON, `oil-metrics`, partial re-render, catalogue, guide view, AGENTS.md, gallery (one scene per style preset), cookbook; realism test set (renders against photos of real paintings per style); Python harness retired once `oil-metrics` matches it | 6 | L4 | agent runs the gallery from AGENTS.md alone; realism test set scored |
 | 10 | L6 | mixers for release: Mixbox plug-in package, Ochrell-vs-Mixbox swatch sheet, harness mix metrics relative to the active mixer, licence packaging per Sean's choice (section 10) | 1.5 | L5 | swatch comparison; **public alpha** |
 | 11 | L8 | memory and speed: tile store with lossless cold tiles (probe first); Ochrell pixel path (state traffic, lane-order SIMD128; the sRGB tables already landed in L1); threads native + WASM; lighting worker; tiles also lift wasm32's 2 GiB-per-allocation limit | 7 | L6 | memory and timing tables; G2 across threads and memory modes |
-| 12 | L9 | planner fixes: cut-in edges, rock facets, halo glaze, tube palettes | 3 | L3, L11 | tower, rock and halo crops |
-| 13 | L10 | brush memory, flat/filbert/round, twist and speed | 3.5 | L1 | brush demo |
-| 14 | L12 | palette knife | 3 | L1 | knife demo |
+| 12 | L9 | planner fixes: cut-in edges, rock facets, halo glaze, tube palettes; focus/detail map, value-first pass, lost-and-found edge control | 5 | L3, L11 | tower, rock and halo crops; a realist-preset scene with and without the focus map |
+| 13 | L10 | brush memory, flat/filbert/round from pressure-recruited bristles, twist and speed; load life cycle (a dry brush drags paint); stroke-end shapes | 4 | L1 | brush demo |
+| 14 | L12 | palette knife (on L7's smear transport) | 3 | L7 | knife demo |
 | 15 | L13 | 1.0: docs site, CI hardening, release | 2 | all | published package |
 
-Total **≈ 49.5 agent-days** (v3: 48). The public alpha lands after L6, at about 31 days. It now includes the
-settling-paint and glaze physics, which v3 placed after its alpha at 26 days.
+Total **≈ 59 agent-days** (v3: 48; 49.5 before the realism roadmap). The public alpha lands after L6, at about
+38 days. It includes the settling-paint, relief-lighting, surface and glaze work, and the style presets. v3 placed
+the physics after its alpha, at 26 days.
 - **Cheaper (−3.5):**
   - L0: no strict-C freeze or C-derived golden corpus (−0.5);
   - L6: no 3-day calibration, and Ochrell is already integrated (−1.5);
@@ -494,7 +548,8 @@ settling-paint and glaze physics, which v3 placed after its alpha at 26 days.
 - **More expensive (+5):**
   - L1: the Mixer trait for an 85-float state, pure sRGB/pow with `encode_linear`, the version gate (+1);
   - F0: the film spike, added after L1's transport decision (+1);
-  - L8: tiled lossless storage and the Ochrell pixel path (+3).
+  - L8: tiled lossless storage and the Ochrell pixel path (+3);
+  - the realism roadmap after L2 (+9.5): L3 +1.5, L7 +4.5, L9 +2, L10 +0.5, L5 +1.
 
 **Risks:**
 - **Ochrell cost:** about 1.5x Mixbox's paint time in the engine (L1 final kernel, *measured*; 4x through the Python
@@ -506,6 +561,12 @@ settling-paint and glaze physics, which v3 placed after its alpha at 26 days.
 - Planner heuristics that hide in numpy behaviour are caught by level E.
 - The threaded WASM toolchain does not affect the single-thread default.
 - `oil-math` costs about 10% (*measured* for detmath on the VM).
+- **Patents** (`docs/research/`):
+  - Adobe's US 8,462,173 and US 8,599,213 are active until 2031.
+  - They claim a brush that deposits from a reservoir buffer and a pick-up buffer. That resembles our lane load plus
+    "dirt", inherited from v1.
+  - Only automated summaries of the claims have been read, and older research (Baxter's dAb) may be prior art.
+  - A professional review is needed before the public alpha (L6); nothing is at risk while the code stays private.
 - Agent JSON drifting from the harness is prevented by a shared metric crate.
 
 ## 12. Decisions and open questions
@@ -529,8 +590,13 @@ settling-paint and glaze physics, which v3 placed after its alpha at 26 days.
    (`docs/reports/L1/storm_transport_choice.png`). Engine `2.0.0-dev.2`.
 10. **A film spike (F0) runs before L7.** It tests a layered paint film with interface mixing and optical layering
     as the paradigm for L7/L11 (section 11).
+11. **L3 evaluates authored flows at stroke points** instead of storing whole-canvas rasters (section 8).
+12. **A general oil-painting engine, not one style** (after L2). The engine is style-neutral real oil paint; styles
+    are presets; Storm Light uses the Impressionist preset. The realism roadmap is in section 11.
 
 **Open for Sean:**
 1. **Visual sign-offs:** the level E side-by-side (L3), and the sky fluidity setting (L7, three settings shown).
 2. **Carried from ENGINE_PLAN** (decide by L8): halve the block-in strokes (a 44% kernel-time layer), and
    1200-px layer images by default.
+3. **Patent review before the public alpha (L6):** US 8,462,173 and US 8,599,213 (section 11, Risks).
+4. **Preset names** (working names in section 11).
