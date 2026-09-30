@@ -373,8 +373,13 @@ How the v4 projections were made:
 - **Updated after L1:** Ochrell paints at about 1.6x Mixbox in the engine and WASM at 9.1-9.4 s per 600 px replay,
   so planning at 600 px is about 11-13 s in WASM (*projected*), about 5-6 s at plan width 320.
 - **Updated after L2:** the guide compile is *measured* on Storm Light at 600 px: 0.69 s native, 1.16 s Chromium,
-  1.39 s Node (medians, one interleaved pinned round; v1 took 4.1 s). Flows are half of it: L3 may evaluate the
-  analytic flows at stroke points instead of rasterising 20 whole-canvas fields (72 MB at 600 px).
+  1.39 s Node (medians, one interleaved pinned round; v1 took 4.1 s). Flows are half of it.
+- **Decided after L2 (Sean): the planner evaluates authored flows at stroke points** instead of rasterising 20
+  whole-canvas fields (160 B/px, 72 MB at 600 px). *Measured:* v1's planner makes 145,971 flow lookups on Storm Light
+  (12,433 strokes), under 2% of the 9M raster values; an exact point evaluation of the sky's sweep costs 124 ns, so
+  all lookups take about 18 ms. The structure-tensor fallback, contour distance fields (over the polygon's area) and
+  sampled fields (at their own size) stay rasters. Soft masks are stored cropped to their non-zero box and 16-bit
+  (34 MB → 9.6 MB cropped, *measured*). Guides drop from 265 to about 36 B/px (*projected*).
 
 **Agent loop** (*projected*, updated after L1):
 - A draft is 300 px paint plus plan width 300, about 5 s in WASM.
