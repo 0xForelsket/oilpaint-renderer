@@ -2,8 +2,12 @@
 //! They follow the OpenCV calls v1 used (GaussianBlur with ksize round(8 sigma + 1) | 1 and BORDER_REFLECT_101,
 //! resize INTER_AREA / INTER_LINEAR, Sobel 3x3) closely, but the engine defines them: every sum has a fixed order
 //! and the only transcendental is `oil_math::exp`, so results are identical on every host.
-//! L2 adds the scene-compiler operations (EDT, structure tensor, polygon fill, value noise, marching squares).
+//! L2 added the scene-compiler operations: hashed value noise (`noise`), polygon fill, EDT and min/max filters
+//! (`geom`).
 #![forbid(unsafe_code)]
+
+pub mod geom;
+pub mod noise;
 
 #[inline(always)]
 fn reflect101(i: i64, n: i64) -> usize {
