@@ -41,9 +41,10 @@ State of the repo:
 2. **C kernel.** It is only a one-off sanity check while porting (Rust vs C within tolerance, via the eval
    harness). There is no C compiler on this machine: compare against the Rust spike kernel
    (`OILPAINT_KERNEL=rust`) instead, and do not install a compiler.
-3. **Retirement.** When the Rust planner passes level E (L3), one dedicated commit removes the C kernel, the
-   Python kernel wrapper and the Python planner. The Python eval harness stays until the Rust metrics replace
-   it (L5).
+3. **Retirement.** The planner port (L3) is a cutover: there is no parity gate with v1's planner, and Storm Light
+   is not reproduced (Sean's decision; acceptance in the plan, section 5). At the end of L3, one dedicated commit
+   removes the C kernel, the Python kernel wrapper and the Python planner. The Python eval harness stays until the
+   Rust metrics replace it (L5).
 4. **Measured acceptance.** Use the eval harness, parity tables and timings. Reports keep measured and
    projected numbers apart and say which is which.
 5. **Licences.**

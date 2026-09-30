@@ -226,18 +226,34 @@ is best-effort. Nothing is promised across engine versions. Outputs are compared
 |---|---|---|
 | P1 kernel port | step 1: bit-exact against the spike kernel (same maths feature, Mixbox, same latents); step 2, after the engine changes (counter RNG, chunked sums, `oil-math`): the new kernel against the C kernel through the eval harness, within the warn tolerances of `eval/thresholds.json`. There is no C compiler on the laptop, so step 2 uses the spike Rust kernel (`OILPAINT_KERNEL=rust`, shown bit-identical to strict C) | **L1: passed.** Step 1 bit-identical; step 2 within one standard error over 8 seeds; the spike matches the C baseline on every sheet metric |
 | P2 Ochrell port | new kernel with Ochrell against the `native/ochrell-brush` bridge: the 17 gates of `tools/check_ochrell.py`, plus harness deltas reported | **L1: passed.** 17/17 gates; within one standard error over 8 seeds |
-| E planner port | Rust planner against the Python planner, both painted by the new kernel with Mixbox; criteria below | L3 |
+| ~~E planner port~~ | dropped: the planner port is a cutover (below) | – |
 
-Level E acceptance is unchanged from v3. Both planners run on the same guides, the engine's (`oil guides --npy`,
-loaded by `GuideMaps.from_arrays`): v1's guides differ by noise realisation (L2 report), which would otherwise be
-measured as planner differences.
-- `eval run --scene` on Storm Light at 600 and 1600 stays within `eval/thresholds.json` of the Python planner on
-  every region metric.
-- Per-layer stroke count within ±10%, width and length medians within ±5%, angle-histogram distance ≤ 0.1.
-- Sean signs off a side-by-side.
+**The planner port is a cutover** (Sean, 2026-09-30). v3's level E (the Rust planner within harness thresholds of the
+Python planner) is dropped, and Storm Light is not reproduced. The new planner starts from v1's mechanisms but
+changes them from the first commit:
+- neutral defaults and style presets;
+- flows evaluated at stroke points;
+- stroke variety;
+- pick-up per distance.
 
-After E passes, one dedicated commit removes the C kernel, the Python kernel wrapper and the Python planner (the
-tag keeps them). The Python eval harness stays until the Rust metrics replace it (L5).
+L3 acceptance instead:
+- The Rust planner plans Storm Light (`scenes/storm_v3.ts`, Impressionist preset) and a second scene end to end from
+  TS, natively and in WASM.
+- **Sanity gates:**
+  - every region is painted: coverage at least 95% of its soft-mask area;
+  - no bare canvas where the target has paint: at most 0.5% of pixels at the ground colour;
+  - stroke sizes stay within each style's ranges.
+- **Reported for information only, not a gate:** the harness's region metrics and per-layer stroke statistics
+  against v1's plan of the same scene.
+- Identical StrokeList SHA-256 on native, Node, Chromium and Firefox.
+- Planning time, measured.
+- Sean signs off a side-by-side of the new planner against v1.
+
+Then one dedicated commit removes the C kernel, the Python kernel wrapper and the Python planner (the tag keeps
+them). The Python eval harness stays until the Rust metrics replace it (L5). From that commit it measures the
+engine's plans and renders, through the `oil` CLI and the shim.
+
+**Python calls and their replacements** (all in Rust):
 
 **Python calls and their replacements** (all in Rust):
 
@@ -509,8 +525,8 @@ The work falls into three layers:
    - Named bundles of style, layer, surface and lighting settings. Working names: Impressionist, old-master glazing,
      alla prima realist, heavy impasto, knife. The final names are Sean's.
    - v1's defaults carry Storm Light's taste: for example `L_floor` 20, "Monet: no real darks".
-   - L3 gives the engine neutral defaults and moves those values into the Impressionist preset, which must still
-     reproduce Storm Light.
+   - L3 gives the engine neutral defaults and moves those values into the Impressionist preset. Storm Light is not
+     reproduced: the planner port is a cutover (section 5).
 
 **Measurement.** L5's gallery holds one scene per preset. A realism test set compares renders with photos of real
 paintings in each style (open-access museum images). No published study provides one.
@@ -525,7 +541,7 @@ paintings in each style (open-access museum images). No published study provides
 | 1 | L0 | v1 tag; StrokeList v2 and ScenePlan v1 spec drafts (engine version, mixer ID, error codes); golden layout; cross-host determinism CI skeleton; `.gitattributes` | 1.5 | – | specs, CI skeleton runnable locally |
 | 2 | L1 | Rust workspace: `oil-math` (pure-Rust maths, sRGB), `oil-mix` (Mixer trait, Ochrell default via `decode_linear`/`encode_linear`, rgb, Mixbox opt-in), kernel port (borrowed planes, counter RNG, chunked sums), image ops, lighting, StrokeList v2 codec with version gate, CLI, ctypes shim, first goldens | 4 | L0 | **done** (`docs/reports/L1.md`): P1 and P2 passed; G1 on 7 hosts; G3 0.03%; G4; goldens. Transport decided after L1: v1's, with Ochrell (engine `2.0.0-dev.2`) |
 | 3 | L2 | ScenePlan v1 + JSON Schema + Rust spec compiler + TS DSL + validation | 4 | L1 | **done** (`docs/reports/L2.md`): Storm Light guide sheets from TS; compile 0.69 s native, 1.16 s Chromium, 1.39 s Node (v1 4.1 s); guides identical on 7 hosts |
-| 4 | L3 | Rust planner port + composed `plan` + toolbox exports + incremental error planes; flows evaluated at stroke points; neutral defaults and style presets as data; stroke variety; photo target op; pick-up per distance; then the retirement commit | 6.5 | L2 | level E (with the Impressionist preset); identical StrokeList SHA on native, Node, Chromium and Firefox |
+| 4 | L3 | Rust planner port + composed `plan` + toolbox exports + incremental error planes; flows evaluated at stroke points; neutral defaults and style presets as data; stroke variety; photo target op; pick-up per distance; then the retirement commit | 6.5 | L2 | cutover acceptance (section 5): Storm Light and a second scene planned end to end, sanity gates, v1 metrics reported, Sean's side-by-side; identical StrokeList SHA on native, Node, Chromium and Firefox |
 | 5 | F0 | **film spike** (throwaway prototype, measured): a two-layer paint film per pixel (top layer + body), mixing only at the interface, driven by pressure, drag, wetness and paint stiffness; Kubelka-Munk layer optics from Ochrell's K/S; colour computed when viewed, not per dab | 1 | L3 | go/no-go: 8-seed harness mix metrics, a Storm Light side-by-side against v1's transport, memory and speed. If go, L7 and L11 are rebuilt around the film |
 | 6 | L7 | **the realism milestone:** paint that settles (height taper, wet displacement, fresh-paint levelling, spline outlines) straight in the kernel, no v1 flags; relief lighting (cast shadows, occlusion, microfacet highlights) as the new default light; surface state (gloss from paint state, optional varnish); canvas tooth in the deposit; smear transport | 7 | L3 | A/B/C strip; harness strata, facet and hairline acceptance (ENGINE_PLAN 3.2); before/after crops for each preset |
 | 7 | L11 | wet/tacky/dry stages (dry brush over dried relief) and the optical KM glaze film (+16 B/px; the old-master glazing preset) | 2.5 | L7 | glow/haze before and after; glaze swatch acceptance |
@@ -557,8 +573,8 @@ the physics after its alpha, at 26 days.
 - **Ochrell development continues** (its optimisation rounds). It is pinned by commit (`ffd6ee9` since L1), its
   model version goes into the engine version, and goldens catch drift.
 - **Tile compression ratio unknown.** It is measured before building; if it is poor, the browser limit stays.
-- **Level E needs Mixbox in Rust.** It comes from the opt-in crate, used only by the port check.
-- Planner heuristics that hide in numpy behaviour are caught by level E.
+- **No parity gate for the planner** (a cutover). Regressions are caught by the sanity gates, the harness metrics
+  reported against v1, and the side-by-side.
 - The threaded WASM toolchain does not affect the single-thread default.
 - `oil-math` costs about 10% (*measured* for detmath on the VM).
 - **Patents** (`docs/research/`):
@@ -593,9 +609,12 @@ the physics after its alpha, at 26 days.
 11. **L3 evaluates authored flows at stroke points** instead of storing whole-canvas rasters (section 8).
 12. **A general oil-painting engine, not one style** (after L2). The engine is style-neutral real oil paint; styles
     are presets; Storm Light uses the Impressionist preset. The realism roadmap is in section 11.
+13. **The planner port is a cutover** (after L2). There is no parity gate with v1's planner (level E is dropped), and
+    Storm Light is not reproduced. The L3 acceptance is in section 5.
 
 **Open for Sean:**
-1. **Visual sign-offs:** the level E side-by-side (L3), and the sky fluidity setting (L7, three settings shown).
+1. **Visual sign-offs:** the L3 side-by-side (new planner against v1), and the sky fluidity setting (L7, three
+   settings shown).
 2. **Carried from ENGINE_PLAN** (decide by L8): halve the block-in strokes (a 44% kernel-time layer), and
    1200-px layer images by default.
 3. **Patent review before the public alpha (L6):** US 8,462,173 and US 8,599,213 (section 11, Risks).
