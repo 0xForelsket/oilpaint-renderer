@@ -115,9 +115,13 @@ cargo build --release -p oil-cli --features mixbox
 node ci/xhost/scene.mjs --strokes out\storm.oilstrokes --width 600 --hosts native,node,chromium   # timing + full-scene determinism
 ```
 
-ScenePlan, guides and the TS package (L2):
+ScenePlan, guides, the planner and the TS package (L2, L3):
 
 ```powershell
+.\target\release\oil.exe plan spec\examples\storm_v3.sceneplan.json --out out\storm.oilstrokes --report out\storm_plan.json   # the Rust planner
+node packages/oilpaint/src/cli.ts plan scenes\storm_v3.ts --out out\storm.oilstrokes                                   # the same, TS -> WASM
+.\target\release\oil.exe paint out\storm.oilstrokes --width 1200 --light painting --out out\storm --npy
+.venv\Scripts\python.exe tools\compare_plans.py --v1-scene scenes/storm_v3.py --spec spec/examples/storm_v3.sceneplan.json --out out\cmp   # v1 vs engine planner (until the L3 retirement)
 npm run build:wasm            # crates/oil-wasm -> packages/oilpaint/wasm/oil.wasm (git-ignored; the TS package needs it)
 npm run typecheck; npm run test:ts
 node packages/oilpaint/src/cli.ts guides scenes\storm_v3.ts --width 600 --out out\guides     # TS scene -> guide sheet (WASM)
