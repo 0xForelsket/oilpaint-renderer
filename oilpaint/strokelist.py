@@ -90,3 +90,48 @@ def write(path, *a, **kw):
     with open(path, "wb") as f:
         f.write(data)
     return data
+
+
+class ReadStroke:
+    """One stroke of a read StrokeList: pts (n, 4) float32 in cw, region, layer, colour (sRGB), mode and params."""
+    __slots__ = ("pts", "region", "layer", "color", "color2", "mode", "params")
+
+    def __init__(self, pts, region, layer, color, color2, mode, params):
+        self.pts, self.region, self.layer, self.color, self.color2, self.mode, self.params = pts, region, layer, color, color2, mode, params
+
+
+def read(path):
+    """Read a StrokeList v2 file (any engine version; no validation beyond the structure): returns a dict with
+    engine, meta, aspect, ground, layers [dict(start, end, hblur_sigma, dry_after)] and strokes [ReadStroke]."""
+    data = open(path, "rb").read()
+    if data[:8] != MAGIC:
+        raise ValueError(f"{path}: not a StrokeList v2 file")
+    vlen = data[12]
+    engine = data[13:13 + vlen].decode("ascii")
+    pos, sec = 64, {}
+    while pos < len(data):
+        tag = data[pos:pos + 4]
+        n = struct.unpack_from("<I", data, pos + 4)[0]
+        sec[tag] = data[pos + 8:pos + 8 + n]
+        pos += 8 + n + (4 - n % 4) % 4
+        if tag == b"END ":
+            break
+    meta = json.loads(sec[b"META"].decode("utf-8"))
+    aw, ah, g0, g1, g2, _ = struct.unpack("<II3fI", sec[b"CANV"])
+    layers = []
+    for k in range(0, len(sec[b"LAYR"]), 24):
+        s, e, flags, hb, dry, _ = struct.unpack_from("<3I2fI", sec[b"LAYR"], k)
+        layers.append(dict(start=s, end=e, hblur_sigma=hb if flags & 1 else None, dry_after=dry if flags & 2 else None))
+    off = np.frombuffer(sec[b"OFFS"], "<u4")
+    pts = np.frombuffer(sec[b"PNTS"], "<f4").reshape(-1, 4)
+    strokes = []
+    rec = struct.Struct("<4I7f12fI12f")
+    for i, k in enumerate(range(0, len(sec[b"STRK"]), rec.size)):
+        f = rec.unpack_from(sec[b"STRK"], k)
+        layer, region, seed, mode = f[:4]
+        params = dict(zip(F_BEFORE_NB, f[11:23]))
+        params["nb"] = f[23]
+        params.update(zip(F_AFTER_NB, f[24:36]))
+        params["seed"] = seed
+        strokes.append(ReadStroke(pts[off[i]:off[i + 1]], region, layer, np.array(f[4:7], np.float32), np.array(f[7:10], np.float32), mode, params))
+    return dict(engine=engine, meta=meta, aspect=(aw, ah), ground=(g0, g1, g2), layers=layers, strokes=strokes)

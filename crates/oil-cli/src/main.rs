@@ -3,7 +3,7 @@
 //!   oil version                                   engine version and mixers in this build (JSON)
 //!   oil info FILE.oilstrokes                      header, counts and validation (JSON)
 //!   oil testsheet --out FILE.oilstrokes           write the procedural test sheet
-//!   oil paint FILE.oilstrokes --width W [--mixer ochrell|rgb|mixbox] [--light default|painting|none] [--out DIR]
+//!   oil paint FILE.oilstrokes --width W [--mixer ochrell|rgb|mixbox] [--light default|painting|none] [--out DIR] [--npy]
 //!                                                 paint; writes unlit.png, lit.png, height.png, report.json
 //!   oil plan FILE.json --out FILE.oilstrokes [--width 600] [--seed 1907] [--mixer ID] [--strict-engine]
 //!            [--field NAME=FILE.f32] [--image NAME=FILE.png] [--report FILE.json]
@@ -89,7 +89,7 @@ pub(crate) fn write_png(path: &Path, w: usize, h: usize, rgb: &[u8], channels: p
     enc.write_header().and_then(|mut wr| wr.write_image_data(rgb)).unwrap_or_else(|e| fail(Error::new("IO", format!("PNG: {e}"))));
 }
 
-fn paint_with<M: Mixer>(m: &M, list: &StrokeList, w: u32, light: Option<LightParams>, out: Option<&Path>) -> Value {
+fn paint_with<M: Mixer>(m: &M, list: &StrokeList, w: u32, light: Option<LightParams>, out: Option<&Path>, npy: bool) -> Value {
     let t0 = Instant::now();
     let (cv, stats) = oil_paint::paint(m, list, w, |_, _| {});
     let paint_s = t0.elapsed().as_secs_f64();
@@ -119,6 +119,15 @@ fn paint_with<M: Mixer>(m: &M, list: &StrokeList, w: u32, light: Option<LightPar
         let height: Vec<u8> = cv.hgt.iter().map(|v| to8(v / hmax)).collect();
         write_png(&dir.join("height.png"), wu, hu, &height, png::ColorType::Grayscale);
         files.push("height.png");
+        if npy {
+            scene::write_npy(&dir.join("unlit.npy"), &[hu, wu, 3], "<f4", &scene::f32_bytes(cv.rgb.iter().flatten().copied()));
+            scene::write_npy(&dir.join("height.npy"), &[hu, wu], "<f4", &scene::f32_bytes(cv.hgt.iter().copied()));
+            files.extend(["unlit.npy", "height.npy"]);
+            if let Some(lit) = &lit {
+                scene::write_npy(&dir.join("lit.npy"), &[hu, wu, 3], "<f4", &scene::f32_bytes(lit.iter().flatten().copied()));
+                files.push("lit.npy");
+            }
+        }
     }
     json!({
         "engine": oil_kernel::ENGINE_VERSION,
@@ -172,13 +181,14 @@ fn main() {
                 other => usage(&format!("unknown light preset {other}")),
             };
             let out = opt("--out").map(PathBuf::from);
+            let npy = args.iter().any(|a| a == "--npy");
             let list = read_list(path);
             let mixer = opt("--mixer").unwrap_or("ochrell");
             let report = match mixer {
-                "ochrell" | "ochrell-0.2" => paint_with(&OchrellMixer, &list, w, light, out.as_deref()),
-                "rgb" => paint_with(&RgbMixer, &list, w, light, out.as_deref()),
+                "ochrell" | "ochrell-0.2" => paint_with(&OchrellMixer, &list, w, light, out.as_deref(), npy),
+                "rgb" => paint_with(&RgbMixer, &list, w, light, out.as_deref(), npy),
                 #[cfg(feature = "mixbox")]
-                "mixbox" | "mixbox-2.0" => paint_with(&oil_mix_mixbox::MixboxMixer, &list, w, light, out.as_deref()),
+                "mixbox" | "mixbox-2.0" => paint_with(&oil_mix_mixbox::MixboxMixer, &list, w, light, out.as_deref(), npy),
                 other => fail(Error::new("UNKNOWN_MIXER", format!("mixer {other} is not in this build")).got(other).expected(mixers().join(", "))),
             };
             if let Some(dir) = &out {

@@ -38,7 +38,7 @@ pub fn scene(args: &[String]) {
 }
 
 /// A NumPy .npy (v1.0) file of little-endian f32 or u8 values.
-fn write_npy(path: &Path, shape: &[usize], descr: &str, bytes: &[u8]) {
+pub(crate) fn write_npy(path: &Path, shape: &[usize], descr: &str, bytes: &[u8]) {
     let dims: Vec<String> = shape.iter().map(|d| d.to_string()).collect();
     let tuple = if dims.len() == 1 { format!("({},)", dims[0]) } else { format!("({})", dims.join(", ")) };
     let mut header = format!("{{'descr': '{descr}', 'fortran_order': False, 'shape': {tuple}, }}");
@@ -53,7 +53,7 @@ fn write_npy(path: &Path, shape: &[usize], descr: &str, bytes: &[u8]) {
     std::fs::write(path, out).unwrap_or_else(|e| fail(Error::new("IO", format!("cannot write {}: {e}", path.display()))));
 }
 
-fn f32_bytes(v: impl Iterator<Item = f32>) -> Vec<u8> {
+pub(crate) fn f32_bytes(v: impl Iterator<Item = f32>) -> Vec<u8> {
     v.flat_map(|x| x.to_le_bytes()).collect()
 }
 
