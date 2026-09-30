@@ -69,7 +69,7 @@ pub fn paint<M: Mixer>(m: &M, list: &StrokeList, w: u32, mut after_layer: impl F
 }
 
 /// Canvas planes that `plane_bytes` serialises.
-pub const PLANES: [&str; 6] = ["lat", "rgb", "h", "wet", "cover", "amount"];
+pub const PLANES: [&str; 5] = ["lat", "rgb", "h", "wet", "cover"];
 
 /// The values of a plane (one of `PLANES`), in row-major order; a mixer state contributes its floats in order.
 pub fn plane_values<'a, M: Mixer>(cv: &'a Canvas<M>, plane: &str) -> Box<dyn Iterator<Item = f32> + 'a> {
@@ -79,7 +79,6 @@ pub fn plane_values<'a, M: Mixer>(cv: &'a Canvas<M>, plane: &str) -> Box<dyn Ite
         "h" => Box::new(cv.hgt.iter().copied()),
         "wet" => Box::new(cv.wet.iter().copied()),
         "cover" => Box::new(cv.cover.iter().copied()),
-        "amount" => Box::new(cv.amount.iter().copied()),
         _ => panic!("unknown plane {plane}"),
     }
 }

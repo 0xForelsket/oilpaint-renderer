@@ -50,8 +50,8 @@ pub trait Mixer: Send + Sync + 'static {
     /// Display colour of a state, sRGB in [0, 1].
     fn decode_srgb(&self, z: &Self::State) -> [f32; 3];
 
-    /// Display colour of a state in linear light, [0, 1] (what the kernel composites with coverage). Mixers that
-    /// decode to linear light natively override it to skip the sRGB round trip.
+    /// Display colour of a state in linear light, [0, 1]. Mixers that decode to linear light natively override it
+    /// to skip the sRGB round trip.
     #[inline(always)]
     fn decode_linear_rgb(&self, z: &Self::State) -> [f32; 3] {
         self.decode_srgb(z).map(srgb::to_linear)
@@ -101,15 +101,6 @@ pub fn clamp01(x: f32) -> f32 {
     }
 }
 
-/// Composite a colour given in linear light over `old` (sRGB, updated in place) with coverage `a`, in linear light,
-/// using the engine's sRGB transfer (`srgb`: table interpolation built from `oil-math`).
-#[inline]
-pub fn composite(old: &mut [f32; 3], new_linear: [f32; 3], a: f32) {
-    for ch in 0..3 {
-        let lo = srgb::to_linear(old[ch]);
-        old[ch] = srgb::from_linear(lo + a * (new_linear[ch] - lo));
-    }
-}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -124,14 +115,5 @@ mod tests {
         assert_eq!(b, [0.25, 0.45, 1.0]);
         assert!(m.is_valid(&b));
         assert!(!m.is_valid(&[f32::NAN, 0.0, 0.0]));
-    }
-
-    #[test]
-    fn composite_is_in_linear_light() {
-        let mut c = [0.0f32, 1.0, 0.5];
-        composite(&mut c, [1.0, 0.0, 0.5].map(srgb::to_linear), 0.5);
-        // half-way in linear light is brighter than half-way in sRGB
-        assert!((c[0] - 0.735_356).abs() < 1e-5 && (c[1] - 0.735_356).abs() < 1e-5, "{c:?}");
-        assert!((c[2] - 0.5).abs() < 1e-6);
     }
 }

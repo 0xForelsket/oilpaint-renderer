@@ -1,0 +1,36 @@
+{
+ "engine": "2.0.0-dev.2",
+ "hosts": [
+  "chrome-154.0.8037.92",
+  "chromium-145.0.7632.6",
+  "firefox-146.0.1",
+  "msedge-154.0.4258.37",
+  "native-windows-x86_64",
+  "node-v24.11.1-win32-x64",
+  "webkit-26.0"
+ ],
+ "cases": {
+  "kernel.testsheet@mixbox@400.cover": "1c3f7d2a0c95ec919d5ff334c74ba02373316f8446c3c2368c01a3c1c0905e7c",
+  "kernel.testsheet@mixbox@400.h": "d952ba5d204e3f62c10bcc72279c08b95b2aa857fa8afa945cfbc7462498c290",
+  "kernel.testsheet@mixbox@400.lat": "8d06b4c225c784e2fdaed13cf365042afe458d758037b49163883e4f8800b2c9",
+  "kernel.testsheet@mixbox@400.rgb": "e2f93a7844e2854a204242aa3944a2a6b17e2cd8f9215e7213e2f3b0b2aa2fce",
+  "kernel.testsheet@mixbox@400.wet": "48a74263dfcd40a38c3690857588c538da75a2a39a23b7e08e11e4dcc4bd0d91",
+  "kernel.testsheet@ochrell@400.cover": "1c3f7d2a0c95ec919d5ff334c74ba02373316f8446c3c2368c01a3c1c0905e7c",
+  "kernel.testsheet@ochrell@400.h": "d952ba5d204e3f62c10bcc72279c08b95b2aa857fa8afa945cfbc7462498c290",
+  "kernel.testsheet@ochrell@400.lat": "e389f3b7e16a750b4bf79d99079f82c620680d832fda5d79e38a94208f66381e",
+  "kernel.testsheet@ochrell@400.rgb": "1283a3598514cf0ee3c2ec527e7e08a3d294eb44b84e7331c3028b9d8584f0c9",
+  "kernel.testsheet@ochrell@400.wet": "48a74263dfcd40a38c3690857588c538da75a2a39a23b7e08e11e4dcc4bd0d91",
+  "kernel.testsheet@rgb@400.cover": "1c3f7d2a0c95ec919d5ff334c74ba02373316f8446c3c2368c01a3c1c0905e7c",
+  "kernel.testsheet@rgb@400.h": "d952ba5d204e3f62c10bcc72279c08b95b2aa857fa8afa945cfbc7462498c290",
+  "kernel.testsheet@rgb@400.lat": "aad97643668cadfb146b889b9b6d4205d74a9c5c70fe418ff12b34373c91aadc",
+  "kernel.testsheet@rgb@400.rgb": "24eb201467820ea3601c91cb6740481e7f034a657a704b312d21cc3a1ccae59e",
+  "kernel.testsheet@rgb@400.wet": "48a74263dfcd40a38c3690857588c538da75a2a39a23b7e08e11e4dcc4bd0d91",
+  "light.testsheet@mixbox@400.lit": "b2be59d1e86311af6e7bb9a0102d9c4f14434a3504af0b25b1c8e69a22b9b370",
+  "light.testsheet@ochrell@400.lit": "cdf974b5ece5fa31177f1207ef4ead8b6e8f8e7764fb625f134ff5173d66929e",
+  "light.testsheet@rgb@400.lit": "10c886e5600426f88dcfcaec643dfb5f318a831dafec9ad4696eac1113e72a80",
+  "math.exp.f64": "96c165b5039ad466d647fd6c7d11de58e1db28edc1749d0c2a41d2daeb4b614a",
+  "math.expf.f32": "a422eb3d4f5b12121303655da5547361b5b33206d14467ca329e2d2a59e48b53",
+  "math.sincos.f64": "95bef6dd8e069136656d63e9546b24417814a024cdc9d1f233cff98d1ac752ec",
+  "strokes.testsheet": "9981ae72dc1f824bde88bf72b5fea920e14cb8cb79651d538b6f99e91a6abe6c"
+ }
+}

@@ -63,9 +63,9 @@ def build_and_load(backend="mixbox"):
     ext = ".dll" if sys.platform == "win32" else (".dylib" if sys.platform == "darwin" else ".so")
     so = os.path.join(HERE, "csrc", f"brush_{digest}{ext}")
     if os.environ.get("OILPAINT_KERNEL") == "oil":
-        # the new engine's kernel has one transport (paint amounts), served through the Ochrell bridge ABI
-        raise RuntimeError(f"OILPAINT_KERNEL=oil paints with the material transport: use a material mixer "
-                           f"(--mixer mixbox-material or ochrell), not {backend!r}")
+        # the new engine's kernel is served through the Ochrell bridge ABI (85-float states), see crates/oil-shim
+        raise RuntimeError(f"OILPAINT_KERNEL=oil serves 85-float states: use --mixer ochrell, or mixbox-material "
+                           f"for Mixbox, not {backend!r}")
     if os.environ.get("OILPAINT_KERNEL") == "rust":
         crate = os.path.abspath(os.path.join(HERE, "..", "spikes", "oilcore"))
         target = os.path.join(crate, "target")

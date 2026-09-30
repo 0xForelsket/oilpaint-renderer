@@ -1,10 +1,10 @@
 //! ctypes shim: the new kernel behind the Ochrell bridge's C ABI (`native/ochrell-brush`, `oilpaint/ochrell.py`), so the
-//! Python renderer and eval harness can paint with it: `OILPAINT_KERNEL=oil` with a material backend
-//! (`--mixer ochrell` or `mixbox-material`). It serves the port checks (L1) and level E (L3), and
-//! is retired together with the Python harness in L5.
+//! Python renderer and eval harness can paint with it: `OILPAINT_KERNEL=oil` with an 85-float backend
+//! (`--mixer ochrell`, or `mixbox-material` for Mixbox padded to 85 floats). It serves the port checks (L1) and
+//! level E (L3), and is retired together with the Python harness in L5.
 //!
-//! The kernel has one transport, the material transport, which needs the canvas `amount` plane; v1's `brush.c` ABI
-//! has no such plane and is not served (step 1 of the L1 port check used it: commit a9c573a).
+//! One ABI per library: this is the bridge's (85-float states; the canvas `amount` pointer is accepted and ignored,
+//! since the kernel uses v1's transport). v1's `brush.c` ABI served step 1 of the L1 port check (commit a9c573a).
 //!
 //! Safety contract (as for the bridge): every pointer is non-null, aligned, and addresses a live, disjoint buffer of
 //! the stated length for the duration of the call. The Python side checks shapes, dtypes and values.
@@ -221,7 +221,6 @@ unsafe fn paint<M: Mixer<State = [f32; LAT]>>(
             hgt: std::slice::from_raw_parts_mut(cv.hgt, npx),
             wet: std::slice::from_raw_parts_mut(cv.wet, npx),
             cover: std::slice::from_raw_parts_mut(cv.cover, npx),
-            amount: std::slice::from_raw_parts_mut(cv.amount, npx),
             hblur: if cv.hblur.is_null() { &[] } else { std::slice::from_raw_parts(cv.hblur, npx) },
         };
         let pts = std::slice::from_raw_parts(pts as *const [f32; 4], n as usize);

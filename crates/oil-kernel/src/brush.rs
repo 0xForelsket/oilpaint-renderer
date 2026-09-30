@@ -1,8 +1,14 @@
 //! The bristle-lane brush: all four modes (0 paint, 1 scumble, 2 smudge, 3 glaze), lanes, height and pick-up.
 //!
-//! Ported from `spikes/oilcore/src/kernel.rs` (itself a port of v1's `brush.c`), generic over the mixer, with the
-//! material transport of the Ochrell integration (see `render_stroke_len`), a counter-based bristle RNG and
-//! fixed-order pick-up sums. Maths goes through `oil-math` only, so a stroke paints the same bits on every host.
+//! Ported from `spikes/oilcore/src/kernel.rs` (itself a port of v1's `brush.c`), generic over the mixer, with a
+//! counter-based bristle RNG and fixed-order pick-up sums. Maths goes through `oil-math` only, so a stroke paints the
+//! same bits on every host.
+//!
+//! Transport (how paint moves between brush and canvas) is v1's, chosen by Sean after L1 (docs/reports/L1.md): a
+//! deposit moves the pixel's mixer state toward the brush's paint by the deposit alpha, and mixing with the paint
+//! underneath comes from the brush: each bristle tip picks up wet canvas paint ("dirt") and carries it along. The
+//! display colour is the decoded state. A layered paint film with interface mixing is the next candidate (the film
+//! spike before L7).
 use crate::planes::Planes;
 use oil_math::{expf, sinf};
 use oil_mix::{Mixer, State};
@@ -326,7 +332,6 @@ struct Partials<S> {
     z: [S; MAX_NB],
     a: [f32; MAX_NB],
     wet: [f32; MAX_NB],
-    cov: [f32; MAX_NB],
     alpha: f64,
     touched: u128,
 }
@@ -334,7 +339,7 @@ struct Partials<S> {
 impl<S: State> Partials<S> {
     /// Add this chunk's sums to the segment totals (lanes in increasing order) and clear it.
     #[inline]
-    fn flush(&mut self, seg_z: &mut [S; MAX_NB], seg_a: &mut [f32; MAX_NB], seg_wet: &mut [f32; MAX_NB], seg_cov: &mut [f32; MAX_NB], alpha: &mut f64) {
+    fn flush(&mut self, seg_z: &mut [S; MAX_NB], seg_a: &mut [f32; MAX_NB], seg_wet: &mut [f32; MAX_NB], alpha: &mut f64) {
         let mut t = self.touched;
         while t != 0 {
             let l = t.trailing_zeros() as usize;
@@ -346,10 +351,8 @@ impl<S: State> Partials<S> {
             }
             seg_a[l] += self.a[l];
             seg_wet[l] += self.wet[l];
-            seg_cov[l] += self.cov[l];
             self.a[l] = 0.0;
             self.wet[l] = 0.0;
-            self.cov[l] = 0.0;
         }
         self.touched = 0;
         *alpha += self.alpha;
@@ -502,13 +505,6 @@ pub fn render_stroke<M: Mixer>(
 }
 
 /// Paint one stroke whose length in brush widths is given (see `length_in_widths`).
-///
-/// Material transport (the model validated by the Ochrell integration, `native/ochrell-brush`): every pixel holds a
-/// relative paint `amount` besides its mixer state. A deposit mixes the incoming paint into the wet, accessible part
-/// of the pixel by amount; dry paint and bare ground do not dilute it. The display colour is composited separately
-/// with the stroke's coverage, in linear light. Each bristle tip carries its own state and amount: it picks up wet
-/// paint in proportion to `pickup` and is replenished from the load by `release`. Glaze composites display colour
-/// only and leaves the material untouched.
 pub fn render_stroke_len<M: Mixer>(
     m: &M,
     cv: &mut Planes<'_, M::State>,
@@ -526,18 +522,16 @@ pub fn render_stroke_len<M: Mixer>(
     let wref = pts.iter().fold(1e-3f32, |w, p| if p[2] > w { p[2] } else { w });
     let bb = make_bristles(bp, total_s);
     let mode = bp.mode;
-    let release = bp.release.clamp(0.0, 1.0);
 
     let zero = M::State::zero();
     let mut zload = [zero; MAX_NB];
     let mut ztip = [zero; MAX_NB];
-    let mut tip_amount = [if mode == MODE_SMUDGE { 0.0f32 } else { bp.load }; MAX_NB];
+    let mut dirt = [0.0f32; MAX_NB];
     let mut seg_z = [zero; MAX_NB];
     let mut seg_a = [0.0f32; MAX_NB];
     let mut seg_wet = [0.0f32; MAX_NB];
-    let mut seg_cov = [0.0f32; MAX_NB];
     // per-chunk partial sums, flushed into seg_* in chunk order
-    let mut part = Partials { z: [zero; MAX_NB], a: [0.0; MAX_NB], wet: [0.0; MAX_NB], cov: [0.0; MAX_NB], alpha: 0.0, touched: 0 };
+    let mut part = Partials { z: [zero; MAX_NB], a: [0.0; MAX_NB], wet: [0.0; MAX_NB], alpha: 0.0, touched: 0 };
     {
         let (zc, zc2) = (load.zcol.as_slice(), load.zcol2.as_slice());
         for l in 0..bb.ntot {
@@ -545,10 +539,13 @@ pub fn render_stroke_len<M: Mixer>(
             let st = bp.streak * bb.tstreak[l];
             let zl = zload[l].as_mut_slice();
             for k in 0..zl.len() {
-                zl[k] = (1.0 - m_b) * zc[k] + m_b * zc2[k];
+                zl[k] = zc[k] + m_b * (zc2[k] - zc[k]);
             }
+            // the mixer adds the streak (plain `+ st * dz` for rgb and Mixbox, bit-identical to v1; limited so that
+            // K >= 0 and S > 0 for Ochrell)
             m.streak(&mut zload[l], &load.dz, st);
             ztip[l] = zload[l];
+            dirt[l] = if mode == MODE_SMUDGE { 1.0 } else { 0.0 };
         }
     }
     let mut v_load = bp.load;
@@ -613,7 +610,6 @@ pub fn render_stroke_len<M: Mixer>(
         for l in 0..bb.ntot {
             seg_a[l] = 0.0;
             seg_wet[l] = 0.0;
-            seg_cov[l] = 0.0;
             seg_z[l] = zero;
         }
         let e0 = 0.35f32;
@@ -622,7 +618,7 @@ pub fn render_stroke_len<M: Mixer>(
         if bx1 >= bx0 && by1 >= by0 {
             for py in by0..=by1 {
                 if py > by0 && py % CHUNK_ROWS == 0 {
-                    part.flush(&mut seg_z, &mut seg_a, &mut seg_wet, &mut seg_cov, &mut stat_alpha);
+                    part.flush(&mut seg_z, &mut seg_a, &mut seg_wet, &mut stat_alpha);
                 }
                 let row = py as usize * wu;
                 for px in bx0..=bx1 {
@@ -695,7 +691,6 @@ pub fn render_stroke_len<M: Mixer>(
                     if wsum < 1e-6 {
                         continue;
                     }
-                    let weight = |c: usize| (if use_r { smp.w_r[c] } else { smp.w_f[c] }) / wsum;
                     let mut bd = smp.idx[0];
                     let mut wd = -1.0f32;
                     for c in 0..smp.n {
@@ -705,67 +700,51 @@ pub fn render_stroke_len<M: Mixer>(
                             bd = smp.idx[c];
                         }
                     }
-                    // pick-up: the dominant lane samples the paint under it, weighted by its amount
-                    let sample_amount = alpha * cv.amount[idx];
                     {
                         let lpix = cv.lat[idx].as_slice();
                         let sz = part.z[bd].as_mut_slice();
                         for k in 0..sz.len() {
-                            sz[k] += sample_amount * lpix[k];
+                            sz[k] += alpha * lpix[k];
                         }
                     }
-                    part.a[bd] += sample_amount;
-                    part.wet[bd] += sample_amount * cv.wet[idx];
-                    part.cov[bd] += alpha;
+                    part.a[bd] += alpha;
+                    part.wet[bd] += alpha * cv.wet[idx];
                     part.touched |= 1u128 << bd;
                     if !can_deposit {
-                        continue;
-                    }
-                    // the paint the brush delivers here: the contributing tips, by weight (and by amount when smudging)
-                    let source_amount = if mode == MODE_SMUDGE {
-                        let mut s_amt = 0.0f32;
-                        for c in 0..smp.n {
-                            s_amt += weight(c) * tip_amount[smp.idx[c]];
-                        }
-                        s_amt
-                    } else if v_load > 0.0 {
-                        v_load
-                    } else {
-                        0.0
-                    };
-                    if source_amount <= 1e-8 {
                         continue;
                     }
                     let mut zpix = zero;
                     {
                         let zp = zpix.as_mut_slice();
-                        for c in 0..smp.n {
-                            let l = smp.idx[c];
-                            let w = if mode == MODE_SMUDGE { weight(c) * tip_amount[l] / source_amount } else { weight(c) };
-                            let zt = ztip[l].as_slice();
-                            for k in 0..zp.len() {
-                                zp[k] += w * zt[k];
+                        if mode == MODE_SMUDGE {
+                            for c in 0..smp.n {
+                                let w = (if use_r { smp.w_r[c] } else { smp.w_f[c] }) / wsum;
+                                let zt = ztip[smp.idx[c]].as_slice();
+                                for k in 0..zp.len() {
+                                    zp[k] += w * zt[k];
+                                }
+                            }
+                        } else {
+                            for c in 0..smp.n {
+                                let w = (if use_r { smp.w_r[c] } else { smp.w_f[c] }) / wsum;
+                                let l = smp.idx[c];
+                                let dpix = clamp01(dirt[l] * (1.0 + bp.streak_mix * bb.tstreak[l]));
+                                let (zl, zt) = (zload[l].as_slice(), ztip[l].as_slice());
+                                for k in 0..zp.len() {
+                                    zp[k] += w * (zl[k] + dpix * (zt[k] - zl[k]));
+                                }
                             }
                         }
                     }
                     let a = alpha;
-                    if mode == MODE_GLAZE {
-                        oil_mix::composite(&mut cv.rgb[idx], m.decode_linear_rgb(&zpix), a);
-                    } else {
-                        let incoming = a * source_amount;
-                        if incoming > 0.0 {
-                            let accessible = cv.amount[idx] * clamp01(cv.wet[idx]);
-                            let total = accessible + incoming;
-                            let tm = incoming / total;
-                            let lpix = cv.lat[idx].as_mut_slice();
-                            let zp = zpix.as_slice();
-                            for k in 0..lpix.len() {
-                                lpix[k] = (1.0 - tm) * lpix[k] + tm * zp[k];
-                            }
-                            cv.amount[idx] = total;
-                            oil_mix::composite(&mut cv.rgb[idx], m.decode_linear_rgb(&cv.lat[idx]), a);
+                    {
+                        let lpix = cv.lat[idx].as_mut_slice();
+                        let zp = zpix.as_slice();
+                        for k in 0..lpix.len() {
+                            lpix[k] += a * (zp[k] - lpix[k]);
                         }
                     }
+                    cv.rgb[idx] = m.decode_srgb(&cv.lat[idx]);
                     let base = hprev + (hcur - hprev) * t;
                     if mode == MODE_PAINT {
                         let au = u.abs();
@@ -791,47 +770,38 @@ pub fn render_stroke_len<M: Mixer>(
                         }
                     } else if mode == MODE_SMUDGE {
                         cv.hgt[idx] -= a * bp.flatten * (cv.hgt[idx] - base);
-                        if cv.wet[idx] < a {
-                            cv.wet[idx] = a;
-                        }
                     }
                     cv.cover[idx] += a;
                     part.alpha += a as f64;
                     stat_pix += 1;
                 }
             }
-            part.flush(&mut seg_z, &mut seg_a, &mut seg_wet, &mut seg_cov, &mut stat_alpha);
+            part.flush(&mut seg_z, &mut seg_a, &mut seg_wet, &mut stat_alpha);
         }
-        let v_fresh = if v_load > 0.0 { v_load } else { 0.0 };
         for l in 0..bb.ntot {
-            let replenish = |ztip: &mut M::State, tip_amount: &mut f32| {
-                let (zt, zl) = (ztip.as_mut_slice(), zload[l].as_slice());
-                for k in 0..zt.len() {
-                    zt[k] = (1.0 - release) * zt[k] + release * zl[k];
-                }
-                *tip_amount = (1.0 - release) * *tip_amount + release * v_fresh;
-            };
             if seg_a[l] <= 1e-6 {
-                if mode != MODE_SMUDGE && mode != MODE_GLAZE {
-                    replenish(&mut ztip[l], &mut tip_amount[l]);
-                }
+                dirt[l] -= bp.release * dirt[l] * (if mode == MODE_SMUDGE { 0.0 } else { 1.0 });
                 continue;
             }
             let wetavg = seg_wet[l] / seg_a[l];
             sum_wet_all += seg_wet[l] as f64;
             sum_a_all += seg_a[l] as f64;
-            if mode != MODE_GLAZE {
-                let picked = bp.pickup * wetavg * seg_a[l] / seg_cov[l].max(1e-6);
-                if picked > 0.0 {
-                    let t = picked / (tip_amount[l] + picked);
-                    let (zt, sz, sa) = (ztip[l].as_mut_slice(), seg_z[l].as_slice(), seg_a[l]);
-                    for k in 0..zt.len() {
-                        zt[k] = (1.0 - t) * zt[k] + t * sz[k] / sa;
-                    }
-                    tip_amount[l] += picked;
+            let (zt, sz, sa) = (ztip[l].as_mut_slice(), seg_z[l].as_slice(), seg_a[l]);
+            if mode == MODE_SMUDGE {
+                for k in 0..zt.len() {
+                    zt[k] += bp.pickup * (sz[k] / sa - zt[k]);
                 }
-                if mode != MODE_SMUDGE {
-                    replenish(&mut ztip[l], &mut tip_amount[l]);
+                dirt[l] = 1.0;
+            } else if mode != MODE_GLAZE {
+                let rate = 0.6f32 * wetavg;
+                for k in 0..zt.len() {
+                    zt[k] += rate * (sz[k] / sa - zt[k]);
+                }
+                let target = bp.pickup * wetavg;
+                if target > dirt[l] {
+                    dirt[l] += 0.6 * (target - dirt[l]);
+                } else {
+                    dirt[l] -= bp.release * (dirt[l] - target);
                 }
             }
         }
