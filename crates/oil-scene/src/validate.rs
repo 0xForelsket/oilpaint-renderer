@@ -621,21 +621,14 @@ impl V<'_> {
             self.range(&format!("{p}/dryWidth"), x, 1e-6, 10.0);
         }
         // curve placement without `curve` follows every region's boundary
-        match &l.curve {
-            Some(m) => {
-                for (n, c) in m {
-                    let kp = format!("{p}/curve/{}", pointer_escape(n));
-                    self.region_name(&kp, n, names);
-                    match c {
-                        CurveSpec::Named(s) if s == "boundary" => {}
-                        CurveSpec::Named(s) => {
-                            self.errs.push(Error::new("SCHEMA", "a curve is \"boundary\" or a polyline").path(kp).got(s).expected("\"boundary\""))
-                        }
-                        CurveSpec::Points(pts) => self.poly(&kp, pts, 2),
-                    }
-                }
+        for (n, c) in l.curve.iter().flatten() {
+            let kp = format!("{p}/curve/{}", pointer_escape(n));
+            self.region_name(&kp, n, names);
+            match c {
+                CurveSpec::Named(s) if s == "boundary" => {}
+                CurveSpec::Named(s) => self.errs.push(Error::new("SCHEMA", "a curve is \"boundary\" or a polyline").path(kp).got(s).expected("\"boundary\"")),
+                CurveSpec::Points(pts) => self.poly(&kp, pts, 2),
             }
-            None => {}
         }
         self.range(&format!("{p}/curveOffset"), l.curve_offset, -20.0, 20.0);
         self.range(&format!("{p}/curveSpacing"), l.curve_spacing, 0.05, 100.0);
