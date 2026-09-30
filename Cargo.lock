@@ -170,6 +170,7 @@ dependencies = [
  "oil-mix",
  "oil-mix-mixbox",
  "oil-paint",
+ "oil-scene",
  "oil-strokes",
  "png",
  "serde_json",
@@ -271,6 +272,16 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+]
+
+[[package]]
+name = "oil-wasm"
+version = "2.0.0-dev.0"
+dependencies = [
+ "oil-kernel",
+ "oil-mix",
+ "oil-scene",
+ "serde_json",
 ]
 
 [[package]]

@@ -1,0 +1,20 @@
+[package]
+name = "oil-wasm"
+description = "C-ABI WASM exports for the TypeScript package (packages/oilpaint): ScenePlan validation and guides (L2); planning and painting come in L3-L4"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+oil-kernel = { path = "../oil-kernel" }
+oil-mix = { path = "../oil-mix" }
+oil-scene = { path = "../oil-scene" }
+serde_json = "1"
+
+[lints]
+workspace = true
