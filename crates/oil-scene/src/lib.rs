@@ -8,10 +8,14 @@
 #![allow(clippy::result_large_err)]
 
 pub mod color;
+pub mod compile;
+pub mod preview;
+pub mod raster;
 pub mod spec;
 pub mod validate;
 
 pub use oil_errors::Error;
+pub use compile::{compile, FieldData, Guides, Timings};
 pub use spec::ScenePlan;
 pub use validate::{load, parse, validate, Report};
 
@@ -25,7 +29,7 @@ pub fn schema() -> serde_json::Value {
     let mut s = serde_json::to_value(gen.into_root_schema_for::<ScenePlan>()).unwrap_or_default();
     if let Some(o) = s.as_object_mut() {
         o.insert("$id".into(), SCHEMA_ID.into());
-        o.insert("title".into(), "ScenePlan v1".into());
+        o.insert("title".into(), "ScenePlan".into());
     }
     s
 }

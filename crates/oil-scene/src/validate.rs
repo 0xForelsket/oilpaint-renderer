@@ -527,6 +527,10 @@ impl V<'_> {
                         self.errs.push(Error::new("RANGE", "a range is [min, max]").path(kp.clone()).got(format!("[{a}, {b}]")).fix(format!("use [{b}, {a}]")));
                     }
                 }
+                R::Two(lo, hi) => {
+                    self.range(&format!("{kp}/0"), num(&x[0]), *lo, *hi);
+                    self.range(&format!("{kp}/1"), num(&x[1]), *lo, *hi);
+                }
                 R::Color => {
                     if let Ok(c) = serde_json::from_value::<ColorSpec>(x.clone()) {
                         self.color(&kp, &c);
@@ -637,6 +641,8 @@ enum R {
     Pos,
     /// [min, max] within [lo, hi]; `true` if the values are cw sizes (UNITS when too large).
     Pair(f64, f64, bool),
+    /// Two independent values within [lo, hi].
+    Two(f64, f64),
     Color,
     Colors,
     Flecks,
@@ -679,7 +685,7 @@ const STYLE_RULES: [(&str, R); 46] = [
     ("load2", R::Color),
     ("splay", R::Range(0.0, 3.0)),
     ("snap", R::Range(0.0, 1.0)),
-    ("jitter", R::Pair(0.0, 100.0, false)),
+    ("jitter", R::Two(0.0, 100.0)),
     ("warmth", R::Range(0.0, 1.0)),
     ("warmColor", R::Color),
     ("priority", R::Any),

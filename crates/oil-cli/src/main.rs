@@ -5,6 +5,11 @@
 //!   oil testsheet --out FILE.oilstrokes           write the procedural test sheet
 //!   oil paint FILE.oilstrokes --width W [--mixer ochrell|rgb|mixbox] [--light default|painting|none] [--out DIR]
 //!                                                 paint; writes unlit.png, lit.png, height.png, report.json
+//!   oil scene validate FILE.json                  validate a ScenePlan: every error with its JSON Pointer (JSON)
+//!   oil scene schema                              print the ScenePlan v1 JSON Schema
+//!   oil guides FILE.json [--width 600] [--mixer ID] [--field NAME=FILE.f32 ...] [--out DIR] [--npy]
+//!                                                 compile a ScenePlan to guide maps; writes the guide PNGs, the
+//!                                                 guide sheet and guides.json (region stats, plane hashes, timings)
 //!
 //! Every command prints one JSON document on stdout. Errors are JSON too ({"error": {...}}, spec/ERRORS.md) with
 //! exit code 1; usage errors exit with 2.
@@ -16,7 +21,9 @@ use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
-fn mixers() -> Vec<&'static str> {
+mod scene;
+
+pub(crate) fn mixers() -> Vec<&'static str> {
     #[cfg_attr(not(feature = "mixbox"), allow(unused_mut))]
     let mut m = vec![OchrellMixer::ID, RgbMixer::ID];
     #[cfg(feature = "mixbox")]
@@ -24,12 +31,12 @@ fn mixers() -> Vec<&'static str> {
     m
 }
 
-fn fail(e: Error) -> ! {
+pub(crate) fn fail(e: Error) -> ! {
     println!("{}", json!({ "error": e }));
     std::process::exit(1);
 }
 
-fn usage(msg: &str) -> ! {
+pub(crate) fn usage(msg: &str) -> ! {
     eprintln!("{msg}\nusage: oil version | info FILE | testsheet --out FILE | paint FILE --width W [--mixer ID] [--light default|painting|none] [--out DIR]");
     std::process::exit(2);
 }
@@ -66,7 +73,7 @@ fn to8(v: f32) -> u8 {
     (v.clamp(0.0, 1.0) * 255.0 + 0.5) as u8
 }
 
-fn write_png(path: &Path, w: usize, h: usize, rgb: &[u8], channels: png::ColorType) {
+pub(crate) fn write_png(path: &Path, w: usize, h: usize, rgb: &[u8], channels: png::ColorType) {
     let f = std::fs::File::create(path).unwrap_or_else(|e| fail(Error::new("IO", format!("cannot write {}: {e}", path.display()))));
     let mut enc = png::Encoder::new(std::io::BufWriter::new(f), w as u32, h as u32);
     enc.set_color(channels);
@@ -171,6 +178,8 @@ fn main() {
             }
             println!("{report}");
         }
+        Some("scene") => scene::scene(&args[1..]),
+        Some("guides") => scene::guides(&args[1..]),
         _ => usage("unknown command"),
     }
 }
