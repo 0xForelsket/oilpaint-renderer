@@ -4,7 +4,8 @@
 //! WASM in Node, Chromium and Firefox (exports below); the hosts hash the bytes with their own SHA-256 and
 //! `ci/xhost/compare.mjs` requires identical digests. Cases: maths (L0) with negative controls, the test sheet's
 //! StrokeList bytes and every canvas plane plus the lit image with each mixer (L1); the scene compiler's guide
-//! planes for Storm Light and the validator's error report (L2); planner cases come in L3.
+//! planes for Storm Light and the validator's error report (L2); the planner's StrokeLists for Storm Light and
+//! the still life (L3).
 #![deny(unsafe_code)]
 
 use oil_kernel::Canvas;
@@ -97,6 +98,18 @@ fn kernel_cases<M: Mixer>(v: &mut Vec<Case>, id: &str, painted: fn() -> &'static
 }
 /// Storm Light's ScenePlan as the TS DSL writes it (scenes/storm_v3.ts).
 const STORM_PLAN: &str = include_str!("../../../spec/examples/storm_v3.sceneplan.json");
+/// The still life (scenes/still_life.ts), the L3 acceptance's second scene.
+const STILL_PLAN: &str = include_str!("../../../spec/examples/still_life.sceneplan.json");
+/// Plan width for the planner cases: small enough for every browser.
+const PLAN_WIDTH: u32 = 300;
+
+/// A ScenePlan planned with Ochrell at `PLAN_WIDTH`: the StrokeList bytes.
+fn plan_bytes(json: &str) -> Vec<u8> {
+    let (sp, _) = oil_scene::load(json).expect("the example ScenePlan is valid");
+    let opts = oil_plan::PlanOptions { seed: 1907, plan_width: PLAN_WIDTH, strict_engine: false };
+    oil_plan::plan(&OchrellMixer, &sp, &opts, &Default::default(), &|| 0.0).expect("it plans").0.to_bytes()
+}
+
 /// Guide width for the compiler cases: the default plan width.
 const GUIDE_WIDTH: u32 = 600;
 
@@ -135,6 +148,8 @@ fn scene_cases(v: &mut Vec<Case>) {
         f32_bytes((0..g.names.len()).flat_map(|r| pts.iter().flat_map(move |&(x, y)| g.flow_at(Some(r), x, y))))
     }));
     v.push(case(name("light"), Expect::Identical, || f32_bytes(storm_guides().light.iter().copied())));
+    v.push(case(format!("plan.storm_v3@{PLAN_WIDTH}.ochrell"), Expect::Identical, || plan_bytes(STORM_PLAN)));
+    v.push(case(format!("plan.still_life@{PLAN_WIDTH}.ochrell"), Expect::Identical, || plan_bytes(STILL_PLAN)));
     // every error of a broken plan: codes, paths and offending values, in order, must not depend on the host
     // (messages and fixes are free text that may change without an engine-version bump, so they are left out)
     v.push(case("scene.validate.codes", Expect::Identical, || {

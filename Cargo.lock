@@ -326,6 +326,7 @@ dependencies = [
  "oil-mix",
  "oil-mix-mixbox",
  "oil-paint",
+ "oil-plan",
  "oil-scene",
  "oil-strokes",
  "serde_json",

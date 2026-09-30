@@ -24,6 +24,7 @@ oil-paint = { path = "../oil-paint" }
 oil-light = { path = "../oil-light" }
 oil-strokes = { path = "../oil-strokes" }
 oil-scene = { path = "../oil-scene" }
+oil-plan = { path = "../oil-plan" }
 serde_json = "1"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
