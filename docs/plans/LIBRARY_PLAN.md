@@ -128,6 +128,14 @@ The golden hashes (section 5) catch any output change in Ochrell.
 - **Colours in StrokeLists.** They are stored as authored sRGB, not latents. A StrokeList is mixer-independent
   and small, and the engine encodes each colour once per replay.
 
+**Transport** (how paint moves between brush and canvas; decided after L1): v1's.
+- A deposit moves the pixel's mixer state toward the brush paint by the deposit alpha.
+- Mixing with the paint underneath comes from the brush: each bristle tip picks up wet paint ("dirt") and carries
+  it along.
+- The material transport of the Ochrell integration (paint amounts, amount-weighted mixing with all wet paint) was
+  tried in L1 and dropped because it washed out broken colour.
+- The film spike (F0, section 11) tests a layered film before L7.
+
 **Kernel, from the spike.** `spikes/oilcore`, about 1,500 lines, ports all of `brush.c`, `relight` and the image
 ops. It builds native and to WASM (71-75 KB). *Measured on the VM:*
 - Rust with platform libm is bit-identical to strict-built C on the swatch sheet and on all 12,495 Storm Light
@@ -283,7 +291,7 @@ definition. It must be measured against Ochrell f32 on the ochrell storage-error
 - region mask: 1 B
 
 That is 373 B/px, *measured* and verified in the ochrell report. The engine (L1) has no region plane, so it uses
-**372 B/px** with Ochrell (60 with Mixbox, 44 with rgb; *measured*). L7 and L11 add about 26 B/px (edge and fresh
+**368 B/px** with Ochrell (56 with Mixbox, 40 with rgb; *measured*; v1's transport needs no `amount` plane). L7 and L11 add about 26 B/px (edge and fresh
 planes, age, glaze film), so about 400 B/px (*projected*). These totals exclude planner proxies, lighting
 temporaries and snapshots. *Measured* peak memory of the native CLI (L1): 171 MB, 712 MB and 3.0 GB at 600, 1200
 and 2400 px.
@@ -451,33 +459,35 @@ physics milestones run straight after the planner port and its retirement commit
 | Order | L | Content | Days | Depends | Ends with |
 |---|---|---|---|---|---|
 | 1 | L0 | v1 tag; StrokeList v2 and ScenePlan v1 spec drafts (engine version, mixer ID, error codes); golden layout; cross-host determinism CI skeleton; `.gitattributes` | 1.5 | – | specs, CI skeleton runnable locally |
-| 2 | L1 | Rust workspace: `oil-math` (pure-Rust maths, sRGB), `oil-mix` (Mixer trait, Ochrell default via `decode_linear`/`encode_linear`, rgb, Mixbox opt-in), kernel port (borrowed planes, counter RNG, chunked sums), image ops, lighting, StrokeList v2 codec with version gate, CLI, ctypes shim, first goldens | 4 | L0 | **done** (`docs/reports/L1.md`): P1 and P2 passed; G1 on 7 hosts; G3 0.03%; G4; goldens `2.0.0-dev.1`. Open: the paint-transport sign-off |
+| 2 | L1 | Rust workspace: `oil-math` (pure-Rust maths, sRGB), `oil-mix` (Mixer trait, Ochrell default via `decode_linear`/`encode_linear`, rgb, Mixbox opt-in), kernel port (borrowed planes, counter RNG, chunked sums), image ops, lighting, StrokeList v2 codec with version gate, CLI, ctypes shim, first goldens | 4 | L0 | **done** (`docs/reports/L1.md`): P1 and P2 passed; G1 on 7 hosts; G3 0.03%; G4; goldens. Transport decided after L1: v1's, with Ochrell (engine `2.0.0-dev.2`) |
 | 3 | L2 | ScenePlan v1 + JSON Schema + Rust spec compiler + TS DSL + validation | 4 | L1 | Storm Light guide sheets from TS; compile time measured |
 | 4 | L3 | Rust planner port + composed `plan` + toolbox exports + incremental error planes; then the retirement commit | 5 | L2 | level E; identical StrokeList SHA on native, Node, Chromium and Firefox |
-| 5 | L7 | paint that settles (height taper, wet displacement, fresh-paint levelling, spline outlines, default light) straight in the kernel, no v1 flags | 2.5 | L3 | A/B/C strip; harness strata, facet and hairline acceptance (ENGINE_PLAN 3.2) |
-| 6 | L11 | wet/tacky/dry stages and the optical KM glaze film (+16 B/px) | 2.5 | L7 | glow/haze before and after; glaze swatch acceptance |
-| 7 | L4 | WASM host: Worker, Level-1 API, standalone and p5 adapters, frames, time-lapse; memory budget and size limits, measured | 4 | L11 | demo pages; peak-memory table in Chromium and Firefox |
-| 8 | L5 | agent tooling: headless API/CLI JSON, `oil-metrics`, partial re-render, catalogue, guide view, AGENTS.md, gallery, cookbook; Python harness retired once `oil-metrics` matches it | 5 | L4 | agent runs the gallery from AGENTS.md alone |
-| 9 | L6 | mixers for release: Mixbox plug-in package, Ochrell-vs-Mixbox swatch sheet, harness mix metrics relative to the active mixer, licence packaging per Sean's choice (section 10) | 1.5 | L5 | swatch comparison; **public alpha** |
-| 10 | L8 | memory and speed: tile store with lossless cold tiles (probe first); Ochrell pixel path (state traffic, lane-order SIMD128; the sRGB tables already landed in L1); threads native + WASM; lighting worker; tiles also lift wasm32's 2 GiB-per-allocation limit | 7 | L6 | memory and timing tables; G2 across threads and memory modes |
-| 11 | L9 | planner fixes: cut-in edges, rock facets, halo glaze, tube palettes | 3 | L3, L11 | tower, rock and halo crops |
-| 12 | L10 | brush memory, flat/filbert/round, twist and speed | 3.5 | L1 | brush demo |
-| 13 | L12 | palette knife | 3 | L1 | knife demo |
-| 14 | L13 | 1.0: docs site, CI hardening, release | 2 | all | published package |
+| 5 | F0 | **film spike** (throwaway prototype, measured): a two-layer paint film per pixel (top layer + body), mixing only at the interface, driven by pressure, drag, wetness and paint stiffness; Kubelka-Munk layer optics from Ochrell's K/S; colour computed when viewed, not per dab | 1 | L3 | go/no-go: 8-seed harness mix metrics, a Storm Light side-by-side against v1's transport, memory and speed. If go, L7 and L11 are rebuilt around the film |
+| 6 | L7 | paint that settles (height taper, wet displacement, fresh-paint levelling, spline outlines, default light) straight in the kernel, no v1 flags | 2.5 | L3 | A/B/C strip; harness strata, facet and hairline acceptance (ENGINE_PLAN 3.2) |
+| 7 | L11 | wet/tacky/dry stages and the optical KM glaze film (+16 B/px) | 2.5 | L7 | glow/haze before and after; glaze swatch acceptance |
+| 8 | L4 | WASM host: Worker, Level-1 API, standalone and p5 adapters, frames, time-lapse; memory budget and size limits, measured | 4 | L11 | demo pages; peak-memory table in Chromium and Firefox |
+| 9 | L5 | agent tooling: headless API/CLI JSON, `oil-metrics`, partial re-render, catalogue, guide view, AGENTS.md, gallery, cookbook; Python harness retired once `oil-metrics` matches it | 5 | L4 | agent runs the gallery from AGENTS.md alone |
+| 10 | L6 | mixers for release: Mixbox plug-in package, Ochrell-vs-Mixbox swatch sheet, harness mix metrics relative to the active mixer, licence packaging per Sean's choice (section 10) | 1.5 | L5 | swatch comparison; **public alpha** |
+| 11 | L8 | memory and speed: tile store with lossless cold tiles (probe first); Ochrell pixel path (state traffic, lane-order SIMD128; the sRGB tables already landed in L1); threads native + WASM; lighting worker; tiles also lift wasm32's 2 GiB-per-allocation limit | 7 | L6 | memory and timing tables; G2 across threads and memory modes |
+| 12 | L9 | planner fixes: cut-in edges, rock facets, halo glaze, tube palettes | 3 | L3, L11 | tower, rock and halo crops |
+| 13 | L10 | brush memory, flat/filbert/round, twist and speed | 3.5 | L1 | brush demo |
+| 14 | L12 | palette knife | 3 | L1 | knife demo |
+| 15 | L13 | 1.0: docs site, CI hardening, release | 2 | all | published package |
 
-Total **≈ 48.5 agent-days** (v3: 48). The public alpha lands after L6, at about 30 days. It now includes the
+Total **≈ 49.5 agent-days** (v3: 48). The public alpha lands after L6, at about 31 days. It now includes the
 settling-paint and glaze physics, which v3 placed after its alpha at 26 days.
 - **Cheaper (−3.5):**
   - L0: no strict-C freeze or C-derived golden corpus (−0.5);
   - L6: no 3-day calibration, and Ochrell is already integrated (−1.5);
   - L7, L10, L11: no v1-default flags or v1 digests (−1.5).
-- **More expensive (+4):**
+- **More expensive (+5):**
   - L1: the Mixer trait for an 85-float state, pure sRGB/pow with `encode_linear`, the version gate (+1);
+  - F0: the film spike, added after L1's transport decision (+1);
   - L8: tiled lossless storage and the Ochrell pixel path (+3).
 
 **Risks:**
-- **Ochrell cost:** 1.6x Mixbox's paint time in the engine (L1, *measured*; 4x through the Python bridge) and 6.2x its
-  memory. It is handled by L8 and the browser limits. A speed-parity claim with Mixbox would be unsupported.
+- **Ochrell cost:** about 1.5x Mixbox's paint time in the engine (L1 final kernel, *measured*; 4x through the Python
+  bridge) and 6.6x its memory. It is handled by L8 and the browser limits. A speed-parity claim with Mixbox would be unsupported.
 - **Ochrell development continues** (its optimisation rounds). It is pinned by commit (`ffd6ee9` since L1), its
   model version goes into the engine version, and goldens catch drift.
 - **Tile compression ratio unknown.** It is measured before building; if it is poor, the browser limit stays.
@@ -503,11 +513,13 @@ settling-paint and glaze physics, which v3 placed after its alpha at 26 days.
      CLI, shim and port check P1.
    - L1 then plugs Ochrell in (P2) against a clean, pinned Ochrell commit, together with the one additive API
      (`encode_linear`).
+9. **Paint transport: v1's, with Ochrell** (after L1). A deposit moves the pixel toward the brush paint by alpha,
+   and mixing comes from the brush's dirt pick-up. The material transport washed out Storm Light's broken colour
+   (`docs/reports/L1/storm_transport_choice.png`). Engine `2.0.0-dev.2`.
+10. **A film spike (F0) runs before L7.** It tests a layered paint film with interface mixing and optical layering
+    as the paradigm for L7/L11 (section 11).
 
 **Open for Sean:**
-1. **The paint transport** (L1, visual sign-off). v1's transport keeps Storm Light's broken colour; the material
-   transport adopted in L1 step 3 washes it out (`docs/reports/L1.md`, `docs/reports/L1/storm_transport_choice.png`).
-   The recommendation is v1's transport with Ochrell, with paint amounts revisited in L7/L11.
-2. **Visual sign-offs:** the level E side-by-side (L3), and the sky fluidity setting (L7, three settings shown).
-3. **Carried from ENGINE_PLAN** (decide by L8): halve the block-in strokes (a 44% kernel-time layer), and
+1. **Visual sign-offs:** the level E side-by-side (L3), and the sky fluidity setting (L7, three settings shown).
+2. **Carried from ENGINE_PLAN** (decide by L8): halve the block-in strokes (a 44% kernel-time layer), and
    1200-px layer images by default.

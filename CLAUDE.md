@@ -23,8 +23,9 @@ State of the repo:
 - **Ochrell** (`../ochrell`, MIT OR Apache-2.0 code, CC BY-SA 4.0 data): the default mixer of the new engine.
   Its integration evidence is in `docs/OCHRELL.md` and `../ochrell/docs/integration-results.md`.
 - **The new engine:** the Rust workspace in `crates/`, the TypeScript packages in `packages/` (from L2), and the
-  specs in `spec/`. Engine version `2.0.0-dev.1` since L1; Ochrell is pinned by commit (Cargo git dependency in
-  `crates/oil-mix/Cargo.toml`). Milestone reports: `docs/reports/`.
+  specs in `spec/`. Engine version `2.0.0-dev.2` (after L1: v1's paint transport with Ochrell, Sean's decision);
+  Ochrell is pinned by commit (Cargo git dependency in `crates/oil-mix/Cargo.toml`). Milestone reports:
+  `docs/reports/`. A film spike (F0) runs before L7.
 
 ## Rules
 
@@ -112,9 +113,14 @@ cargo build --release -p oil-cli --features mixbox
 node ci/xhost/scene.mjs --strokes out\storm.oilstrokes --width 600 --hosts native,node,chromium   # timing + full-scene determinism
 ```
 
-The Python harness can drive the new kernel through `crates/oil-shim`: set `OILPAINT_KERNEL=oil` and use a material
-mixer (`--mixer ochrell` or `mixbox-material`). Judge engine changes over several seeds (8 in L1): the harness's
-single-seed thresholds are tighter than the seed-to-seed spread of the mixing and outline metrics.
+The Python harness can drive the new kernel through `crates/oil-shim`: set `OILPAINT_KERNEL=oil` and use an 85-float
+mixer (`--mixer ochrell`, or `mixbox-material` for Mixbox). Judge engine changes over several seeds (8 in L1): the
+harness's single-seed thresholds are tighter than the seed-to-seed spread of the mixing and outline metrics.
+
+**Timing on this laptop:** the Core Ultra 7 258V has 4 performance cores (CPUs 0-3) and 4 low-power efficiency
+cores (4-7), and single-thread runs on an efficiency core are about 1.4x slower. Windows moves threads between them,
+so unpinned timings swing by 2x. Pin benchmarks to a performance core (`Process.ProcessorAffinity = 1 -shl 2` in
+PowerShell) and report ranges over repeats.
 
 ## Conventions
 
