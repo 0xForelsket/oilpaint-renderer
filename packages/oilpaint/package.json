@@ -1,0 +1,19 @@
+{
+  "name": "oilpaint",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Offline oil painting for agents and people: a declarative ScenePlan, a deterministic Rust/WASM engine, JSON feedback",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./scene": "./src/scene.ts",
+    "./engine": "./src/engine.ts"
+  },
+  "bin": {
+    "oilpaint": "./src/cli.ts"
+  }
+}

@@ -12,3 +12,5 @@ spikes/**/node_modules/
 spikes/planspike/data/
 /target/
 node_modules/
+# WASM built from crates/oil-wasm (npm run build:wasm); shipped in the npm package from L4
+packages/oilpaint/wasm/*.wasm
