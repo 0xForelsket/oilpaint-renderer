@@ -4,9 +4,9 @@ These specs define the two seams of the new engine:
 
 | Spec | What it is | Status |
 |---|---|---|
-| [`SCENEPLAN_V1.md`](SCENEPLAN_V1.md) | **ScenePlan v1**, the JSON input that describes a painting: canvas, target, regions, flows, light, styles, layers | draft (L0); frozen with its JSON Schema in L2 |
+| [`SCENEPLAN_V1.md`](SCENEPLAN_V1.md) | **ScenePlan v1**, the JSON input that describes a painting: canvas, target, regions, flows, light, styles, layers. Schema: [`sceneplan-1.schema.json`](sceneplan-1.schema.json) (generated from the Rust types); example: [`examples/`](examples/) | frozen in L2 |
 | [`STROKELIST_V2.md`](STROKELIST_V2.md) | **StrokeList v2**, the binary output of the planner and input of the painter; carries the engine version | draft (L0); frozen with the codec in L1 |
-| [`ERRORS.md`](ERRORS.md) | The structured error format and the error codes shared by the Rust core, the CLI and the TS API | draft (L0) |
+| [`ERRORS.md`](ERRORS.md) | The structured error format and the error codes shared by the Rust core, the CLI and the TS API | kept current; scene codes implemented in L2 |
 | [`ENGINE_VERSIONS.md`](ENGINE_VERSIONS.md) | Which engine version shipped in which package version or git tag | kept current from L1 |
 
 ## The engine version

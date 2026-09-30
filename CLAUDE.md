@@ -113,6 +113,19 @@ cargo build --release -p oil-cli --features mixbox
 node ci/xhost/scene.mjs --strokes out\storm.oilstrokes --width 600 --hosts native,node,chromium   # timing + full-scene determinism
 ```
 
+ScenePlan, guides and the TS package (L2):
+
+```powershell
+npm run build:wasm            # crates/oil-wasm -> packages/oilpaint/wasm/oil.wasm (git-ignored; the TS package needs it)
+npm run typecheck; npm run test:ts
+node packages/oilpaint/src/cli.ts guides scenes\storm_v3.ts --width 600 --out out\guides     # TS scene -> guide sheet (WASM)
+.\target\release\oil.exe guides spec\examples\storm_v3.sceneplan.json --out out\guides --npy   # the same, native
+.venv\Scripts\python.exe tools\compare_guides.py --rust out\guides --out out\guides\compare      # against v1's guides
+```
+
+The ScenePlan types are generated, never edited by hand: change `crates/oil-scene/src/spec.rs`, then regenerate the
+schema (`$env:OIL_WRITE_SCHEMA = "1"; cargo test --release -p oil-scene`) and the TS types (`npm run gen:types`).
+
 The Python harness can drive the new kernel through `crates/oil-shim`: set `OILPAINT_KERNEL=oil` and use an 85-float
 mixer (`--mixer ochrell`, or `mixbox-material` for Mixbox). Judge engine changes over several seeds (8 in L1): the
 harness's single-seed thresholds are tighter than the seed-to-seed spread of the mixing and outline metrics.
@@ -120,7 +133,8 @@ harness's single-seed thresholds are tighter than the seed-to-seed spread of the
 **Timing on this laptop:** the Core Ultra 7 258V has 4 performance cores (CPUs 0-3) and 4 low-power efficiency
 cores (4-7), and single-thread runs on an efficiency core are about 1.4x slower. Windows moves threads between them,
 so unpinned timings swing by 2x. Pin benchmarks to a performance core (`Process.ProcessorAffinity = 1 -shl 2` in
-PowerShell) and report ranges over repeats.
+PowerShell), or pin the PowerShell process itself to all four (`0xF`) so child processes and browsers inherit it,
+and report ranges over repeats.
 
 ## Conventions
 
@@ -130,3 +144,5 @@ PowerShell) and report ranges over repeats.
 - **Golden hashes.** They come from the new engine and are regression checks only, keyed by engine version.
   Output that changes means an engine-version bump, and the goldens are regenerated with it.
 - **Scratch output** goes to `out/` (ignored).
+- **TypeScript** is run directly by Node 24 (type stripping). Use erasable syntax only (no enums, namespaces or
+  parameter properties) and `.ts` extensions in relative imports; `tsc` is only for checks.

@@ -46,9 +46,15 @@ written for this project (MIT is the planned licence; no LICENSE file yet).
 - **Mixbox** (`mixbox` crate 2.0.0, CC BY-NC 4.0, non-commercial): only in the opt-in `oil-mix-mixbox` crate, the
   CLI's `mixbox` feature, the Python-harness shim (`crates/oil-shim`) and the cross-host test build
   (`crates/oil-xhost`); never in a default build. Later only in the `@oilpaint/mixbox` package.
-- **Other crates** (checked with `cargo metadata` in L1): serde, serde_json, sha2 and its RustCrypto helpers, png,
-  flate2, miniz_oxide, crc32fast, fdeflate, simd-adler32, zlib-rs, adler2, memchr, itoa, libm (via mixbox),
-  bitflags, generic-array, typenum, libc, cfg-if, cpufeatures, version_check, proc-macro2, quote, syn,
-  unicode-ident, zmij: all MIT, Apache-2.0, Zlib, Unicode-3.0, Unlicense or 0BSD (as alternatives or
-  combinations). No GPL.
-- **npm dev dependency:** Playwright 1.58.2 (Apache-2.0), for the cross-host check only.
+- **Other crates** (checked with `cargo metadata` in L1 and L2): serde, serde_json, sha2 and its RustCrypto
+  helpers, png, flate2, miniz_oxide, crc32fast, fdeflate, simd-adler32, zlib-rs, adler2, memchr, itoa, libm (via
+  mixbox), bitflags, generic-array, typenum, libc, cfg-if, cpufeatures, version_check, proc-macro2, quote, syn,
+  unicode-ident, zmij; from L2 (ScenePlan schema and errors) schemars and schemars_derive (MIT),
+  serde_path_to_error, serde_derive_internals, dyn-clone, ref-cast and ref-cast-impl (MIT OR Apache-2.0). All MIT,
+  Apache-2.0, Zlib, Unicode-3.0, Unlicense or 0BSD (as alternatives or combinations). No GPL.
+- **The TS package** (`packages/oilpaint`) has no runtime dependencies. Its SHA-256 and PNG encoder are written for
+  this project.
+- **npm dev dependencies** (never shipped): Playwright 1.58.2 (Apache-2.0), for the cross-host check;
+  TypeScript 7.0.2 (Apache-2.0), for type checks; json-schema-to-typescript 16.0.0 (MIT), which generates
+  `src/sceneplan.ts`, with its MIT dependencies (prettier, lodash, js-yaml, @apidevtools/json-schema-ref-parser and
+  others) and argparse 2.0.1 (Python-2.0, a permissive licence); @types/node (MIT).

@@ -74,6 +74,32 @@ jobs:
           name: xhost-wasm
           path: oilpaint-renderer/out/xhost/*.json
 
+  # The TS package (L2): WASM engine build, type check, tests, and generated types in sync with the schema (the
+  # schema itself is checked against the Rust types by `cargo test` in the native job).
+  ts:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: oilpaint-renderer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: oilpaint-renderer
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+      - run: npm run build:wasm
+      - run: npm run typecheck
+      - run: npm run test:ts
+      - run: node packages/oilpaint/scripts/gen-types.mjs --check
+
   compare:
     needs: [native, wasm]
     runs-on: ubuntu-latest
