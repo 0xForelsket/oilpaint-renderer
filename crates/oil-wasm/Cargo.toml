@@ -14,6 +14,7 @@ crate-type = ["cdylib", "rlib"]
 oil-kernel = { path = "../oil-kernel" }
 oil-mix = { path = "../oil-mix" }
 oil-scene = { path = "../oil-scene" }
+oil-plan = { path = "../oil-plan" }
 serde_json = "1"
 
 [lints]

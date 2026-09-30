@@ -6,6 +6,8 @@
 //   oilpaint validate SCENE                       {valid, errors, warnings}
 //   oilpaint guides SCENE [--width 600] [--mixer ochrell|rgb] [--out DIR]
 //                                                 compile guides; writes guide_*.png, guides_sheet.png, guides.json
+//   oilpaint plan SCENE --out FILE.oilstrokes [--width 600] [--seed 1907] [--mixer ochrell|rgb] [--strict-engine]
+//                                                 plan a scene into a StrokeList; prints the plan report
 //   oilpaint schema                               the ScenePlan v1 JSON Schema
 //   oilpaint version
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -16,7 +18,7 @@ import { encodePng } from "./png.ts";
 import type { Scene } from "./scene.ts";
 
 function usage(msg: string): never {
-  console.error(`${msg}\nusage: oilpaint spec SCENE [--out FILE] | validate SCENE | guides SCENE [--width W] [--mixer ID] [--out DIR] | schema | version`);
+  console.error(`${msg}\nusage: oilpaint spec SCENE [--out FILE] | validate SCENE | plan SCENE --out FILE [--width W] [--seed N] [--mixer ID] | guides SCENE [--width W] [--mixer ID] [--out DIR] | schema | version`);
   process.exit(2);
 }
 
@@ -72,6 +74,18 @@ async function main(argv: string[]) {
       const v = engine.validate(scene);
       console.log(JSON.stringify(v));
       if (!v.valid) process.exit(1);
+      return;
+    }
+    case "plan": {
+      if (!file) usage("plan needs a scene");
+      const out = opt("--out");
+      if (!out) usage("plan needs --out FILE.oilstrokes");
+      const { scene, buildMs } = await loadScene(file);
+      const t0 = performance.now();
+      const p = engine.plan(scene, { width: Number(opt("--width") ?? 600), seed: Number(opt("--seed") ?? 1907), mixer: (opt("--mixer") ?? "ochrell") as "ochrell" | "rgb", strictEngine: argv.includes("--strict-engine") });
+      const planMs = performance.now() - t0;
+      writeFileSync(out, p.strokes);
+      console.log(JSON.stringify({ ...p.report, file: out, timings: { buildSpecMs: buildMs, planMs }, host: `node ${process.versions.node}` }));
       return;
     }
     case "guides": {

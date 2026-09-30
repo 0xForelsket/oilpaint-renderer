@@ -2,8 +2,8 @@
 //! host copies input into a buffer (`oil_input`), calls a function that returns a byte length, and reads the
 //! result at `oil_buf_ptr()`. Results are JSON unless stated otherwise.
 //!
-//! L2 exports ScenePlan validation, the schema and the guide compiler (planes and preview images). Planning and
-//! painting are added in L3 and L4.
+//! L2 exports ScenePlan validation, the schema and the guide compiler (planes and preview images); L3 adds planning
+//! (`oil_plan`, `oil_plan_strokes`). Painting is added in L4.
 #![deny(unsafe_code)]
 
 use oil_mix::{OchrellMixer, RgbMixer};
@@ -68,6 +68,33 @@ pub fn guides(text: &str, width: u32, mixer: u32, fields: &BTreeMap<String, Fiel
     }
 }
 
+/// Plan a ScenePlan: the StrokeList bytes and the plan report (or `{errors}`).
+pub fn plan(text: &str, width: u32, seed: u32, mixer: u32, strict: bool, fields: &BTreeMap<String, FieldData>) -> (Value, Option<Vec<u8>>) {
+    let sp = match oil_scene::parse(text) {
+        Ok(p) => p,
+        Err(errors) => return (json!({ "errors": errors }), None),
+    };
+    let opts = oil_plan::PlanOptions { seed, plan_width: width, strict_engine: strict };
+    let clock = || 0.0;
+    let res = match mixer {
+        0 => oil_plan::plan(&OchrellMixer, &sp, &opts, fields, &clock),
+        1 => oil_plan::plan(&RgbMixer, &sp, &opts, fields, &clock),
+        _ => {
+            let e = oil_scene::Error::new("UNKNOWN_MIXER", format!("mixer id {mixer} is not in this build")).got(mixer).expected("0 (ochrell) or 1 (rgb)");
+            return (json!({ "errors": [e] }), None);
+        }
+    };
+    match res {
+        Err(errors) => (json!({ "errors": errors }), None),
+        Ok((list, report)) => {
+            let bytes = list.to_bytes();
+            let mut v = serde_json::to_value(&report).unwrap_or_default();
+            v["bytes"] = json!(bytes.len());
+            (v, Some(bytes))
+        }
+    }
+}
+
 /// Plane or preview bytes. Planes: 0 target (f32 RGB), 1 region ids (u8), 2 soft masks (f32, region-major),
 /// 3 flow (f32 xy), 4 light (f32). Previews (u32 LE width, u32 LE height, then RGB8): 10 target, 11 regions,
 /// 12 flow, 13 light, 14 the guide sheet. Region flows: 100 + region index (f32 xy; empty if none).
@@ -114,6 +141,7 @@ mod wasm_abi {
     static BUF: Mutex<Vec<u8>> = Mutex::new(Vec::new());
     static INPUT: Mutex<Vec<u8>> = Mutex::new(Vec::new());
     static GUIDES: Mutex<Option<Guides>> = Mutex::new(None);
+    static STROKES: Mutex<Vec<u8>> = Mutex::new(Vec::new());
     static FIELDS: Mutex<BTreeMap<String, FieldData>> = Mutex::new(BTreeMap::new());
 
     fn put(bytes: Vec<u8>) -> u32 {
@@ -181,6 +209,21 @@ mod wasm_abi {
 
     /// Compile the ScenePlan in the input buffer at `width` with mixer id `mixer`; keeps the guides for
     /// `oil_guides_plane` and returns the summary JSON.
+    /// Plan the ScenePlan in the input buffer; keeps the StrokeList for `oil_plan_strokes` and returns the report
+    /// JSON (`strict` 1 refuses a plan authored for another engine version).
+    #[no_mangle]
+    pub extern "C" fn oil_plan(width: u32, seed: u32, mixer: u32, strict: u32) -> u32 {
+        let (report, bytes) = plan(&input_text(), width, seed, mixer, strict != 0, &FIELDS.lock().unwrap());
+        *STROKES.lock().unwrap() = bytes.unwrap_or_default();
+        put_json(&report)
+    }
+
+    /// The StrokeList bytes of the last plan (0 if it failed).
+    #[no_mangle]
+    pub extern "C" fn oil_plan_strokes() -> u32 {
+        put(std::mem::take(&mut *STROKES.lock().unwrap()))
+    }
+
     #[no_mangle]
     pub extern "C" fn oil_guides(width: u32, mixer: u32) -> u32 {
         let (summary, g) = guides(&input_text(), width, mixer, &FIELDS.lock().unwrap());

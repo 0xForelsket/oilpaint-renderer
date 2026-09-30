@@ -70,8 +70,31 @@ export interface Guides extends GuidesSummary {
   preview(name: PreviewName): RgbImage;
 }
 
+/** The plan report (crates/oil-plan): strokes per layer and region, coverage, timings (0 in WASM), warnings. */
+export interface PlanReport {
+  engine: string;
+  mixer: string;
+  size: [number, number];
+  seed: number;
+  strokes: number;
+  points: number;
+  layers: { name: string; strokes: number; regions: { region: string; sites: number; strokes: number; gapStrokes: number }[]; ms: number }[];
+  regions: { region: string; covered: number; strokes: number; width: [number, number] }[];
+  bare: number;
+  warnings: OilIssue[];
+  bytes: number;
+}
+
+export interface Plan {
+  report: PlanReport;
+  /** The StrokeList v2 bytes (spec/STROKELIST_V2.md): paint them at any size with the same engine version. */
+  strokes: Uint8Array;
+}
+
 export interface Engine {
   readonly version: string;
+  /** Plan a scene into a StrokeList. Throws OilError on invalid input. */
+  plan(scene: ScenePlan | Scene | string, o?: { width?: number; seed?: number; mixer?: MixerId; strictEngine?: boolean }): Plan;
   schema(): object;
   validate(spec: ScenePlan | Scene | string): Validation;
   /** Compile guides at `width` px. Throws OilError on invalid input. */
@@ -88,6 +111,8 @@ type Exports = {
   oil_field_add(): number;
   oil_fields_clear(): void;
   oil_guides(width: number, mixer: number): number;
+  oil_plan(width: number, seed: number, mixer: number, strict: number): number;
+  oil_plan_strokes(): number;
   oil_guides_plane(which: number): number;
 };
 
@@ -124,6 +149,24 @@ export async function loadEngine(source?: string | URL | BufferSource): Promise<
   };
   const version = text(e.oil_engine_version());
   let generation = 0;
+  const sendFields = (fields?: Map<string, Float32Array>) => {
+    e.oil_fields_clear();
+    for (const [name, data] of fields ?? []) {
+      const nb = new TextEncoder().encode(name);
+      const buf = new Uint8Array(4 + nb.length + data.length * 4);
+      const dv = new DataView(buf.buffer);
+      dv.setUint32(0, nb.length, true);
+      buf.set(nb, 4);
+      data.forEach((v, i) => dv.setFloat32(4 + nb.length + i * 4, v, true));
+      input(buf);
+      e.oil_field_add();
+    }
+  };
+  const mixerId = (m?: MixerId) => {
+    const id = MIXERS.indexOf(m ?? "ochrell");
+    if (id < 0) throw new OilError([{ code: "UNKNOWN_MIXER", message: `mixer ${m} is not in this build`, got: String(m), expected: MIXERS.join(", ") }]);
+    return id;
+  };
 
   const f32 = (b: Uint8Array) => new Float32Array(b.buffer, b.byteOffset, b.byteLength / 4);
 
@@ -133,6 +176,15 @@ export async function loadEngine(source?: string | URL | BufferSource): Promise<
     validate(s) {
       input(new TextEncoder().encode(specOf(s).text));
       return json(e.oil_scene_validate());
+    },
+    plan(s, o = {}) {
+      const { text: spec, fields } = specOf(s);
+      sendFields(fields);
+      input(new TextEncoder().encode(spec));
+      const mixer = mixerId(o.mixer);
+      const report = json(e.oil_plan(o.width ?? 600, (o.seed ?? 1907) >>> 0, mixer, o.strictEngine ? 1 : 0));
+      if (report.errors) throw new OilError(report.errors);
+      return { report, strokes: bytes(e.oil_plan_strokes()) };
     },
     guides(s, o = {}) {
       const { text: spec, fields } = specOf(s);

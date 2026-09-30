@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { loadEngine, OilError } from "../src/engine.ts";
-import { all, above, constant, fieldShape, scene } from "../src/scene.ts";
+import { all, above, constant, fieldShape, gradientV, scene } from "../src/scene.ts";
 
 const engine = await loadEngine();
 
@@ -123,4 +123,21 @@ test("an unknown preset is reported with a suggestion", () => {
   const v = engine.validate(spec);
   assert.equal(v.errors[0].code, "UNKNOWN_PRESET");
   assert.equal(v.errors[0].fix, 'did you mean "impressionist"?');
+});
+
+test("plan: a StrokeList, repeatable, with a report", () => {
+  const s = scene((S) => {
+    S.canvas({ aspect: [4, 5], ground: "#e9e1d6" });
+    S.target.fill(gradientV([[0, "#2c3266"], [1.25, "#e8cbb8"]]));
+    S.region("all", all(), { flow: constant(10, { noise: 0.2 }) });
+    S.style("all", { width: [0.05, 0.08], length: [0.1, 0.2] });
+    S.layers([{ name: "block in", regions: "all", errorThreshold: 10 }]);
+  });
+  const a = engine.plan(s, { width: 96, seed: 3, mixer: "rgb" });
+  const b = engine.plan(s, { width: 96, seed: 3, mixer: "rgb" });
+  assert.ok(a.report.strokes > 5, `${a.report.strokes} strokes`);
+  assert.deepEqual([...a.strokes.subarray(0, 8)], [0x89, 0x4f, 0x49, 0x4c, 0x0d, 0x0a, 0x1a, 0x0a]);
+  assert.deepEqual(a.strokes, b.strokes);
+  assert.equal(a.report.regions[0].region, "all");
+  assert.notDeepEqual(engine.plan(s, { width: 96, seed: 4, mixer: "rgb" }).strokes, a.strokes);
 });

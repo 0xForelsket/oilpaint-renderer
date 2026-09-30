@@ -311,6 +311,7 @@ version = "2.0.0-dev.0"
 dependencies = [
  "oil-kernel",
  "oil-mix",
+ "oil-plan",
  "oil-scene",
  "serde_json",
 ]
