@@ -177,6 +177,13 @@ fn clamp01(x: f32) -> f32 {
     }
 }
 
+/// A rate `r` defined per reference distance, applied over `q` reference distances: 1 - (1 - r)^q.
+#[inline(always)]
+fn per_distance(r: f32, q: f32) -> f32 {
+    let keep = clamp01(1.0 - r) as f64;
+    (1.0 - oil_math::pow(keep, q as f64)) as f32
+}
+
 #[inline(always)]
 fn smoothstep(e0: f32, e1: f32, x: f32) -> f32 {
     let t = clamp01((x - e0) / (e1 - e0));
@@ -778,9 +785,15 @@ pub fn render_stroke_len<M: Mixer>(
             }
             part.flush(&mut seg_z, &mut seg_a, &mut seg_wet, &mut stat_alpha);
         }
+        // Pick-up and release rates are per reference distance (half a brush width, the planner's step), not per
+        // segment: a stroke sampled with more points picks up the same paint.
+        let q = len / (0.5 * wref);
+        let r_release = per_distance(bp.release, q);
+        let r_approach = per_distance(0.6, q);
+        let r_pickup = per_distance(bp.pickup, q);
         for l in 0..bb.ntot {
             if seg_a[l] <= 1e-6 {
-                dirt[l] -= bp.release * dirt[l] * (if mode == MODE_SMUDGE { 0.0 } else { 1.0 });
+                dirt[l] -= r_release * dirt[l] * (if mode == MODE_SMUDGE { 0.0 } else { 1.0 });
                 continue;
             }
             let wetavg = seg_wet[l] / seg_a[l];
@@ -789,19 +802,19 @@ pub fn render_stroke_len<M: Mixer>(
             let (zt, sz, sa) = (ztip[l].as_mut_slice(), seg_z[l].as_slice(), seg_a[l]);
             if mode == MODE_SMUDGE {
                 for k in 0..zt.len() {
-                    zt[k] += bp.pickup * (sz[k] / sa - zt[k]);
+                    zt[k] += r_pickup * (sz[k] / sa - zt[k]);
                 }
                 dirt[l] = 1.0;
             } else if mode != MODE_GLAZE {
-                let rate = 0.6f32 * wetavg;
+                let rate = per_distance(0.6f32 * wetavg, q);
                 for k in 0..zt.len() {
                     zt[k] += rate * (sz[k] / sa - zt[k]);
                 }
                 let target = bp.pickup * wetavg;
                 if target > dirt[l] {
-                    dirt[l] += 0.6 * (target - dirt[l]);
+                    dirt[l] += r_approach * (target - dirt[l]);
                 } else {
-                    dirt[l] -= bp.release * (dirt[l] - target);
+                    dirt[l] -= r_release * (dirt[l] - target);
                 }
             }
         }

@@ -88,3 +88,49 @@ pub fn plane_values<'a, M: Mixer>(cv: &'a Canvas<M>, plane: &str) -> Box<dyn Ite
 pub fn plane_bytes<M: Mixer>(cv: &Canvas<M>, plane: &str) -> Vec<u8> {
     plane_values(cv, plane).flat_map(|x| x.to_bits().to_le_bytes()).collect()
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oil_kernel::BrushParams;
+    use oil_mix::RgbMixer;
+
+    /// Mean red channel in 20 px windows along a blue drag through a patch of wet red, with the drag sampled every
+    /// `step` pixels.
+    fn red_along_drag(step: f32) -> Vec<f64> {
+        let m = RgbMixer;
+        let (w, h) = (320usize, 120usize);
+        let mut cv = Canvas::new(&m, w, h, [0.95, 0.93, 0.9]);
+        let line = |x0: f32, x1: f32, width: f32, step: f32| -> Vec<[f32; 4]> {
+            let n = ((x1 - x0) / step).round() as usize;
+            (0..=n).map(|i| [x0 + (x1 - x0) * i as f32 / n as f32, 60.0, width, 1.0]).collect()
+        };
+        let red = Load { zcol: [0.8, 0.1, 0.1], zcol2: [0.8, 0.1, 0.1], dz: [0.0; 3] };
+        let blue = Load { zcol: [0.1, 0.2, 0.8], zcol2: [0.1, 0.2, 0.8], dz: [0.0; 3] };
+        let bp = BrushParams { pickup: 0.4, release: 0.3, seed: 7, ..BrushParams::default() };
+        render_stroke_len(&m, &mut cv.planes(), &line(60.0, 140.0, 40.0, 10.0), &red, &bp, 2.0);
+        render_stroke_len(&m, &mut cv.planes(), &line(20.0, 300.0, 24.0, step), &blue, &BrushParams { seed: 9, ..bp }, 11.7);
+        (0..14)
+            .map(|b| {
+                let (mut s, mut n) = (0.0f64, 0.0);
+                for y in 55..65 {
+                    for x in 20 + b * 20..40 + b * 20 {
+                        s += cv.rgb[y * w + x][0] as f64;
+                        n += 1.0;
+                    }
+                }
+                s / n
+            })
+            .collect()
+    }
+
+    /// Pick-up and release rates are per distance: the red a brush drags in from wet paint and the length of the
+    /// smear it leaves after it must not depend on how densely the stroke is sampled. With per-segment rates (engine
+    /// 2.0.0-dev.2) the smear after the patch was about half as long at 3 px spacing as at 12 px (summed difference
+    /// 0.54); per distance it is 0.10, the rest coming from other per-segment details.
+    #[test]
+    fn pick_up_does_not_depend_on_point_spacing() {
+        let (sparse, dense) = (red_along_drag(12.0), red_along_drag(3.0));
+        let diff: f64 = sparse.iter().zip(&dense).map(|(a, b)| (a - b).abs()).sum();
+        assert!(diff < 0.2, "12 px vs 3 px sampling differ by {diff:.3}: {sparse:.3?} vs {dense:.3?}");
+    }
+}
