@@ -610,11 +610,9 @@ impl V<'_> {
         if let Some(x) = l.dry_width {
             self.range(&format!("{p}/dryWidth"), x, 1e-6, 10.0);
         }
-        match (&l.curve, l.placement) {
-            (None, Placement::Curve) => {
-                self.errs.push(Error::new("SCHEMA", "curve placement needs curve: {region: \"boundary\" | [[x, y], ...]}").path(format!("{p}/curve")))
-            }
-            (Some(m), _) => {
+        // curve placement without `curve` follows every region's boundary
+        match &l.curve {
+            Some(m) => {
                 for (n, c) in m {
                     let kp = format!("{p}/curve/{}", pointer_escape(n));
                     self.region_name(&kp, n, names);
@@ -627,7 +625,7 @@ impl V<'_> {
                     }
                 }
             }
-            (None, _) => {}
+            None => {}
         }
         self.range(&format!("{p}/curveOffset"), l.curve_offset, -20.0, 20.0);
         self.range(&format!("{p}/curveSpacing"), l.curve_spacing, 0.05, 100.0);

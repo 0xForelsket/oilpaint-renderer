@@ -282,7 +282,7 @@ export interface Layer {
    */
   colors?: ColorSpec[] | null;
   /**
-   * Share of the region to cover: a number or per region.
+   * Share of the region to cover: a number or per region (regions not listed: 1.0).
    */
   coverage?: NumOrMap;
   /**
@@ -290,7 +290,7 @@ export interface Layer {
    */
   curvature?: number | null;
   /**
-   * Curve placement: per region, "boundary" or a polyline.
+   * Curve placement: per region, "boundary" or a polyline (regions not listed, or no map: "boundary").
    */
   curve?: {
     [k: string]: CurveSpec;
@@ -492,7 +492,7 @@ export interface Layer {
    */
   snap?: number | null;
   /**
-   * Density placement spacing in stroke widths: a number or per region.
+   * Density placement spacing in stroke widths: a number or per region (regions not listed: 1.6).
    */
   spacing?: NumOrMap;
   /**

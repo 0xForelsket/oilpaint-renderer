@@ -673,7 +673,7 @@
             }
           ],
           "default": 1.0,
-          "description": "Share of the region to cover: a number or per region."
+          "description": "Share of the region to cover: a number or per region (regions not listed: 1.0)."
         },
         "curvature": {
           "description": "0 = straight, 1 = follows every turn of the flow (default 0.3).",
@@ -687,7 +687,7 @@
           "additionalProperties": {
             "$ref": "#/definitions/CurveSpec"
           },
-          "description": "Curve placement: per region, \"boundary\" or a polyline.",
+          "description": "Curve placement: per region, \"boundary\" or a polyline (regions not listed, or no map: \"boundary\").",
           "type": [
             "object",
             "null"
@@ -1136,7 +1136,7 @@
             }
           ],
           "default": 1.6,
-          "description": "Density placement spacing in stroke widths: a number or per region."
+          "description": "Density placement spacing in stroke widths: a number or per region (regions not listed: 1.6)."
         },
         "spill": {
           "description": "Chance to keep painting across a region edge (default 0.15).",

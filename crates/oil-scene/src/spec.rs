@@ -719,10 +719,10 @@ with_style_keys! {
         /// Blur of the reference in stroke widths (v1 `fs`).
         #[serde(default = "d_half")]
         pub reference_blur: f64,
-        /// Density placement spacing in stroke widths: a number or per region.
+        /// Density placement spacing in stroke widths: a number or per region (regions not listed: 1.6).
         #[serde(default = "d_spacing")]
         pub spacing: NumOrMap,
-        /// Share of the region to cover: a number or per region.
+        /// Share of the region to cover: a number or per region (regions not listed: 1.0).
         #[serde(default = "d_coverage")]
         pub coverage: NumOrMap,
         /// Wetness factor applied after the layer.
@@ -762,7 +762,7 @@ with_style_keys! {
         /// Allow short, round dabs.
         #[serde(default)]
         pub dab: bool,
-        /// Curve placement: per region, "boundary" or a polyline.
+        /// Curve placement: per region, "boundary" or a polyline (regions not listed, or no map: "boundary").
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub curve: Option<BTreeMap<String, CurveSpec>>,
         #[serde(default)]
