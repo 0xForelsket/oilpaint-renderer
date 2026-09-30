@@ -1,6 +1,6 @@
 [package]
-name = "oil-strokes"
-description = "StrokeList v2 codec (spec/STROKELIST_V2.md): deterministic bytes, engine-version gate, validation"
+name = "oil-scene"
+description = "ScenePlan v1 (spec/SCENEPLAN_V1.md): types, JSON Schema, validation, and the scene compiler (guide maps)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -8,10 +8,15 @@ rust-version.workspace = true
 publish.workspace = true
 
 [dependencies]
-oil-kernel = { path = "../oil-kernel" }
 oil-errors = { path = "../oil-errors" }
+oil-kernel = { path = "../oil-kernel" }
+oil-math = { path = "../oil-math" }
+oil-mix = { path = "../oil-mix" }
+oil-image = { path = "../oil-image" }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }
+serde_path_to_error = "0.1"
+schemars = "1"
 sha2 = "0.10"
 
 [lints]

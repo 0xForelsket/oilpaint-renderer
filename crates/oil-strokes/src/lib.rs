@@ -11,7 +11,6 @@ use oil_kernel::BrushParams;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
-use std::fmt;
 
 pub const MAGIC: [u8; 8] = [0x89, b'O', b'I', b'L', 0x0D, 0x0A, 0x1A, 0x0A];
 pub const GENERATION: u16 = 2;
@@ -293,54 +292,7 @@ impl StrokeList {
 
 // ------------------------------------------------------------------ errors
 
-/// A structured error (spec/ERRORS.md).
-#[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct Error {
-    pub code: &'static str,
-    pub message: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub path: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub got: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub expected: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub fix: Option<String>,
-}
-
-impl Error {
-    pub fn new(code: &'static str, message: impl Into<String>) -> Self {
-        Error { code, message: message.into(), path: None, got: None, expected: None, fix: None }
-    }
-    pub fn path(mut self, p: impl Into<String>) -> Self {
-        self.path = Some(p.into());
-        self
-    }
-    pub fn got(mut self, g: impl fmt::Display) -> Self {
-        self.got = Some(g.to_string());
-        self
-    }
-    pub fn expected(mut self, e: impl fmt::Display) -> Self {
-        self.expected = Some(e.to_string());
-        self
-    }
-    pub fn fix(mut self, f: impl Into<String>) -> Self {
-        self.fix = Some(f.into());
-        self
-    }
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}: {}", self.code, self.message)?;
-        if let Some(fix) = &self.fix {
-            write!(f, " {fix}")?;
-        }
-        Ok(())
-    }
-}
-
-impl std::error::Error for Error {}
+pub use oil_errors::Error;
 
 // ------------------------------------------------------------------ reading
 

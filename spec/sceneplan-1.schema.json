@@ -1,0 +1,2523 @@
+{
+  "$id": "https://oilpaint.dev/schema/sceneplan-1.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "definitions": {
+    "BandAround": {
+      "additionalProperties": false,
+      "properties": {
+        "dist": {
+          "format": "double",
+          "type": "number"
+        },
+        "polygon": {
+          "items": {
+            "items": {
+              "format": "double",
+              "type": "number"
+            },
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "polygon",
+        "dist"
+      ],
+      "type": "object"
+    },
+    "Bands": {
+      "additionalProperties": false,
+      "properties": {
+        "bands": {
+          "description": "[from, to, colour] with from/to as fractions of the polygon's height.",
+          "items": {
+            "items": [
+              {
+                "format": "double",
+                "type": "number"
+              },
+              {
+                "format": "double",
+                "type": "number"
+              },
+              {
+                "$ref": "#/definitions/ColorSpec"
+              }
+            ],
+            "maxItems": 3,
+            "minItems": 3,
+            "type": "array"
+          },
+          "type": "array"
+        },
+        "points": {
+          "items": {
+            "items": {
+              "format": "double",
+              "type": "number"
+            },
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          },
+          "type": "array"
+        },
+        "softness": {
+          "default": 0.008,
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "points",
+        "bands"
+      ],
+      "type": "object"
+    },
+    "Beam": {
+      "additionalProperties": false,
+      "properties": {
+        "angle": {
+          "format": "double",
+          "type": "number"
+        },
+        "apex": {
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": "array"
+        },
+        "color": {
+          "$ref": "#/definitions/ColorSpec"
+        },
+        "length": {
+          "format": "double",
+          "type": "number"
+        },
+        "softness": {
+          "default": 0.3,
+          "format": "double",
+          "type": "number"
+        },
+        "spread": {
+          "format": "double",
+          "type": "number"
+        },
+        "strength": {
+          "default": 0.4,
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "apex",
+        "angle",
+        "spread",
+        "length",
+        "color"
+      ],
+      "type": "object"
+    },
+    "Blob": {
+      "additionalProperties": false,
+      "properties": {
+        "c": {
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": "array"
+        },
+        "color": {
+          "$ref": "#/definitions/ColorSpec"
+        },
+        "noise": {
+          "default": 0.0,
+          "format": "double",
+          "type": "number"
+        },
+        "r": {
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": "array"
+        },
+        "seed": {
+          "default": 21,
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "softness": {
+          "default": 0.5,
+          "format": "double",
+          "type": "number"
+        },
+        "strength": {
+          "default": 1.0,
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "c",
+        "r",
+        "color"
+      ],
+      "type": "object"
+    },
+    "Canvas": {
+      "additionalProperties": false,
+      "properties": {
+        "aspect": {
+          "description": "Aspect ratio as positive integers [width, height], for example [4, 5].",
+          "items": {
+            "format": "uint32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": "array"
+        },
+        "ground": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/ColorSpec"
+            }
+          ],
+          "description": "Ground (canvas) colour."
+        }
+      },
+      "required": [
+        "aspect",
+        "ground"
+      ],
+      "type": "object"
+    },
+    "ColorFrom": {
+      "oneOf": [
+        {
+          "const": "reference",
+          "description": "Sample the target image.",
+          "type": "string"
+        },
+        {
+          "const": "palette",
+          "description": "Pick from the style's `colors`.",
+          "type": "string"
+        }
+      ]
+    },
+    "ColorSpec": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "items": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "format": "double",
+              "type": "number"
+            }
+          ],
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        },
+        {
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      ],
+      "description": "A colour: `\"#rrggbb\"`, a tube name (for example `\"lead_white\"`, `\"cobalt_blue\"`), an sRGB triple with channels in\n[0, 1], or `[\"a\", \"b\", t]`, a mix of two colours at t in [0, 1] made with the active mixer."
+    },
+    "ConstantFlow": {
+      "additionalProperties": false,
+      "properties": {
+        "angle": {
+          "default": 0.0,
+          "format": "double",
+          "type": "number"
+        },
+        "noise": {
+          "default": 0.0,
+          "format": "double",
+          "type": "number"
+        },
+        "seed": {
+          "default": 1,
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "ContourFlow": {
+      "additionalProperties": false,
+      "properties": {
+        "noise": {
+          "default": 0.35,
+          "format": "double",
+          "type": "number"
+        },
+        "polygon": {
+          "items": {
+            "items": {
+              "format": "double",
+              "type": "number"
+            },
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          },
+          "type": "array"
+        },
+        "seed": {
+          "default": 7,
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "polygon"
+      ],
+      "type": "object"
+    },
+    "CurveSpec": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "items": {
+            "items": {
+              "format": "double",
+              "type": "number"
+            },
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          },
+          "type": "array"
+        }
+      ],
+      "description": "`\"boundary\"` (the region's outline) or a polyline."
+    },
+    "Disc": {
+      "additionalProperties": false,
+      "properties": {
+        "c": {
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": "array"
+        },
+        "r": {
+          "format": "double",
+          "type": "number"
+        },
+        "softness": {
+          "default": 0.0,
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "c",
+        "r"
+      ],
+      "type": "object"
+    },
+    "Ellipse": {
+      "additionalProperties": false,
+      "properties": {
+        "c": {
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": "array"
+        },
+        "r": {
+          "description": "Radii [rx, ry] in cw.",
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": "array"
+        },
+        "softness": {
+          "default": 0.0,
+          "description": "0 = hard edge; otherwise the width of the fade, relative to the radius.",
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "c",
+        "r"
+      ],
+      "type": "object"
+    },
+    "FieldDecl": {
+      "additionalProperties": false,
+      "description": "A sampled field: little-endian f32 values (1 channel for a mask, 2 for a flow, 3 for rgb), row-major, passed next\nto the spec and checked against `sha256`.",
+      "properties": {
+        "height": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "kind": {
+          "$ref": "#/definitions/FieldKind"
+        },
+        "sha256": {
+          "type": "string"
+        },
+        "width": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "width",
+        "height",
+        "sha256"
+      ],
+      "type": "object"
+    },
+    "FieldKind": {
+      "enum": [
+        "mask",
+        "flow",
+        "rgb"
+      ],
+      "type": "string"
+    },
+    "Fill": {
+      "additionalProperties": false,
+      "properties": {
+        "color": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ColorSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "A solid colour (give this or `gradientV`)."
+        },
+        "gradientV": {
+          "description": "A vertical gradient: stops [y, colour], linear between them, clamped outside.",
+          "items": {
+            "items": [
+              {
+                "format": "double",
+                "type": "number"
+              },
+              {
+                "$ref": "#/definitions/ColorSpec"
+              }
+            ],
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "mask": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Shape"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "Flow": {
+      "description": "A unit direction field, as a single-key object.",
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "constant": {
+              "$ref": "#/definitions/ConstantFlow"
+            }
+          },
+          "required": [
+            "constant"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Long arcs: base direction plus a slowly varying bend.",
+          "properties": {
+            "sweep": {
+              "$ref": "#/definitions/SweepFlow"
+            }
+          },
+          "required": [
+            "sweep"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Near-horizontal with an undulation whose wavelength shrinks toward the horizon.",
+          "properties": {
+            "waves": {
+              "$ref": "#/definitions/WavesFlow"
+            }
+          },
+          "required": [
+            "waves"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Tangential flow around ellipse centres [cx, cy, rx, ry].",
+          "properties": {
+            "swirlAround": {
+              "$ref": "#/definitions/SwirlFlow"
+            }
+          },
+          "required": [
+            "swirlAround"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "radialFrom": {
+              "$ref": "#/definitions/RadialFlow"
+            }
+          },
+          "required": [
+            "radialFrom"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "upward": {
+              "$ref": "#/definitions/UpwardFlow"
+            }
+          },
+          "required": [
+            "upward"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Tangent of a polygon's distance field: strokes follow its outline.",
+          "properties": {
+            "contour": {
+              "$ref": "#/definitions/ContourFlow"
+            }
+          },
+          "required": [
+            "contour"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "A sampled flow (escape hatch), by name.",
+          "properties": {
+            "field": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "field"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "Glow": {
+      "additionalProperties": false,
+      "properties": {
+        "c": {
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": "array"
+        },
+        "color": {
+          "$ref": "#/definitions/ColorSpec"
+        },
+        "power": {
+          "default": 2.0,
+          "format": "double",
+          "type": "number"
+        },
+        "r": {
+          "format": "double",
+          "type": "number"
+        },
+        "strength": {
+          "default": 1.0,
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "c",
+        "r",
+        "color"
+      ],
+      "type": "object"
+    },
+    "Layer": {
+      "additionalProperties": false,
+      "description": "A layer of the schedule. Besides its own keys it accepts every style key, overriding the region styles for this\nlayer.",
+      "properties": {
+        "align": {
+          "description": "1 = strictly along the flow, 0 = random directions (default 0.85).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "blob": {
+          "description": "Extra paint where the stroke starts, x hgain (default 0.3).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "body": {
+          "description": "Paint body between bristle lanes (default 0.9).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "colorFrom": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/ColorFrom"
+            }
+          ],
+          "default": "reference"
+        },
+        "colors": {
+          "description": "Palette-snapping targets.",
+          "items": {
+            "$ref": "#/definitions/ColorSpec"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "coverage": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/NumOrMap"
+            }
+          ],
+          "default": 1.0,
+          "description": "Share of the region to cover: a number or per region."
+        },
+        "curvature": {
+          "description": "0 = straight, 1 = follows every turn of the flow (default 0.3).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "curve": {
+          "additionalProperties": {
+            "$ref": "#/definitions/CurveSpec"
+          },
+          "description": "Curve placement: per region, \"boundary\" or a polyline.",
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "curveJitter": {
+          "default": 0.5,
+          "format": "double",
+          "type": "number"
+        },
+        "curveOffset": {
+          "default": 0.0,
+          "format": "double",
+          "type": "number"
+        },
+        "curveSpacing": {
+          "default": 1.0,
+          "format": "double",
+          "type": "number"
+        },
+        "dab": {
+          "default": false,
+          "description": "Allow short, round dabs.",
+          "type": "boolean"
+        },
+        "deplete": {
+          "description": "Load lost per unit length (default 0.02).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "dropout": {
+          "description": "Default 0.02.",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "dryAfter": {
+          "description": "Wetness factor applied after the layer.",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "dryThresh": {
+          "description": "Scumble: height-above-blur threshold where paint catches (default 0).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "dryWidth": {
+          "description": "Scumble: smoothstep width around `dryThresh` (default 0.15).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "endPressure": {
+          "description": "Pressure at the stroke's end (default 0.15).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "endWidth": {
+          "description": "Width factor at the stroke's end (default 0.5).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "errorThreshold": {
+          "default": 18.0,
+          "description": "Lab error that triggers a stroke (error placement; v1 `T`).",
+          "format": "double",
+          "type": "number"
+        },
+        "flatten": {
+          "description": "Share of the surface the stroke replaces (default 0.6).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "flecks": {
+          "description": "Complementary touches: [colour, probability].",
+          "items": {
+            "items": [
+              {
+                "$ref": "#/definitions/ColorSpec"
+              },
+              {
+                "format": "double",
+                "type": "number"
+              }
+            ],
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "furrow": {
+          "description": "Trough along the centre, x hgain (default 0.15).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "gapCover": {
+          "default": 0.15,
+          "format": "double",
+          "type": "number"
+        },
+        "gapFill": {
+          "default": true,
+          "type": "boolean"
+        },
+        "grain": {
+          "description": "Canvas-grain catch (default 0.10).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "gridFactor": {
+          "default": 1.0,
+          "description": "Proposal grid cell in stroke widths (v1 `fg`).",
+          "format": "double",
+          "type": "number"
+        },
+        "hardness": {
+          "description": "Edge crispness (default 0.75).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "hblurSigma": {
+          "default": 0.01,
+          "description": "Height blur before scumble, in cw.",
+          "format": "double",
+          "type": "number"
+        },
+        "hgain": {
+          "description": "Paint thickness (default 1.0).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "hgainJitter": {
+          "description": "+- relative thickness variation (default 0.25).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "jitter": {
+          "description": "Lab jitter [L, a/b] between strokes (default [5, 4]).",
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "jitterPos": {
+          "default": 0.5,
+          "format": "double",
+          "type": "number"
+        },
+        "lFloor": {
+          "description": "Stroke colours are never darker than this L* (default 20).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "length": {
+          "description": "Stroke length range [min, max] in cw (default [0.04, 0.10]).",
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "levee": {
+          "description": "Raised paint along both edges, x hgain (default 0.35).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "load": {
+          "description": "Paint on the brush at the start (default 1.0).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "load2": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ColorSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Colour B for marbling (default: a lighter/warmer variant)."
+        },
+        "marble": {
+          "description": "Two-colour load: share of colour B in its lanes (default 0).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "maxCover": {
+          "description": "Skip sites already covered more than this.",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "maxStrokes": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "minAspect": {
+          "description": "Length >= minAspect x width unless the layer sets `dab` (default 2.5).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Mode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "paint, scumble, smudge or glaze (default paint)."
+        },
+        "name": {
+          "type": "string"
+        },
+        "nbBase": {
+          "description": "Default 5.",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "nbPerCw": {
+          "description": "Bristle lanes = nbBase + nbPerCw x width (default 450).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "opacity": {
+          "description": "Opacity range [min, max] (default [0.85, 1.0]).",
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "opacityByLight": {
+          "description": "Fade strokes away from the light: opacity x (1 - k (1 - light)) (default 0).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "order": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/Order"
+            }
+          ],
+          "default": "sweep"
+        },
+        "pickup": {
+          "description": "Share of wet paint picked up from the canvas (default 0.12).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "placement": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/Placement"
+            }
+          ],
+          "default": "error"
+        },
+        "priority": {
+          "description": "Order among regions within a layer, low first (default 0).",
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "ragged": {
+          "description": "Outline raggedness (default 0.5).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "referenceBlur": {
+          "default": 0.5,
+          "description": "Blur of the reference in stroke widths (v1 `fs`).",
+          "format": "double",
+          "type": "number"
+        },
+        "regions": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/RegionSel"
+            }
+          ],
+          "default": "all",
+          "description": "`\"all\"` or region names."
+        },
+        "release": {
+          "description": "Default 0.3.",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "relief": {
+          "default": 1.0,
+          "description": "Thickness multiplier for the layer.",
+          "format": "double",
+          "type": "number"
+        },
+        "reverseP": {
+          "description": "Chance to run against the flow (default 0).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "ridge": {
+          "description": "Lane ridge/furrow relief, x hgain (default 0.5).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "seedOffset": {
+          "default": 0,
+          "format": "int64",
+          "type": "integer"
+        },
+        "sizeByY": {
+          "description": "[y0, y1, s0, s1]: scale width and length by s0 at y0 .. s1 at y1 (perspective).",
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "snap": {
+          "description": "Pull toward the nearest palette mixture (default 0.85).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "spacing": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/NumOrMap"
+            }
+          ],
+          "default": 1.6,
+          "description": "Density placement spacing in stroke widths: a number or per region."
+        },
+        "spill": {
+          "description": "Chance to keep painting across a region edge (default 0.15).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "splay": {
+          "description": "Stray hairs at the outline, 0..3 (default 1.0).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "stiff": {
+          "description": "Multi-scale roughness of stiff paint, x hgain (default 0.25).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "stopAtEdge": {
+          "description": "Chance to stop where the soft mask fades (default 0.9).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "streak": {
+          "description": "Per-bristle colour streaks (default 0.25).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "streakMix": {
+          "description": "Default 0.8.",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "vdry": {
+          "description": "How fast the tail dries out (default 0.25).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "warmColor": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ColorSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Default \"#f6d09a\"."
+        },
+        "warmth": {
+          "description": "How much the light map warms the colour toward warmColor (default 0).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "width": {
+          "description": "Stroke width range [min, max] in cw (default [0.015, 0.03]).",
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "Light": {
+      "description": "A light-map contribution, as a single-key object.",
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "description": "An ellipse of light, 2.5x flatter than wide.",
+          "properties": {
+            "glow": {
+              "$ref": "#/definitions/LightGlow"
+            }
+          },
+          "required": [
+            "glow"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "beam": {
+              "$ref": "#/definitions/LightBeam"
+            }
+          },
+          "required": [
+            "beam"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "lamp": {
+              "$ref": "#/definitions/LightLamp"
+            }
+          },
+          "required": [
+            "lamp"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "LightBeam": {
+      "additionalProperties": false,
+      "properties": {
+        "angle": {
+          "format": "double",
+          "type": "number"
+        },
+        "apex": {
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": "array"
+        },
+        "length": {
+          "format": "double",
+          "type": "number"
+        },
+        "spread": {
+          "format": "double",
+          "type": "number"
+        },
+        "strength": {
+          "default": 1.0,
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "apex",
+        "angle",
+        "spread",
+        "length"
+      ],
+      "type": "object"
+    },
+    "LightGlow": {
+      "additionalProperties": false,
+      "properties": {
+        "c": {
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": "array"
+        },
+        "r": {
+          "format": "double",
+          "type": "number"
+        },
+        "strength": {
+          "default": 1.0,
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "c",
+        "r"
+      ],
+      "type": "object"
+    },
+    "LightLamp": {
+      "additionalProperties": false,
+      "properties": {
+        "c": {
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": "array"
+        },
+        "r": {
+          "format": "double",
+          "type": "number"
+        },
+        "strength": {
+          "default": 1.0,
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "c",
+        "r"
+      ],
+      "type": "object"
+    },
+    "Mode": {
+      "enum": [
+        "paint",
+        "scumble",
+        "smudge",
+        "glaze"
+      ],
+      "type": "string"
+    },
+    "Noisy": {
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "default": 0.3,
+          "format": "double",
+          "type": "number"
+        },
+        "scale": {
+          "default": 0.08,
+          "description": "Size of the largest noise feature, in cw.",
+          "format": "double",
+          "type": "number"
+        },
+        "seed": {
+          "default": 11,
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "shape": {
+          "$ref": "#/definitions/Shape"
+        }
+      },
+      "required": [
+        "shape"
+      ],
+      "type": "object"
+    },
+    "NumOrMap": {
+      "anyOf": [
+        {
+          "format": "double",
+          "type": "number"
+        },
+        {
+          "additionalProperties": {
+            "format": "double",
+            "type": "number"
+          },
+          "type": "object"
+        }
+      ],
+      "description": "A number for all regions, or one per region name."
+    },
+    "Order": {
+      "enum": [
+        "sweep",
+        "random"
+      ],
+      "type": "string"
+    },
+    "Placement": {
+      "oneOf": [
+        {
+          "const": "error",
+          "description": "Where the canvas differs most from the target.",
+          "type": "string"
+        },
+        {
+          "const": "density",
+          "description": "Even coverage at `spacing`.",
+          "type": "string"
+        },
+        {
+          "const": "curve",
+          "description": "Along given curves (`curve`).",
+          "type": "string"
+        }
+      ]
+    },
+    "PolygonOp": {
+      "additionalProperties": false,
+      "properties": {
+        "color": {
+          "$ref": "#/definitions/ColorSpec"
+        },
+        "noise": {
+          "default": 0.0,
+          "format": "double",
+          "type": "number"
+        },
+        "points": {
+          "items": {
+            "items": {
+              "format": "double",
+              "type": "number"
+            },
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          },
+          "type": "array"
+        },
+        "seed": {
+          "default": 22,
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "softness": {
+          "default": 0.01,
+          "description": "Edge blur in cw.",
+          "format": "double",
+          "type": "number"
+        },
+        "strength": {
+          "default": 1.0,
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "points",
+        "color"
+      ],
+      "type": "object"
+    },
+    "RadialFlow": {
+      "additionalProperties": false,
+      "properties": {
+        "c": {
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": "array"
+        },
+        "noise": {
+          "default": 0.1,
+          "format": "double",
+          "type": "number"
+        },
+        "seed": {
+          "default": 5,
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "c"
+      ],
+      "type": "object"
+    },
+    "Region": {
+      "additionalProperties": false,
+      "properties": {
+        "edge": {
+          "default": 0.02,
+          "description": "Soft-mask blur in cw.",
+          "format": "double",
+          "type": "number"
+        },
+        "flow": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Flow"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Stroke direction field; without one the region follows the target's structure tensor."
+        },
+        "name": {
+          "type": "string"
+        },
+        "shape": {
+          "$ref": "#/definitions/Shape"
+        }
+      },
+      "required": [
+        "name",
+        "shape"
+      ],
+      "type": "object"
+    },
+    "RegionSel": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      ],
+      "description": "`\"all\"` or a list of region names."
+    },
+    "Shape": {
+      "description": "A mask in [0, 1], as a single-key object.",
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "description": "Everywhere (`{\"all\": true}`).",
+          "properties": {
+            "all": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "all"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Above a y (y < value).",
+          "properties": {
+            "above": {
+              "format": "double",
+              "type": "number"
+            }
+          },
+          "required": [
+            "above"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "At or below a y (y >= value).",
+          "properties": {
+            "below": {
+              "format": "double",
+              "type": "number"
+            }
+          },
+          "required": [
+            "below"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "ellipse": {
+              "$ref": "#/definitions/Ellipse"
+            }
+          },
+          "required": [
+            "ellipse"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "disc": {
+              "$ref": "#/definitions/Disc"
+            }
+          },
+          "required": [
+            "disc"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "A polygon (at least 3 points), filled.",
+          "properties": {
+            "polygon": {
+              "items": {
+                "items": {
+                  "format": "double",
+                  "type": "number"
+                },
+                "maxItems": 2,
+                "minItems": 2,
+                "type": "array"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "polygon"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "A soft sector from `apex` pointing at `angle`, `spread` degrees either side, `length` long.",
+          "properties": {
+            "wedge": {
+              "$ref": "#/definitions/Wedge"
+            }
+          },
+          "required": [
+            "wedge"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Pixels within `dist` of a polygon's outline.",
+          "properties": {
+            "bandAround": {
+              "$ref": "#/definitions/BandAround"
+            }
+          },
+          "required": [
+            "bandAround"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Sum of the shapes, clamped to 1.",
+          "properties": {
+            "union": {
+              "items": {
+                "$ref": "#/definitions/Shape"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "union"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Product of the shapes.",
+          "properties": {
+            "intersect": {
+              "items": {
+                "$ref": "#/definitions/Shape"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "intersect"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "1 - shape.",
+          "properties": {
+            "not": {
+              "$ref": "#/definitions/Shape"
+            }
+          },
+          "required": [
+            "not"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "A shape whose boundary is perturbed by noise.",
+          "properties": {
+            "noisy": {
+              "$ref": "#/definitions/Noisy"
+            }
+          },
+          "required": [
+            "noisy"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "A sampled mask (escape hatch), by name.",
+          "properties": {
+            "field": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "field"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "Style": {
+      "additionalProperties": false,
+      "description": "A region's painting style. Every key is optional; defaults are v1's.",
+      "properties": {
+        "align": {
+          "description": "1 = strictly along the flow, 0 = random directions (default 0.85).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "blob": {
+          "description": "Extra paint where the stroke starts, x hgain (default 0.3).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "body": {
+          "description": "Paint body between bristle lanes (default 0.9).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "colors": {
+          "description": "Palette-snapping targets.",
+          "items": {
+            "$ref": "#/definitions/ColorSpec"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "curvature": {
+          "description": "0 = straight, 1 = follows every turn of the flow (default 0.3).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "deplete": {
+          "description": "Load lost per unit length (default 0.02).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "dropout": {
+          "description": "Default 0.02.",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "endPressure": {
+          "description": "Pressure at the stroke's end (default 0.15).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "endWidth": {
+          "description": "Width factor at the stroke's end (default 0.5).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "flatten": {
+          "description": "Share of the surface the stroke replaces (default 0.6).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "flecks": {
+          "description": "Complementary touches: [colour, probability].",
+          "items": {
+            "items": [
+              {
+                "$ref": "#/definitions/ColorSpec"
+              },
+              {
+                "format": "double",
+                "type": "number"
+              }
+            ],
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "furrow": {
+          "description": "Trough along the centre, x hgain (default 0.15).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "grain": {
+          "description": "Canvas-grain catch (default 0.10).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "hardness": {
+          "description": "Edge crispness (default 0.75).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "hgain": {
+          "description": "Paint thickness (default 1.0).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "hgainJitter": {
+          "description": "+- relative thickness variation (default 0.25).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "jitter": {
+          "description": "Lab jitter [L, a/b] between strokes (default [5, 4]).",
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "lFloor": {
+          "description": "Stroke colours are never darker than this L* (default 20).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "length": {
+          "description": "Stroke length range [min, max] in cw (default [0.04, 0.10]).",
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "levee": {
+          "description": "Raised paint along both edges, x hgain (default 0.35).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "load": {
+          "description": "Paint on the brush at the start (default 1.0).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "load2": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ColorSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Colour B for marbling (default: a lighter/warmer variant)."
+        },
+        "marble": {
+          "description": "Two-colour load: share of colour B in its lanes (default 0).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "minAspect": {
+          "description": "Length >= minAspect x width unless the layer sets `dab` (default 2.5).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Mode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Per-region override of the layer mode."
+        },
+        "nbBase": {
+          "description": "Default 5.",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "nbPerCw": {
+          "description": "Bristle lanes = nbBase + nbPerCw x width (default 450).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "opacity": {
+          "description": "Opacity range [min, max] (default [0.85, 1.0]).",
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "opacityByLight": {
+          "description": "Fade strokes away from the light: opacity x (1 - k (1 - light)) (default 0).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "pickup": {
+          "description": "Share of wet paint picked up from the canvas (default 0.12).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "priority": {
+          "description": "Order among regions within a layer, low first (default 0).",
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "ragged": {
+          "description": "Outline raggedness (default 0.5).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "release": {
+          "description": "Default 0.3.",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "reverseP": {
+          "description": "Chance to run against the flow (default 0).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "ridge": {
+          "description": "Lane ridge/furrow relief, x hgain (default 0.5).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "sizeByY": {
+          "description": "[y0, y1, s0, s1]: scale width and length by s0 at y0 .. s1 at y1 (perspective).",
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "snap": {
+          "description": "Pull toward the nearest palette mixture (default 0.85).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "spill": {
+          "description": "Chance to keep painting across a region edge (default 0.15).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "splay": {
+          "description": "Stray hairs at the outline, 0..3 (default 1.0).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "stiff": {
+          "description": "Multi-scale roughness of stiff paint, x hgain (default 0.25).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "stopAtEdge": {
+          "description": "Chance to stop where the soft mask fades (default 0.9).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "streak": {
+          "description": "Per-bristle colour streaks (default 0.25).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "streakMix": {
+          "description": "Default 0.8.",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "vdry": {
+          "description": "How fast the tail dries out (default 0.25).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "warmColor": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ColorSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Default \"#f6d09a\"."
+        },
+        "warmth": {
+          "description": "How much the light map warms the colour toward warmColor (default 0).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "width": {
+          "description": "Stroke width range [min, max] in cw (default [0.015, 0.03]).",
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "SweepFlow": {
+      "additionalProperties": false,
+      "properties": {
+        "angle": {
+          "default": -12.0,
+          "format": "double",
+          "type": "number"
+        },
+        "curl": {
+          "default": 0.4,
+          "format": "double",
+          "type": "number"
+        },
+        "noise": {
+          "default": 0.25,
+          "format": "double",
+          "type": "number"
+        },
+        "scale": {
+          "default": 0.5,
+          "format": "double",
+          "type": "number"
+        },
+        "seed": {
+          "default": 2,
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "SwirlFlow": {
+      "additionalProperties": false,
+      "properties": {
+        "centres": {
+          "items": {
+            "items": {
+              "format": "double",
+              "type": "number"
+            },
+            "maxItems": 4,
+            "minItems": 4,
+            "type": "array"
+          },
+          "type": "array"
+        },
+        "noise": {
+          "default": 0.3,
+          "format": "double",
+          "type": "number"
+        },
+        "seed": {
+          "default": 4,
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "strength": {
+          "default": 0.7,
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "centres"
+      ],
+      "type": "object"
+    },
+    "TargetOp": {
+      "description": "A target-image operation, as a single-key object.",
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "description": "Replace (inside `mask`, if given) with a colour or a vertical gradient.",
+          "properties": {
+            "fill": {
+              "$ref": "#/definitions/Fill"
+            }
+          },
+          "required": [
+            "fill"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "An elliptical blob, alpha-blended.",
+          "properties": {
+            "blob": {
+              "$ref": "#/definitions/Blob"
+            }
+          },
+          "required": [
+            "blob"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "A polygon, alpha-blended.",
+          "properties": {
+            "polygon": {
+              "$ref": "#/definitions/PolygonOp"
+            }
+          },
+          "required": [
+            "polygon"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Horizontal colour bands inside a polygon; band positions are fractions of the polygon's height.",
+          "properties": {
+            "bands": {
+              "$ref": "#/definitions/Bands"
+            }
+          },
+          "required": [
+            "bands"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Additive light around a point.",
+          "properties": {
+            "glow": {
+              "$ref": "#/definitions/Glow"
+            }
+          },
+          "required": [
+            "glow"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Additive light in a wedge.",
+          "properties": {
+            "beam": {
+              "$ref": "#/definitions/Beam"
+            }
+          },
+          "required": [
+            "beam"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "UpwardFlow": {
+      "additionalProperties": false,
+      "properties": {
+        "noise": {
+          "default": 0.6,
+          "format": "double",
+          "type": "number"
+        },
+        "seed": {
+          "default": 6,
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "WavesFlow": {
+      "additionalProperties": false,
+      "properties": {
+        "amplitude": {
+          "default": 18.0,
+          "format": "double",
+          "type": "number"
+        },
+        "angle": {
+          "default": 0.0,
+          "format": "double",
+          "type": "number"
+        },
+        "horizon": {
+          "default": 0.5,
+          "format": "double",
+          "type": "number"
+        },
+        "noise": {
+          "default": 0.3,
+          "format": "double",
+          "type": "number"
+        },
+        "perspective": {
+          "default": true,
+          "type": "boolean"
+        },
+        "seed": {
+          "default": 3,
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "wavelength": {
+          "default": 0.12,
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "Wedge": {
+      "additionalProperties": false,
+      "properties": {
+        "angle": {
+          "format": "double",
+          "type": "number"
+        },
+        "apex": {
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": "array"
+        },
+        "length": {
+          "format": "double",
+          "type": "number"
+        },
+        "spread": {
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "apex",
+        "angle",
+        "spread",
+        "length"
+      ],
+      "type": "object"
+    }
+  },
+  "description": "A ScenePlan: the declarative description of a painting. With the plan options `{seed, planWidth, mixer}` and an\nengine version it determines the StrokeList bit for bit on every host.",
+  "properties": {
+    "$schema": {
+      "description": "Ignored by the engine; lets editors validate.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "canvas": {
+      "$ref": "#/definitions/Canvas"
+    },
+    "engine": {
+      "description": "Engine version the scene was authored and tuned with. A different engine warns (`ENGINE_VERSION_DIFFERS`).",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "fields": {
+      "additionalProperties": {
+        "$ref": "#/definitions/FieldDecl"
+      },
+      "description": "Declarations of sampled fields (escape hatch): the arrays are passed next to the spec.",
+      "type": "object"
+    },
+    "layers": {
+      "description": "The layer schedule, painted in order.",
+      "items": {
+        "$ref": "#/definitions/Layer"
+      },
+      "type": "array"
+    },
+    "lights": {
+      "description": "Contributions to the light map (drives `warmth` and `opacityByLight`).",
+      "items": {
+        "$ref": "#/definitions/Light"
+      },
+      "type": "array"
+    },
+    "regions": {
+      "description": "Regions, in order: later regions override earlier ones in the hard region map.",
+      "items": {
+        "$ref": "#/definitions/Region"
+      },
+      "type": "array"
+    },
+    "sceneplan": {
+      "description": "Schema generation: 1.",
+      "format": "uint32",
+      "minimum": 0,
+      "type": "integer"
+    },
+    "styles": {
+      "additionalProperties": {
+        "$ref": "#/definitions/Style"
+      },
+      "description": "Style per region, keyed by region name.",
+      "type": "object"
+    },
+    "target": {
+      "description": "Target-image operations, applied in order: the reference colours the planner paints toward.",
+      "items": {
+        "$ref": "#/definitions/TargetOp"
+      },
+      "type": "array"
+    },
+    "title": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "sceneplan",
+    "canvas",
+    "target",
+    "regions",
+    "styles",
+    "layers"
+  ],
+  "title": "ScenePlan v1",
+  "type": "object"
+}
