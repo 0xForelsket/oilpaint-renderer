@@ -46,8 +46,11 @@ pub struct RegionCoverage {
     /// Share of the region's soft-mask area painted at all (proxy cover > 0.05).
     pub covered: f64,
     pub strokes: usize,
-    /// Stroke base widths (cw) planned for this region, min and max (sizeByY and gap fill scale them).
+    /// Drawn stroke widths (cw) for this region, min and max: the style's range, scaled by sizeByY, and 0.8x for gap
+    /// fill.
     pub width: [f64; 2],
+    /// Strokes whose path stopped after one step (two points: a tapered stub).
+    pub stubs: usize,
 }
 
 #[derive(Clone, Copy, Debug, Default, serde::Serialize)]
@@ -116,13 +119,9 @@ pub fn plan<M: Mixer>(
     // coverage per region and bare canvas
     let (w, h) = (p.g.w, p.g.h);
     let bare = p.cv.cover.iter().filter(|c| **c < 0.05).count() as f64 / (w * h) as f64;
-    let mut per_region: Vec<(usize, [f64; 2])> = vec![(0, [f64::INFINITY, 0.0]); p.g.names.len()];
-    for (s, k) in p.strokes.iter().zip(0..) {
-        let pts = &p.points[p.offsets[k] as usize..p.offsets[k + 1] as usize];
-        let wmax = pts.iter().fold(0f64, |a, q| a.max(q[2] as f64));
-        let e = &mut per_region[s.region as usize];
-        e.0 += 1;
-        e.1 = [e.1[0].min(wmax), e.1[1].max(wmax)];
+    let mut counts = vec![0usize; p.g.names.len()];
+    for s in &p.strokes {
+        counts[s.region as usize] += 1;
     }
     let regions = p
         .g
@@ -141,8 +140,9 @@ pub fn plan<M: Mixer>(
                     }
                 }
             }
-            let (n, wr) = per_region[r];
-            RegionCoverage { region: name.clone(), covered: if area > 0.0 { painted / area } else { 1.0 }, strokes: n, width: if n > 0 { wr } else { [0.0, 0.0] } }
+            let n = counts[r];
+            let (wr, stubs) = p.drawn[r];
+            RegionCoverage { region: name.clone(), covered: if area > 0.0 { painted / area } else { 1.0 }, strokes: n, width: if n > 0 { wr } else { [0.0, 0.0] }, stubs }
         })
         .collect();
 

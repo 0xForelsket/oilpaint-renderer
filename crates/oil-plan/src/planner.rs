@@ -139,6 +139,9 @@ pub struct Planner<'a, M: Mixer> {
     pub strokes: Vec<Stroke>,
     pub layers: Vec<oil_strokes::Layer>,
     pub report: Vec<LayerReport>,
+    /// Per region: drawn stroke widths (cw, after sizeByY) min and max, and strokes whose path stopped after one
+    /// step (two points).
+    pub drawn: Vec<([f64; 2], usize)>,
 }
 
 /// v1's stroke profile: width factor and pressure along t in [0, 1].
@@ -165,6 +168,7 @@ fn norm(d: (f64, f64)) -> (f64, f64) {
 
 impl<'a, M: Mixer> Planner<'a, M> {
     pub fn new(m: &'a M, plan: &'a ScenePlan, g: Guides, seed: u32) -> Planner<'a, M> {
+        let n_regions = g.names.len();
         let cv = Canvas::new(m, g.w, g.h, g.ground);
         let lab = LabCache::new(g.w, g.h);
         let (wf, pw) = (g.w as f32, g.w as f64);
@@ -189,6 +193,7 @@ impl<'a, M: Mixer> Planner<'a, M> {
             strokes: Vec::new(),
             layers: Vec::new(),
             report: Vec::new(),
+            drawn: vec![([f64::INFINITY, 0.0], 0); n_regions],
         }
     }
 
@@ -479,6 +484,11 @@ impl<'a, M: Mixer> Planner<'a, M> {
         self.points.extend_from_slice(&pts_cw);
         self.offsets.push(self.points.len() as u32);
         self.strokes.push(Stroke { layer: li as u32, region: r as u32, color, color2, streak_amount: 1.0, brush });
+        let d = &mut self.drawn[r];
+        d.0 = [d.0[0].min(width / pw), d.0[1].max(width / pw)];
+        if path.len() == 2 {
+            d.1 += 1;
+        }
         true
     }
 

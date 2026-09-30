@@ -286,6 +286,77 @@ Messages and fixes are free text: they may improve without an engine-version bum
 `oil scene validate FILE.json`, `oilpaint validate SCENE.ts` and `engine.validate(spec)` all run the same Rust
 validator.
 
+## Planning (from engine `2.0.0-dev.3`)
+
+`oil plan`, `engine.plan()` and `oil_plan::plan` turn a ScenePlan into a StrokeList. The planner is a cutover
+from v1's Python planner: the same ideas, restructured, with no parity requirement. Same inputs and engine version
+give the same StrokeList bytes on every host (`ci/xhost`, cases `plan.*`).
+
+**Plan options** (not part of the spec):
+
+| Option | Default | Meaning |
+|---|---|---|
+| `seed` | 1907 | u32 |
+| `planWidth` | 600 | width of the guides and of the proxy canvas, in pixels; strokes are stored in cw and replay at any size |
+| `mixer` | `ochrell` | the mixer of the proxy canvas and of colour mixes; recorded in the StrokeList |
+| `strictEngine` | false | refuse a plan whose `engine` differs from the running engine instead of warning |
+
+**Per layer** (in order, disabled layers kept as empty ranges):
+1. The layer's regions, sorted by resolved `priority` (stable).
+2. If any of them paints in `scumble` mode, the proxy's height is blurred by `hblurSigma` once for the layer. The
+   StrokeList layer records the sigma, so the painter does the same.
+3. Per region, with its own random stream keyed by (seed, layer index, `seedOffset`, region index): editing one
+   region leaves every other region's strokes unchanged.
+   - **Sites.**
+     - `error`: cells of `gridFactor` x half the mean stroke width, aligned to the canvas origin. A cell's error is
+       0.6 x mean + 0.4 x max of the Lab difference between the proxy and the reference (the target blurred by
+       `referenceBlur` x half the mean width), weighted by the soft mask. A cell with error above `errorThreshold`
+       and mask cover above 0.3 gives one site at its worst pixel, jittered by `jitterPos`.
+     - `density`: one candidate per `spacing` x mean-width cell, kept with probability equal to the soft mask.
+     - `curve`: points every `curveSpacing` widths along the region's outline (soft mask > 0.5, outer boundaries)
+       or a polyline, offset along the normal.
+   - Then `coverage` thins the sites, `order` sorts them (painterly sweeps: bands of 3 widths, alternating
+     direction, jittered; or random), and `maxStrokes` caps them.
+   - **Per site:**
+     - error placement re-checks the error (skip below half the threshold), and `maxCover` skips covered canvas;
+     - width and length are drawn (`sizeByDetail`, `lengthSkew`, `dabShare`, `minAspect` unless `dab`);
+     - one stroke is emitted.
+   - **Gap fill** (error placement): canvas still bare inside the region (cover < `gapCover`, mask > 0.5) gets one
+     more stroke per half-cell.
+4. `dryAfter` multiplies wetness after the layer.
+
+**A stroke:**
+- **Path.** It starts at the site, pushed off-canvas when it lies at the edge and the flow runs inward. It follows
+  the region's flow, evaluated at each step of half a width: per-stroke angle jitter (`align`), `curvature` toward
+  the flow, wobble, an optional flick of up to 40 degrees over the last third (`flick`), and `reverseP`. It stops
+  where the soft mask fades (`stopAtEdge`) unless the stroke spills (`spill`).
+- **Profile.** Width and pressure follow v1's start and end ramps, with per-stroke `endVariation`.
+- **Colour.**
+  1. A reference sample (box of half a width), or a palette colour with `colorFrom: palette`.
+  2. Snapped toward the nearest mixer-made palette mixture by `snap`.
+  3. Lab jitter, floored at `lFloor`.
+  4. `flecks` mixed in at 0.75.
+  5. Warmed by the light map (`warmth`).
+  6. `marble` or `load2` gives a second load.
+- **Brush.**
+  - `opacity` is drawn from its range, scaled by `opacityByLight`.
+  - Lanes = `nbBase` + `nbPerCw` x width, clamped to 3..40.
+  - Thickness is `hgain` x the layer's `relief` x jitter, x (1 + `reliefByValue` (L* - 50) / 50).
+- **Painting.** It is painted on the proxy canvas exactly as `oil_paint` replays the StrokeList. A StrokeList
+  painted at the plan width reproduces the proxy bit for bit (tested).
+
+**The StrokeList** records its provenance in `META`:
+- the generator;
+- `plan` (`mixer`, `planWidth`, `seed`, `portable`: false when the plan uses sampled fields);
+- `inputs`: the SHA-256 of the ScenePlan's canonical JSON, and each field's hash;
+- the layer and region names.
+
+**The plan report** (JSON, printed by `oil plan`):
+- per layer and region: sites, strokes and gap strokes;
+- per region: the share of its soft-mask area painted at all (proxy cover > 0.05), stroke count and width range;
+- `bare`: the share of the canvas never painted;
+- timings and warnings.
+
 ## Porting v1 scenes
 
 The mapping is mechanical: each DSL call becomes the JSON object in the tables above, and snake_case keys become
