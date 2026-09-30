@@ -52,6 +52,7 @@ The crate `oil-errors` defines the type; `packages/oilpaint` throws it as `OilEr
 | `RANGE` | a value is outside its documented range |
 | `UNKNOWN_COLOR` | a colour string is neither `#rrggbb` nor a known tube |
 | `UNKNOWN_REGION` | a style, layer or curve names a region that is not declared |
+| `UNKNOWN_PRESET` | `preset` names a preset that is not in this build (with a did-you-mean fix) |
 | `UNKNOWN_FIELD` | a shape or flow refers to a field not declared in `fields` (or of the wrong kind), or a declared field was not supplied |
 | `FIELD_HASH_MISMATCH` | a supplied sampled field does not match the hash recorded in the spec |
 | `DUPLICATE_NAME` | two regions or two layers share a name |

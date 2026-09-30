@@ -76,8 +76,8 @@ pub fn clip01(v: f64) -> f64 {
     v.clamp(0.0, 1.0)
 }
 
-/// Sampled fields resampled to the grid, by name (channels interleaved).
-pub type Fields = BTreeMap<String, Vec<f32>>;
+/// Sampled fields at their own resolution, by name.
+pub type Fields = BTreeMap<String, crate::flows::Sampled>;
 
 pub fn polygon(g: &Grid, pts: &[Point]) -> Vec<f32> {
     geom::fill_polygon(g.w, g.h, &g.to_px(pts))
@@ -160,7 +160,10 @@ pub fn shape(g: &Grid, s: &Shape, fields: &Fields) -> Vec<f32> {
         }
         Shape::Not(s) => shape(g, s, fields).iter().map(|v| (1.0 - v).clamp(0.0, 1.0)).collect(),
         Shape::Noisy(n) => noisy(g, &shape(g, &n.shape, fields), n.amount, n.scale, n.seed),
-        Shape::Field(name) => fields.get(name).map(|f| f.iter().map(|v| v.clamp(0.0, 1.0)).collect()).unwrap_or_else(|| vec![0.0; g.len()]),
+        Shape::Field(name) => match fields.get(name) {
+            Some(f) => g.map(|x, y| f.at(x, y)[0].clamp(0.0, 1.0) as f32),
+            None => vec![0.0; g.len()],
+        },
     }
 }
 

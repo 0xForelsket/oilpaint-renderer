@@ -72,7 +72,7 @@ fn guides_with<M: Mixer>(m: &M, plan: &ScenePlan, width: u32, fields: &BTreeMap<
         .enumerate()
         .map(|(i, name)| {
             json!({ "id": i, "name": name, "pixels": counts[i], "share": counts[i] as f64 / n as f64,
-                    "softArea": g.masks[i].iter().map(|v| *v as f64).sum::<f64>() / n as f64, "flow": g.region_flows[i].is_some() })
+                    "softArea": g.masks[i].data.iter().map(|v| *v as f64 / 65535.0).sum::<f64>() / n as f64, "flow": g.flows[i].is_some() })
         })
         .collect();
     let light_mean = g.light.iter().map(|v| *v as f64).sum::<f64>() / n as f64;
@@ -94,11 +94,11 @@ fn guides_with<M: Mixer>(m: &M, plan: &ScenePlan, width: u32, fields: &BTreeMap<
             let (w, h) = (g.w, g.h);
             write_npy(&dir.join("target.npy"), &[h, w, 3], "<f4", &f32_bytes(g.target.iter().flatten().copied()));
             write_npy(&dir.join("region_id.npy"), &[h, w], "|u1", &g.region_id);
-            write_npy(&dir.join("masks.npy"), &[g.masks.len(), h, w], "<f4", &f32_bytes(g.masks.iter().flatten().copied()));
-            write_npy(&dir.join("flow.npy"), &[h, w, 2], "<f4", &f32_bytes(g.flow.iter().flatten().copied()));
+            write_npy(&dir.join("masks.npy"), &[g.masks.len(), h, w], "<f4", &f32_bytes(g.masks.iter().flat_map(|m| m.to_full(w, h))));
+            write_npy(&dir.join("flow.npy"), &[h, w, 2], "<f4", &f32_bytes(g.flow_raster().into_iter().flatten()));
             write_npy(&dir.join("light.npy"), &[h, w], "<f4", &f32_bytes(g.light.iter().copied()));
-            for (i, rf) in g.region_flows.iter().enumerate() {
-                if let Some(rf) = rf {
+            for i in 0..g.names.len() {
+                if let Some(rf) = g.region_flow_raster(i) {
                     let name = format!("flow_{}.npy", g.names[i]);
                     write_npy(&dir.join(&name), &[h, w, 2], "<f4", &f32_bytes(rf.iter().flatten().copied()));
                 }

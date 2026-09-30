@@ -82,6 +82,10 @@ pub struct ScenePlan {
     pub engine: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
+    /// A style preset (for example `"impressionist"`): its style values sit between the engine's neutral defaults and
+    /// the region styles.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub preset: Option<String>,
     pub canvas: Canvas,
     /// Target-image operations, applied in order: the reference colours the planner paints toward.
     pub target: Vec<TargetOp>,
@@ -207,6 +211,34 @@ pub enum TargetOp {
     Glow(Glow),
     /// Additive light in a wedge.
     Beam(Beam),
+    /// A picture (a photo reference) from a sampled rgb field, replacing the target (inside `mask`, if given).
+    Image(ImageOp),
+}
+
+/// How a picture of another aspect ratio fills the canvas.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum Fit {
+    /// Scale to cover the whole canvas and crop the overflow, centred.
+    #[default]
+    Cover,
+    /// Scale to fit inside the canvas, centred; outside it the target is unchanged.
+    Contain,
+    /// Stretch to the canvas, ignoring the picture's aspect ratio.
+    Stretch,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct ImageOp {
+    /// Name of an rgb field in `fields` (sRGB in [0, 1]).
+    pub field: String,
+    #[serde(default)]
+    pub fit: Fit,
+    #[serde(default = "d_one")]
+    pub strength: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mask: Option<Shape>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -632,7 +664,7 @@ macro_rules! with_style_keys {
             /// Colour B for marbling (default: a lighter/warmer variant).
             #[serde(default, skip_serializing_if = "Option::is_none")]
             pub load2: Option<ColorSpec>,
-            /// Stray hairs at the outline, 0..3 (default 1.0).
+            /// Stray hairs at the outline, 0..3 (default 0.35).
             #[serde(default, skip_serializing_if = "Option::is_none")]
             pub splay: Option<f64>,
             /// Pull toward the nearest palette mixture (default 0.85).
@@ -677,9 +709,29 @@ macro_rules! with_style_keys {
             /// Fade strokes away from the light: opacity x (1 - k (1 - light)) (default 0).
             #[serde(default, skip_serializing_if = "Option::is_none")]
             pub opacity_by_light: Option<f64>,
-            /// Stroke colours are never darker than this L* (default 20).
+            /// Stroke colours are never darker than this L* (default 0; the impressionist preset sets 20).
             #[serde(default, skip_serializing_if = "Option::is_none")]
             pub l_floor: Option<f64>,
+            /// 0..1: stroke width follows the reference's local detail, narrower where it is busy and wider where it
+            /// is flat, within `width` (default 0: uniform in the range).
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            pub size_by_detail: Option<f64>,
+            /// >= 0: skews stroke lengths toward the short end of `length` (default 0: uniform).
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            pub length_skew: Option<f64>,
+            /// 0..1: share of strokes that are short dabs, one to `minAspect` widths long (default 0).
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            pub dab_share: Option<f64>,
+            /// 0..1: per-stroke variation of `endWidth` and `endPressure` (default 0).
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            pub end_variation: Option<f64>,
+            /// 0..1: share of strokes that end in a flick, a curl of up to 40 degrees over the last third (default 0).
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            pub flick: Option<f64>,
+            /// 0..1: paint thickness follows the colour's value, thick in the lights and thin in the darks
+            /// (default 0).
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            pub relief_by_value: Option<f64>,
         }
     };
 }

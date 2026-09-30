@@ -11,7 +11,7 @@
 //   });
 import type {
   Beam, Blob, ColorSpec, ContourFlow, FieldKind, Flow, Glow, Layer, Light, LightBeam, LightGlow, LightLamp, Noisy,
-  PolygonOp, Region, ScenePlan, Shape, Style, SweepFlow, TargetOp, WavesFlow,
+  Fit, ImageOp, PolygonOp, Region, ScenePlan, Shape, Style, SweepFlow, TargetOp, WavesFlow,
 } from "./sceneplan.ts";
 import { sha256Hex } from "./sha256.ts";
 
@@ -110,6 +110,13 @@ export class TargetBuilder {
   }
 
   /** Additive light in a wedge. */
+  /** A picture (for example a photo reference) declared with `S.picture(name, ...)`, replacing the target (inside
+   *  `mask`, if given). `fit`: "cover" (default), "contain" or "stretch". */
+  image(field: string, o: { fit?: Fit; strength?: number; mask?: Shape } = {}): this {
+    this.ops.push({ image: clean<ImageOp>({ field, ...o }) });
+    return this;
+  }
+
   beam(apex: Point, angle: number, spread: number, length: number, color: ColorSpec, o: Opt<Beam, "apex" | "angle" | "spread" | "length" | "color"> = {}): this {
     this.ops.push({ beam: clean({ apex, angle, spread, length, color, ...o }) });
     return this;
@@ -167,6 +174,13 @@ export class SceneBuilder {
   readonly fields = new Map<string, Float32Array>();
 
   /** Title and the engine version the scene is tuned for (a different engine warns). */
+  /** A style preset (for example "impressionist"): its values sit between the engine's defaults and the region
+   *  styles. */
+  preset(name: string): this {
+    this.plan.preset = name;
+    return this;
+  }
+
   meta(o: { title?: string; engine?: string }): this {
     Object.assign(this.plan, clean(o));
     return this;
@@ -208,6 +222,20 @@ export class SceneBuilder {
 
   /** Sample a function into a field at `width` x round(width x aspect) and declare it (escape hatch: the plan is
    *  then marked non-portable, since JS maths may differ between engines). */
+  /** Declare a picture as an rgb field: 8-bit RGB or RGBA pixels (as from a canvas's ImageData or a decoded PNG),
+   *  or floats in [0, 1]. Use it as the target with `S.target.image(name)`. */
+  picture(name: string, img: { width: number; height: number; data: Uint8Array | Uint8ClampedArray | Float32Array; channels?: 3 | 4 }): this {
+    const n = img.width * img.height;
+    const ch = img.channels ?? (img.data.length === n * 4 ? 4 : 3);
+    if (img.data.length !== n * ch) throw new SceneError("RANGE", `picture ${name}: expected ${n * ch} values, got ${img.data.length}`, "/fields/" + name);
+    const scale = img.data instanceof Float32Array ? 1 : 1 / 255;
+    const data = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) for (let c = 0; c < 3; c++) data[i * 3 + c] = img.data[i * ch + c] * scale;
+    this.fields.set(name, data);
+    this.plan.fields = { ...this.plan.fields, [name]: { kind: "rgb", width: img.width, height: img.height, sha256: sha256Hex(f32Bytes(data)) } };
+    return this;
+  }
+
   field(name: string, kind: FieldKind, fn: FieldFn, width = 300): this {
     const [aw, ah] = this.plan.canvas.aspect;
     const height = Math.floor((width * ah * 2 + aw) / (2 * aw));

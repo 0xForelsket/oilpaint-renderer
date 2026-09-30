@@ -62,11 +62,12 @@ const LANTERN_ROOM = rect(CX - 0.024, 0.338, CX + 0.024, 0.392);
 const FOOT: Point[] = [[CX - 0.085, 0.736], [CX + 0.085, 0.736], [CX + 0.095, 0.758], [CX - 0.095, 0.758]];
 
 export default scene((S) => {
-  S.meta({ title: "Storm Light v3", engine: "2.0.0-dev.2" });
+  S.meta({ title: "Storm Light v3", engine: "2.0.0-dev.3" });
+  S.preset("impressionist");
   S.canvas({ aspect: [4, 5], ground: "#e9e1d6" });
 
-  // fewer stray hairs by default: they read as pencil lines in pale areas
-  const style = (name: string, s: Style) => S.style(name, { splay: 0.35, ...s });
+  // (v1 set splay 0.35 per style here, "fewer stray hairs: they read as pencil lines"; it is the engine default now)
+  const style = (name: string, s: Style) => S.style(name, s);
 
   const T = S.target;
   // ---- sky: dark above, a pale-gold gap low on the left, a dark squall on the right at tower height

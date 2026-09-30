@@ -145,7 +145,7 @@ pub fn flow(g: &Guides) -> Rgb8 {
     let len = step as f64 * 0.45;
     for y in (step / 2..g.h).step_by(step) {
         for x in (step / 2..g.w).step_by(step) {
-            let f = g.flow[y * g.w + x];
+            let f = g.flow_at(None, (x as f64 + 0.5) / g.w as f64, (y as f64 + 0.5) / g.w as f64);
             let (dx, dy) = (f[0] as f64 * len, f[1] as f64 * len);
             let n = (2.0 * len).ceil() as usize * 2;
             for s in 0..=n {

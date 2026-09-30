@@ -477,6 +477,26 @@
       },
       "type": "object"
     },
+    "Fit": {
+      "description": "How a picture of another aspect ratio fills the canvas.",
+      "oneOf": [
+        {
+          "const": "cover",
+          "description": "Scale to cover the whole canvas and crop the overflow, centred.",
+          "type": "string"
+        },
+        {
+          "const": "contain",
+          "description": "Scale to fit inside the canvas, centred; outside it the target is unchanged.",
+          "type": "string"
+        },
+        {
+          "const": "stretch",
+          "description": "Stretch to the canvas, ignoring the picture's aspect ratio.",
+          "type": "string"
+        }
+      ]
+    },
     "Flow": {
       "description": "A unit direction field, as a single-key object.",
       "oneOf": [
@@ -620,6 +640,42 @@
       ],
       "type": "object"
     },
+    "ImageOp": {
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "description": "Name of an rgb field in `fields` (sRGB in [0, 1]).",
+          "type": "string"
+        },
+        "fit": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/Fit"
+            }
+          ],
+          "default": "cover"
+        },
+        "mask": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Shape"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "strength": {
+          "default": 1.0,
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "field"
+      ],
+      "type": "object"
+    },
     "Layer": {
       "additionalProperties": false,
       "description": "A layer of the schedule. Besides its own keys it accepts every style key, overriding the region styles for this\nlayer.",
@@ -713,6 +769,14 @@
           "description": "Allow short, round dabs.",
           "type": "boolean"
         },
+        "dabShare": {
+          "description": "0..1: share of strokes that are short dabs, one to `minAspect` widths long (default 0).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
         "deplete": {
           "description": "Load lost per unit length (default 0.02).",
           "format": "double",
@@ -765,6 +829,14 @@
             "null"
           ]
         },
+        "endVariation": {
+          "description": "0..1: per-stroke variation of `endWidth` and `endPressure` (default 0).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
         "endWidth": {
           "description": "Width factor at the stroke's end (default 0.5).",
           "format": "double",
@@ -805,6 +877,14 @@
           },
           "type": [
             "array",
+            "null"
+          ]
+        },
+        "flick": {
+          "description": "0..1: share of strokes that end in a flick, a curl of up to 40 degrees over the last third (default 0).",
+          "format": "double",
+          "type": [
+            "number",
             "null"
           ]
         },
@@ -888,7 +968,7 @@
           "type": "number"
         },
         "lFloor": {
-          "description": "Stroke colours are never darker than this L* (default 20).",
+          "description": "Stroke colours are never darker than this L* (default 0; the impressionist preset sets 20).",
           "format": "double",
           "type": [
             "number",
@@ -905,6 +985,14 @@
           "minItems": 2,
           "type": [
             "array",
+            "null"
+          ]
+        },
+        "lengthSkew": {
+          "description": ">= 0: skews stroke lengths toward the short end of `length` (default 0: uniform).",
+          "format": "double",
+          "type": [
+            "number",
             "null"
           ]
         },
@@ -1087,6 +1175,14 @@
           "format": "double",
           "type": "number"
         },
+        "reliefByValue": {
+          "description": "0..1: paint thickness follows the colour's value, thick in the lights and thin in the darks\n(default 0).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
         "reverseP": {
           "description": "Chance to run against the flow (default 0).",
           "format": "double",
@@ -1107,6 +1203,14 @@
           "default": 0,
           "format": "int64",
           "type": "integer"
+        },
+        "sizeByDetail": {
+          "description": "0..1: stroke width follows the reference's local detail, narrower where it is busy and wider where it\nis flat, within `width` (default 0: uniform in the range).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "sizeByY": {
           "description": "[y0, y1, s0, s1]: scale width and length by s0 at y0 .. s1 at y1 (perspective).",
@@ -1147,7 +1251,7 @@
           ]
         },
         "splay": {
-          "description": "Stray hairs at the outline, 0..3 (default 1.0).",
+          "description": "Stray hairs at the outline, 0..3 (default 0.35).",
           "format": "double",
           "type": [
             "number",
@@ -1806,6 +1910,14 @@
             "null"
           ]
         },
+        "dabShare": {
+          "description": "0..1: share of strokes that are short dabs, one to `minAspect` widths long (default 0).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
         "deplete": {
           "description": "Load lost per unit length (default 0.02).",
           "format": "double",
@@ -1824,6 +1936,14 @@
         },
         "endPressure": {
           "description": "Pressure at the stroke's end (default 0.15).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "endVariation": {
+          "description": "0..1: per-stroke variation of `endWidth` and `endPressure` (default 0).",
           "format": "double",
           "type": [
             "number",
@@ -1864,6 +1984,14 @@
           },
           "type": [
             "array",
+            "null"
+          ]
+        },
+        "flick": {
+          "description": "0..1: share of strokes that end in a flick, a curl of up to 40 degrees over the last third (default 0).",
+          "format": "double",
+          "type": [
+            "number",
             "null"
           ]
         },
@@ -1921,7 +2049,7 @@
           ]
         },
         "lFloor": {
-          "description": "Stroke colours are never darker than this L* (default 20).",
+          "description": "Stroke colours are never darker than this L* (default 0; the impressionist preset sets 20).",
           "format": "double",
           "type": [
             "number",
@@ -1938,6 +2066,14 @@
           "minItems": 2,
           "type": [
             "array",
+            "null"
+          ]
+        },
+        "lengthSkew": {
+          "description": ">= 0: skews stroke lengths toward the short end of `length` (default 0: uniform).",
+          "format": "double",
+          "type": [
+            "number",
             "null"
           ]
         },
@@ -2064,6 +2200,14 @@
             "null"
           ]
         },
+        "reliefByValue": {
+          "description": "0..1: paint thickness follows the colour's value, thick in the lights and thin in the darks\n(default 0).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
         "reverseP": {
           "description": "Chance to run against the flow (default 0).",
           "format": "double",
@@ -2074,6 +2218,14 @@
         },
         "ridge": {
           "description": "Lane ridge/furrow relief, x hgain (default 0.5).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "sizeByDetail": {
+          "description": "0..1: stroke width follows the reference's local detail, narrower where it is busy and wider where it\nis flat, within `width` (default 0: uniform in the range).",
           "format": "double",
           "type": [
             "number",
@@ -2110,7 +2262,7 @@
           ]
         },
         "splay": {
-          "description": "Stray hairs at the outline, 0..3 (default 1.0).",
+          "description": "Stray hairs at the outline, 0..3 (default 0.35).",
           "format": "double",
           "type": [
             "number",
@@ -2341,6 +2493,19 @@
             "beam"
           ],
           "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "A picture (a photo reference) from a sampled rgb field, replacing the target (inside `mask`, if given).",
+          "properties": {
+            "image": {
+              "$ref": "#/definitions/ImageOp"
+            }
+          },
+          "required": [
+            "image"
+          ],
+          "type": "object"
         }
       ]
     },
@@ -2475,6 +2640,13 @@
         "$ref": "#/definitions/Light"
       },
       "type": "array"
+    },
+    "preset": {
+      "description": "A style preset (for example `\"impressionist\"`): its style values sit between the engine's neutral defaults and\nthe region styles.",
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "regions": {
       "description": "Regions, in order: later regions override earlier ones in the hard region map.",

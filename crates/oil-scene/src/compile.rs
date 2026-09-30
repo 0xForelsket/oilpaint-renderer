@@ -2,22 +2,82 @@
 //!
 //! - target: RGB reference image (sRGB, [0, 1]);
 //! - region_id: the hard region map (later regions override earlier ones), and one soft mask per region;
-//! - flow: unit stroke directions: each pixel takes the authored flow of the region that owns it, or the target's
-//!   structure-tensor flow; each authored flow is also kept whole (`region_flows`), since a region's strokes
-//!   follow its own field wherever they go;
+//! - flow: unit stroke directions. Authored flows are functions evaluated where needed (`flows.rs`), since a
+//!   region's strokes follow its own field wherever they go; elsewhere a pixel takes the flow of the region that
+//!   owns it, or the target's structure-tensor flow, the one flow kept as a raster;
 //! - light: the light map in [0, 1].
 use crate::color;
+use crate::flows::{unit, FlowEval, Sampled};
 use crate::raster::{self, clip01, Fields, Grid};
 use crate::spec::*;
 use oil_errors::Error;
-use oil_image::{blur, gaussian_blur, geom, sobel};
+use oil_image::{blur, sobel};
 use oil_math::{atan2, cos, exp, pow, sin};
 use oil_mix::Mixer;
 use sha2::{Digest, Sha256};
 
+/// A soft mask cropped to the box where it is non-zero, stored as 16-bit fractions (value = q / 65535).
+#[derive(Clone, Debug, PartialEq)]
+pub struct Mask {
+    pub x0: usize,
+    pub y0: usize,
+    pub w: usize,
+    pub h: usize,
+    pub data: Vec<u16>,
+}
+
+impl Mask {
+    /// Quantise and crop a full-canvas mask.
+    pub fn from_full(full: &[f32], gw: usize, gh: usize) -> Mask {
+        let q: Vec<u16> = full.iter().map(|v| (v.clamp(0.0, 1.0) * 65535.0 + 0.5) as u16).collect();
+        let (mut x0, mut y0, mut x1, mut y1) = (gw, gh, 0, 0);
+        for j in 0..gh {
+            for i in 0..gw {
+                if q[j * gw + i] != 0 {
+                    x0 = x0.min(i);
+                    x1 = x1.max(i + 1);
+                    y0 = y0.min(j);
+                    y1 = y1.max(j + 1);
+                }
+            }
+        }
+        if x1 <= x0 {
+            return Mask { x0: 0, y0: 0, w: 0, h: 0, data: Vec::new() };
+        }
+        let (w, h) = (x1 - x0, y1 - y0);
+        let mut data = Vec::with_capacity(w * h);
+        for j in y0..y1 {
+            data.extend_from_slice(&q[j * gw + x0..j * gw + x1]);
+        }
+        Mask { x0, y0, w, h, data }
+    }
+
+    /// The mask at pixel (i, j); 0 outside its box.
+    #[inline(always)]
+    pub fn at(&self, i: usize, j: usize) -> f32 {
+        if i < self.x0 || j < self.y0 || i >= self.x0 + self.w || j >= self.y0 + self.h {
+            return 0.0;
+        }
+        self.data[(j - self.y0) * self.w + (i - self.x0)] as f32 * (1.0 / 65535.0)
+    }
+
+    /// The whole-canvas plane (for previews and exports).
+    pub fn to_full(&self, gw: usize, gh: usize) -> Vec<f32> {
+        let mut out = vec![0f32; gw * gh];
+        for j in 0..self.h {
+            for i in 0..self.w {
+                out[(self.y0 + j) * gw + self.x0 + i] = self.data[j * self.w + i] as f32 * (1.0 / 65535.0);
+            }
+        }
+        out
+    }
+}
+
 pub struct Guides {
     pub w: usize,
     pub h: usize,
+    /// Canvas height in cw (aspect height / width).
+    pub canvas_h: f64,
     pub ground: [f32; 3],
     /// Row-major sRGB.
     pub target: Vec<[f32; 3]>,
@@ -25,10 +85,11 @@ pub struct Guides {
     /// Region names, in id order.
     pub names: Vec<String>,
     /// Soft masks, in region order.
-    pub masks: Vec<Vec<f32>>,
-    pub flow: Vec<[f32; 2]>,
-    /// The authored flow of each region, whole-canvas (None: the region follows `flow`).
-    pub region_flows: Vec<Option<Vec<[f32; 2]>>>,
+    pub masks: Vec<Mask>,
+    /// The target's structure-tensor flow (the fallback where no authored flow applies).
+    pub structure: Vec<[f32; 2]>,
+    /// Each region's authored flow (None: the region follows the global flow).
+    pub flows: Vec<Option<FlowEval>>,
     pub light: Vec<f32>,
 }
 
@@ -71,8 +132,8 @@ fn channels(kind: FieldKind) -> usize {
     }
 }
 
-/// Check supplied fields against their declarations and resample them to the grid (bilinear).
-fn resolve_fields(plan: &ScenePlan, g: &Grid, supplied: &std::collections::BTreeMap<String, FieldData>) -> Result<Fields, Vec<Error>> {
+/// Check supplied fields against their declarations; they stay at their own resolution and are sampled where used.
+fn resolve_fields(plan: &ScenePlan, supplied: &std::collections::BTreeMap<String, FieldData>) -> Result<Fields, Vec<Error>> {
     let mut out = Fields::new();
     let mut errs = Vec::new();
     for (name, decl) in &plan.fields {
@@ -91,22 +152,7 @@ fn resolve_fields(plan: &ScenePlan, g: &Grid, supplied: &std::collections::BTree
             errs.push(Error::new("FIELD_HASH_MISMATCH", format!("field {name} does not match its sha256")).path(format!("{p}/sha256")).got(hash).expected(&decl.sha256));
             continue;
         }
-        let mut res = vec![0f32; g.len() * nc];
-        for c in 0..nc {
-            let plane: Vec<f32> = f.data.iter().skip(c).step_by(nc).copied().collect();
-            let r = oil_image::resize_linear(&plane, fw, fh, g.w, g.h);
-            for (i, v) in r.into_iter().enumerate() {
-                res[i * nc + c] = v;
-            }
-        }
-        if decl.kind == FieldKind::Flow {
-            for v in res.chunks_exact_mut(2) {
-                let n = ((v[0] * v[0] + v[1] * v[1]) as f64).sqrt() + 1e-6;
-                v[0] = (v[0] as f64 / n) as f32;
-                v[1] = (v[1] as f64 / n) as f32;
-            }
-        }
-        out.insert(name.clone(), res);
+        out.insert(name.clone(), Sampled { w: fw, h: fh, channels: nc, data: f.data.clone() });
     }
     if errs.is_empty() {
         Ok(out)
@@ -132,11 +178,12 @@ pub fn compile<M: Mixer>(
     }
     let t0 = clock();
     let g = Grid::new(width, plan.canvas.aspect);
-    let fields = resolve_fields(plan, &g, fields)?;
+    let canvas_h = plan.canvas.aspect[1] as f64 / plan.canvas.aspect[0] as f64;
+    let fields = resolve_fields(plan, fields)?;
     let col = |c: &ColorSpec, p: &str| color::resolve(c, mixer, p).map_err(|e| vec![e]);
     let ground = col(&plan.canvas.ground, "/canvas/ground")?;
 
-    let target = render_target(plan, &g, &fields, &col)?;
+    let target = render_target(plan, &g, canvas_h, &fields, &col)?;
     let t1 = clock();
 
     let n = plan.regions.len();
@@ -149,22 +196,12 @@ pub fn compile<M: Mixer>(
                 *id = i as u8;
             }
         }
-        masks.push(blur(&m, g.w, g.h, (r.edge * g.pw).max(0.5)));
+        masks.push(Mask::from_full(&blur(&m, g.w, g.h, (r.edge * g.pw).max(0.5)), g.w, g.h));
     }
     let t2 = clock();
 
-    let st = structure_flow(&target, &g);
-    let mut region_flows = Vec::with_capacity(n);
-    for r in &plan.regions {
-        region_flows.push(r.flow.as_ref().map(|f| flow_field(&g, f, &fields)));
-    }
-    let mut flow = st;
-    for (k, (f, id)) in flow.iter_mut().zip(&region_id).enumerate() {
-        if let Some(rf) = &region_flows[*id as usize] {
-            *f = rf[k];
-        }
-        *f = unit(f[0] as f64, f[1] as f64);
-    }
+    let structure = structure_flow(&target, &g);
+    let flows = plan.regions.iter().map(|r| r.flow.as_ref().map(|f| FlowEval::new(f, canvas_h, |n| fields.get(n).cloned()))).collect();
     let t3 = clock();
 
     let light = light_map(plan, &g);
@@ -173,23 +210,18 @@ pub fn compile<M: Mixer>(
     let guides = Guides {
         w: g.w,
         h: g.h,
+        canvas_h,
         ground,
         target,
         region_id,
         names: plan.regions.iter().map(|r| r.name.clone()).collect(),
         masks,
-        flow,
-        region_flows,
+        structure,
+        flows,
         light,
     };
     let timings = Timings { target_ms: t1 - t0, regions_ms: t2 - t1, flow_ms: t3 - t2, light_ms: t4 - t3, total_ms: t4 - t0 };
     Ok((guides, timings))
-}
-
-#[inline(always)]
-fn unit(dx: f64, dy: f64) -> [f32; 2] {
-    let n = (dx * dx + dy * dy).sqrt() + 1e-6;
-    [(dx / n) as f32, (dy / n) as f32]
 }
 
 // ------------------------------------------------------------------ target
@@ -232,7 +264,68 @@ fn gradient(g: &Grid, stops: &[(f64, [f32; 3])]) -> Vec<[f32; 3]> {
     out
 }
 
-fn render_target(plan: &ScenePlan, g: &Grid, fields: &Fields, col: &Col) -> Result<Vec<[f32; 3]>, Vec<Error>> {
+/// Average of a sampled rgb field over the pixel box [u0, u1) x [v0, v1) (field pixels), exact area weights.
+fn area_rgb(s: &Sampled, u0: f64, u1: f64, v0: f64, v1: f64) -> [f64; 3] {
+    let (mut acc, mut wsum) = ([0.0f64; 3], 0.0f64);
+    let (i0, i1) = (u0.floor().max(0.0) as usize, (u1.ceil() as usize).min(s.w));
+    let (j0, j1) = (v0.floor().max(0.0) as usize, (v1.ceil() as usize).min(s.h));
+    for j in j0..j1 {
+        let wy = (v1.min(j as f64 + 1.0) - v0.max(j as f64)).max(0.0);
+        for i in i0..i1 {
+            let wgt = wy * (u1.min(i as f64 + 1.0) - u0.max(i as f64)).max(0.0);
+            let k = (j * s.w + i) * s.channels;
+            for (c, a) in acc.iter_mut().enumerate() {
+                *a += wgt * s.data[k + c] as f64;
+            }
+            wsum += wgt;
+        }
+    }
+    if wsum > 0.0 {
+        acc.map(|v| v / wsum)
+    } else {
+        [0.0; 3]
+    }
+}
+
+/// A picture fitted to the canvas: colour and coverage (0 outside a `contain` picture) per pixel. Downscaling
+/// averages the picture's pixels under each canvas pixel; upscaling is bilinear.
+fn image_layer(g: &Grid, canvas_h: f64, s: &Sampled, fit: Fit) -> (Vec<[f32; 3]>, Vec<f32>) {
+    let pa = s.h as f64 / s.w as f64;
+    // displayed picture width in cw, and its offset
+    let wd = match fit {
+        Fit::Cover => 1f64.max(canvas_h / pa),
+        Fit::Contain => 1f64.min(canvas_h / pa),
+        Fit::Stretch => 1.0,
+    };
+    let hd = if fit == Fit::Stretch { canvas_h } else { wd * pa };
+    let (ox, oy) = ((1.0 - wd) * 0.5, (canvas_h - hd) * 0.5);
+    let (sx, sy) = (s.w as f64 / wd, s.h as f64 / hd); // field pixels per cw
+    let footprint = sx / g.pw;
+    let mut rgb = Vec::with_capacity(g.len());
+    let mut cov = Vec::with_capacity(g.len());
+    for j in 0..g.h {
+        for i in 0..g.w {
+            let (x, y) = (g.x(i), g.y(j));
+            let (u, v) = ((x - ox) * sx, (y - oy) * sy);
+            if u < 0.0 || v < 0.0 || u > s.w as f64 || v > s.h as f64 {
+                rgb.push([0.0; 3]);
+                cov.push(0.0);
+                continue;
+            }
+            let c = if footprint >= 1.0 {
+                let (hu, hv) = (0.5 * sx / g.pw, 0.5 * sy / g.pw);
+                area_rgb(s, u - hu, u + hu, v - hv, v + hv)
+            } else {
+                s.at((u / s.w as f64) * 1.0, (v / s.w as f64) * 1.0)
+            };
+            rgb.push(c.map(|v| v.clamp(0.0, 1.0) as f32));
+            cov.push(1.0);
+        }
+    }
+    (rgb, cov)
+}
+
+fn render_target(plan: &ScenePlan, g: &Grid, canvas_h: f64, fields: &Fields, col: &Col) -> Result<Vec<[f32; 3]>, Vec<Error>> {
     let mut img = vec![[0f32; 3]; g.len()];
     for (i, op) in plan.target.iter().enumerate() {
         let p = format!("/target/{i}");
@@ -302,6 +395,17 @@ fn render_target(plan: &ScenePlan, g: &Grid, fields: &Fields, col: &Col) -> Resu
                 });
                 add_light(&mut img, c, &a);
             }
+            TargetOp::Image(im) => {
+                let Some(s) = fields.get(&im.field) else { continue };
+                let (rgb, cov) = image_layer(g, canvas_h, s, im.fit);
+                let mask = im.mask.as_ref().map(|m| raster::shape(g, m, fields));
+                for (k, px) in img.iter_mut().enumerate() {
+                    let a = (im.strength as f32 * cov[k] * mask.as_ref().map_or(1.0, |m| m[k].clamp(0.0, 1.0))).clamp(0.0, 1.0);
+                    for c in 0..3 {
+                        px[c] = px[c] * (1.0 - a) + rgb[k][c] * a;
+                    }
+                }
+            }
             TargetOp::Beam(b) => {
                 let c = col(&b.color, &format!("{p}/beam/color"))?;
                 let w = raster::wedge(g, b.apex, b.angle, b.spread, b.length);
@@ -365,102 +469,6 @@ pub fn structure_flow(target: &[[f32; 3]], g: &Grid) -> Vec<[f32; 2]> {
         .collect()
 }
 
-fn angles_to_unit(a: Vec<f64>) -> Vec<[f32; 2]> {
-    a.into_iter().map(|a| unit(cos(a), sin(a))).collect()
-}
-
-/// (fbm - 0.5) x 2 x amount, as angles in radians (v1's flow noise term).
-fn noise_term(g: &Grid, scale: f64, octaves: u32, seed: u32, amount: f64) -> Vec<f64> {
-    g.fbm(scale, octaves, seed).iter().map(|n| (*n as f64 - 0.5) * 2.0 * amount).collect()
-}
-
-fn constant(g: &Grid, angle: f64, noise: f64, seed: u32) -> Vec<[f32; 2]> {
-    let a0 = angle.to_radians();
-    if noise > 0.0 {
-        angles_to_unit(noise_term(g, 0.15, 3, seed, noise).into_iter().map(|n| a0 + n).collect())
-    } else {
-        vec![unit(cos(a0), sin(a0)); g.len()]
-    }
-}
-
-pub fn flow_field(g: &Grid, f: &Flow, fields: &Fields) -> Vec<[f32; 2]> {
-    match f {
-        Flow::Constant(c) => constant(g, c.angle, c.noise, c.seed),
-        Flow::Sweep(s) => {
-            let curl = noise_term(g, s.scale, 2, s.seed, s.curl);
-            let nz = noise_term(g, s.scale * 0.35, 3, s.seed.wrapping_add(1), s.noise);
-            let a0 = s.angle.to_radians();
-            angles_to_unit(curl.iter().zip(&nz).map(|(c, n)| a0 + c + n).collect())
-        }
-        Flow::Waves(w) => {
-            // depth runs from the horizon (0) to the bottom edge of the canvas (1)
-            let bottom = g.h as f64 / g.pw;
-            let phase = g.fbm(0.3, 2, w.seed);
-            let nz = noise_term(g, 0.08, 3, w.seed.wrapping_add(1), w.noise);
-            let (a0, amp) = (w.angle.to_radians(), w.amplitude.to_radians());
-            let tau = 2.0 * std::f64::consts::PI;
-            let mut a = Vec::with_capacity(g.len());
-            for j in 0..g.h {
-                let y = g.y(j);
-                let depth = if w.perspective { clip01((y - w.horizon) / (bottom - w.horizon).max(1e-3)) } else { 1.0 };
-                let wl = w.wavelength * (0.3 + 0.7 * depth);
-                for i in 0..g.w {
-                    let k = j * g.w + i;
-                    a.push(a0 + amp * sin(tau * g.x(i) / wl + 6.0 * phase[k] as f64) + nz[k] * (0.3 + 0.7 * depth));
-                }
-            }
-            angles_to_unit(a)
-        }
-        Flow::SwirlAround(s) => {
-            let base = constant(g, -8.0, s.noise, s.seed);
-            let mut out = Vec::with_capacity(g.len());
-            for j in 0..g.h {
-                let y = g.y(j);
-                for i in 0..g.w {
-                    let x = g.x(i);
-                    let (mut dx, mut dy) = (0.0, 0.0);
-                    for c in &s.centres {
-                        let (ex, ey) = ((x - c[0]) / c[2], (y - c[1]) / c[3]);
-                        let d = (ex * ex + ey * ey).sqrt() + 1e-6;
-                        let wgt = exp(-d * d * 0.7);
-                        dx += wgt * (-ey / d);
-                        dy += wgt * (ex / d);
-                    }
-                    let b = base[j * g.w + i];
-                    out.push(unit(s.strength * dx + (1.0 - s.strength) * b[0] as f64, s.strength * dy + (1.0 - s.strength) * b[1] as f64));
-                }
-            }
-            out
-        }
-        Flow::RadialFrom(r) => {
-            let nz = noise_term(g, 0.1, 2, r.seed, r.noise);
-            let mut a = Vec::with_capacity(g.len());
-            for j in 0..g.h {
-                let y = g.y(j);
-                for i in 0..g.w {
-                    a.push(atan2(y - r.c[1], g.x(i) - r.c[0]) + nz[j * g.w + i]);
-                }
-            }
-            angles_to_unit(a)
-        }
-        Flow::Upward(u) => constant(g, -90.0, u.noise * 1.2, u.seed),
-        Flow::Contour(c) => {
-            // tangent of the signed distance to the outline (positive inside), smoothed
-            let m = raster::polygon(g, &c.polygon);
-            let inside: Vec<bool> = m.iter().map(|v| *v > 0.5).collect();
-            let outside: Vec<bool> = inside.iter().map(|b| !b).collect();
-            let (di, dout) = (geom::edt(&inside, g.w, g.h), geom::edt(&outside, g.w, g.h));
-            let d: Vec<f32> = di.iter().zip(&dout).map(|(a, b)| a - b).collect();
-            let d = gaussian_blur(&d, g.w, g.h, (0.01 * g.pw).max(1.0));
-            let (gx, gy) = (sobel(&d, g.w, g.h, true), sobel(&d, g.w, g.h, false));
-            let nz = noise_term(g, 0.1, 3, c.seed, c.noise);
-            let half_pi = 0.5 * std::f64::consts::PI;
-            angles_to_unit((0..g.len()).map(|i| atan2(gy[i] as f64, gx[i] as f64) + half_pi + nz[i]).collect())
-        }
-        Flow::Field(name) => fields.get(name).map(|f| f.chunks_exact(2).map(|v| [v[0], v[1]]).collect()).unwrap_or_else(|| vec![[1.0, 0.0]; g.len()]),
-    }
-}
-
 // ------------------------------------------------------------------ light
 
 fn light_map(plan: &ScenePlan, g: &Grid) -> Vec<f32> {
@@ -501,17 +509,88 @@ fn light_map(plan: &ScenePlan, g: &Grid) -> Vec<f32> {
     lm.iter().map(|v| clip01(*v) as f32).collect()
 }
 
-// ------------------------------------------------------------------ digests
+// ------------------------------------------------------------------ queries and digests
 
 impl Guides {
-    /// SHA-256 of each plane (f32 little-endian; region ids as bytes): the determinism check across hosts.
+    /// The flow for a stroke of `region` at (x, y) in cw: the region's authored flow if it has one; otherwise the
+    /// authored flow of the region owning that pixel, or the structure-tensor flow (bilinear) where there is none.
+    pub fn flow_at(&self, region: Option<usize>, x: f64, y: f64) -> [f32; 2] {
+        if let Some(Some(f)) = region.map(|r| &self.flows[r]) {
+            return f.at(x, y);
+        }
+        let (i, j) = self.pixel(x, y);
+        if let Some(f) = &self.flows[self.region_id[j * self.w + i] as usize] {
+            return f.at(x, y);
+        }
+        self.structure_at(x, y)
+    }
+
+    fn pixel(&self, x: f64, y: f64) -> (usize, usize) {
+        let pw = self.w as f64;
+        (((x * pw).floor().max(0.0) as usize).min(self.w - 1), ((y * pw).floor().max(0.0) as usize).min(self.h - 1))
+    }
+
+    /// Bilinear structure-tensor flow at (x, y) in cw, renormalised.
+    pub fn structure_at(&self, x: f64, y: f64) -> [f32; 2] {
+        let pw = self.w as f64;
+        let (u, v) = ((x * pw - 0.5).clamp(0.0, (self.w - 1) as f64), (y * pw - 0.5).clamp(0.0, (self.h - 1) as f64));
+        let (i0, j0) = (u.floor() as usize, v.floor() as usize);
+        let (i1, j1) = ((i0 + 1).min(self.w - 1), (j0 + 1).min(self.h - 1));
+        let (tu, tv) = (u - i0 as f64, v - j0 as f64);
+        let p = |i: usize, j: usize, c: usize| self.structure[j * self.w + i][c] as f64;
+        let lerp2 = |c: usize| {
+            let top = p(i0, j0, c) + tu * (p(i1, j0, c) - p(i0, j0, c));
+            let bot = p(i0, j1, c) + tu * (p(i1, j1, c) - p(i0, j1, c));
+            top + tv * (bot - top)
+        };
+        unit(lerp2(0), lerp2(1))
+    }
+
+    /// The global flow at every pixel centre: the owning region's authored flow, or the structure-tensor flow
+    /// (for previews, exports and the cross-host digest).
+    pub fn flow_raster(&self) -> Vec<[f32; 2]> {
+        let pw = self.w as f64;
+        let mut out = Vec::with_capacity(self.w * self.h);
+        for j in 0..self.h {
+            for i in 0..self.w {
+                let k = j * self.w + i;
+                out.push(match &self.flows[self.region_id[k] as usize] {
+                    Some(f) => f.at((i as f64 + 0.5) / pw, (j as f64 + 0.5) / pw),
+                    None => {
+                        let s = self.structure[k];
+                        unit(s[0] as f64, s[1] as f64)
+                    }
+                });
+            }
+        }
+        out
+    }
+
+    /// A region's authored flow over the whole canvas, or None (for exports).
+    pub fn region_flow_raster(&self, r: usize) -> Option<Vec<[f32; 2]>> {
+        let f = self.flows[r].as_ref()?;
+        let pw = self.w as f64;
+        Some((0..self.h).flat_map(|j| (0..self.w).map(move |i| (i, j))).map(|(i, j)| f.at((i as f64 + 0.5) / pw, (j as f64 + 0.5) / pw)).collect())
+    }
+
+    /// SHA-256 of each plane (f32 little-endian; region ids as bytes; masks as their boxes and 16-bit values): the
+    /// determinism check across hosts.
     pub fn hashes(&self) -> std::collections::BTreeMap<&'static str, String> {
+        let hex = |d: sha2::digest::Output<Sha256>| d.iter().map(|b| format!("{b:02x}")).collect::<String>();
         let mut m = std::collections::BTreeMap::new();
         m.insert("target", sha256_f32(self.target.iter().flatten().copied()));
-        m.insert("regionId", Sha256::digest(&self.region_id).iter().map(|b| format!("{b:02x}")).collect());
-        m.insert("masks", sha256_f32(self.masks.iter().flatten().copied()));
-        m.insert("flow", sha256_f32(self.flow.iter().flatten().copied()));
-        m.insert("regionFlows", sha256_f32(self.region_flows.iter().flatten().flatten().flatten().copied()));
+        m.insert("regionId", hex(Sha256::digest(&self.region_id)));
+        let mut mh = Sha256::new();
+        for mk in &self.masks {
+            for v in [mk.x0, mk.y0, mk.w, mk.h] {
+                mh.update((v as u32).to_le_bytes());
+            }
+            for v in &mk.data {
+                mh.update(v.to_le_bytes());
+            }
+        }
+        m.insert("masks", hex(mh.finalize()));
+        m.insert("flow", sha256_f32(self.flow_raster().iter().flatten().copied()));
         m.insert("light", sha256_f32(self.light.iter().copied()));
         m
     }

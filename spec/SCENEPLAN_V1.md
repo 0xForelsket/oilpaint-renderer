@@ -42,6 +42,7 @@ StrokeList.
 | `$schema` | no | ignored by the engine; lets editors validate |
 | `engine` | no | engine version the scene was authored and tuned with. A different engine warns `ENGINE_VERSION_DIFFERS`; plan option `strictEngine: true` (L3) makes that an error. |
 | `title` | no | copied into the StrokeList's `META` |
+| `preset` | no | a style preset (`"impressionist"`); its style values sit between the engine's neutral defaults and the region styles (`UNKNOWN_PRESET` otherwise). Presets are data: `crates/oil-scene/presets/*.json` |
 | `canvas` | yes | `aspect: [w, h]`, positive integers, at most 16:1; `ground`: a colour |
 | `target` | yes | ordered target-image operations; the reference the planner paints toward |
 | `regions` | yes | ordered list, 1 to 255 regions; later regions override earlier ones in the hard region map |
@@ -113,6 +114,7 @@ Applied in order onto an RGB image that starts black; the result is clipped to [
 | bands | `{"bands": {"points": [...], "bands": [[f0, f1, c], ...], "softness": 0.008}}` | per band: polygon rows with y in [y0 + f0 h, y0 + f1 h), blurred by max(0.5 px, softness) |
 | glow | `{"glow": {"c": [x, y], "r": r, "color": c, "strength": 1, "power": 2}}` | additive: alpha = strength x exp(-(d / r)^power) |
 | beam | `{"beam": {"apex": [x, y], "angle": a, "spread": s, "length": l, "color": c, "strength": 0.4, "softness": 0.3}}` | additive: a wedge blurred by max(1 px, softness x spread x 0.02) |
+| image | `{"image": {"field": "photo", "fit": "cover", "strength": 1, "mask": shape?}}` | replace (blend by strength x mask) with a picture: an `rgb` field, fitted by `cover` (fill, crop centred), `contain` (fit inside, centred; the target stays outside it) or `stretch`. Downscaling averages the picture's pixels under each guide pixel (exact areas); upscaling is bilinear |
 
 The alpha blend is `img (1 - a) + c a` with a clipped to [0, 1]. The additive light is `img + a (c - img / 2)` with
 a clipped to [0, 2].
@@ -151,8 +153,15 @@ wl = wavelength x (0.3 + 0.7 depth). The angle is angle + amplitude x sin(2 pi x
 - It uses Sobel gradients of luma (0.299 R + 0.587 G + 0.114 B), with products blurred by max(1 px, 0.02).
 - θ = ½ atan2(2 Jxy, Jxx - Jyy), and the flow is (-sin θ, cos θ).
 
-**Global flow:** each pixel takes the authored flow of the region that owns it, or the fallback. Each authored flow
-is also kept whole-canvas, because a region's strokes follow their own field wherever they go.
+**Evaluation (from engine `2.0.0-dev.3`).** Authored flows are functions of (x, y), evaluated where they are
+needed, not rasters:
+- A stroke of region R follows R's authored flow wherever it goes.
+- Without one, it follows the global flow: the authored flow of the region owning that pixel, or else the
+  structure-tensor fallback, which is the one flow kept as a raster (sampled bilinearly).
+- `contour` uses the gradient of a smooth minimum of the distances to the polygon's edges: each edge's unit vector
+  from its nearest point, weighted by exp(-(d - d_min) / 0.01 cw). It no longer blurs a distance raster.
+- `waves` measures depth to the canvas bottom, aspect height / width, exactly.
+- Soft masks are stored cropped to their non-zero box, as 16-bit fractions.
 
 ## Lights
 
@@ -164,9 +173,11 @@ Each entry adds to the light map, which is clipped to [0, 1]:
   max(1 px, 0.02).
 - `{"lamp": {"c": [x, y], "r": r, "strength": 1}}`: strength x exp(-(d / r)²).
 
-## Styles (per region; defaults from v1's planner)
+## Styles (per region)
 
-Every key is optional. Where v1's name differs, it is given.
+Every key is optional. The defaults are the engine's neutral defaults: v1's planner defaults, except where they
+carried Storm Light's taste (`lFloor`, `splay`), which now sits in the `impressionist` preset. Where v1's name
+differs, it is given.
 
 | Key | Default | Meaning |
 |---|---|---|
@@ -182,7 +193,7 @@ Every key is optional. Where v1's name differs, it is given.
 | `nbPerCw`, `nbBase` (`nb_per_cw`, `nb_base`) | 450, 5 | bristle lanes = nbBase + nbPerCw x width (3..40) |
 | `ridge`, `levee`, `furrow`, `blob`, `stiff` | 0.5, 0.35, 0.15, 0.3, 0.25 | surface relief (x hgain) |
 | `marble`, `load2` | 0, null | two-colour load share, and colour B (null: an automatic lighter/warmer variant) |
-| `splay` | 1.0 | stray hairs, 0..3 |
+| `splay` | 0.35 | stray hairs, 0..3 (v1's 1.0 read as pencil lines in pale areas) |
 | `snap` | 0.85 | pull toward the nearest palette mixture |
 | `jitter` | `[5, 4]` | Lab jitter [L, a/b] between strokes |
 | `warmth`, `warmColor` (`warm_color`) | 0, `"#f6d09a"` | light-map warming |
@@ -196,7 +207,13 @@ Every key is optional. Where v1's name differs, it is given.
 | `mode` | null | per-region override of the layer mode |
 | `sizeByY` (`size_by_y`) | null | `[y0, y1, s0, s1]` perspective scaling |
 | `opacityByLight` (`opacity_by_light`) | 0 | fade strokes away from the light |
-| `lFloor` (`L_floor`) | 20 | stroke colours never darker than this L* |
+| `lFloor` (`L_floor`) | 0 (impressionist: 20) | stroke colours never darker than this L* |
+| `sizeByDetail` | 0 | 0..1: stroke width follows the reference's local detail (narrower where busy) within `width` |
+| `lengthSkew` | 0 | ≥ 0: skews lengths toward the short end of `length` |
+| `dabShare` | 0 | 0..1: share of strokes that are short dabs (1 to `minAspect` widths) |
+| `endVariation` | 0 | 0..1: per-stroke variation of `endWidth` and `endPressure` |
+| `flick` | 0 | 0..1: share of strokes ending in a curl of up to 40 degrees over their last third |
+| `reliefByValue` | 0 | 0..1: paint thickness follows value: thick lights, thin darks |
 
 ## Layers
 

@@ -155,6 +155,17 @@ pub fn validate(plan: &ScenePlan) -> Report {
             );
         }
     }
+    if let Some(name) = &plan.preset {
+        if crate::presets::get(name).is_none() {
+            let names = crate::presets::names();
+            let mut e = Error::new("UNKNOWN_PRESET", format!("preset {name} is not in this build")).path("/preset").got(name);
+            e = match suggest(name, names.iter().copied()) {
+                Some(s) => e.fix(format!("did you mean \"{s}\"?")),
+                None => e.expected(names.join(", ")),
+            };
+            v.errs.push(e);
+        }
+    }
     let [aw, ah] = plan.canvas.aspect;
     if aw == 0 || ah == 0 || aw.max(ah) > 16 * aw.min(ah) {
         v.errs.push(Error::new("RANGE", "aspect is [width, height], positive integers, at most 16:1").path("/canvas/aspect").got(format!("[{aw}, {ah}]")));
@@ -427,6 +438,14 @@ impl V<'_> {
                 self.range(&format!("{p}/strength"), g.strength, 0.0, 2.0);
                 self.range(&format!("{p}/power"), g.power, 0.1, 8.0);
             }
+            TargetOp::Image(im) => {
+                let p = format!("{p}/image");
+                self.field(&format!("{p}/field"), &im.field, FieldKind::Rgb);
+                self.range(&format!("{p}/strength"), im.strength, 0.0, 1.0);
+                if let Some(m) = &im.mask {
+                    self.shape(&format!("{p}/mask"), m);
+                }
+            }
             TargetOp::Beam(b) => {
                 let p = format!("{p}/beam");
                 self.wedge(&p, &b.apex, b.angle, b.spread, b.length);
@@ -652,7 +671,7 @@ enum R {
 }
 
 /// Every style key and its rule (the defaults are in spec/SCENEPLAN_V1.md).
-const STYLE_RULES: [(&str, R); 46] = [
+const STYLE_RULES: [(&str, R); 53] = [
     ("mode", R::Any),
     ("colors", R::Colors),
     ("flecks", R::Flecks),
@@ -699,6 +718,13 @@ const STYLE_RULES: [(&str, R); 46] = [
     ("hgainJitter", R::Range(0.0, 1.0)),
     ("sizeByY", R::SizeByY),
     ("opacityByLight", R::Range(0.0, 1.0)),
+    ("sizeByDetail", R::Range(0.0, 1.0)),
+    ("lengthSkew", R::Range(0.0, 10.0)),
+    ("dabShare", R::Range(0.0, 1.0)),
+    ("endVariation", R::Range(0.0, 1.0)),
+    ("flick", R::Range(0.0, 1.0)),
+    ("reliefByValue", R::Range(0.0, 1.0)),
+    ("lFloor", R::Range(0.0, 100.0)),
 ];
 
 #[cfg(test)]

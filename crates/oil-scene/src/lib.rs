@@ -9,13 +9,16 @@
 
 pub mod color;
 pub mod compile;
+pub mod flows;
+pub mod presets;
 pub mod preview;
 pub mod raster;
 pub mod spec;
 pub mod validate;
 
 pub use oil_errors::Error;
-pub use compile::{compile, FieldData, Guides, Timings};
+pub use compile::{compile, FieldData, Guides, Mask, Timings};
+pub use flows::{FlowEval, Sampled};
 pub use spec::ScenePlan;
 pub use validate::{load, parse, validate, Report};
 

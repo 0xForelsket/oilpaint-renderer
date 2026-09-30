@@ -8,7 +8,8 @@
   "ground": "#e9e1d6"
  },
  "title": "Storm Light v3",
- "engine": "2.0.0-dev.2",
+ "engine": "2.0.0-dev.3",
+ "preset": "impressionist",
  "target": [
   {
    "fill": {
@@ -1964,7 +1965,6 @@
  ],
  "styles": {
   "sky": {
-   "splay": 0.35,
    "colors": [
     "#b1a8cf",
     "#9d97c4",
@@ -2011,7 +2011,6 @@
    "hardness": 0.6
   },
   "storm": {
-   "splay": 0.35,
    "colors": [
     "#5a5a95",
     "#484886",
@@ -2058,7 +2057,6 @@
    "hardness": 0.6
   },
   "glow": {
-   "splay": 0.35,
    "colors": [
     "#fbe5b8",
     "#f6d09a",
@@ -2106,7 +2104,6 @@
    "hardness": 0.55
   },
   "sea_far": {
-   "splay": 0.35,
    "colors": [
     "#f3dcc4",
     "#e3c3c4",
@@ -2144,7 +2141,6 @@
    "hardness": 0.65
   },
   "sea_near": {
-   "splay": 0.35,
    "colors": [
     "#4a76ae",
     "#3a67a0",
@@ -2204,7 +2200,6 @@
    "hardness": 0.75
   },
   "rock": {
-   "splay": 0.35,
    "colors": [
     "#4a4a7c",
     "#3c4270",
@@ -2251,7 +2246,6 @@
    "hardness": 0.75
   },
   "foam": {
-   "splay": 0.35,
    "colors": [
     "#f3e9e0",
     "#e6e3f2",
@@ -2283,7 +2277,6 @@
    "hardness": 0.7
   },
   "spray": {
-   "splay": 0.35,
    "colors": [
     "#f3e9e0",
     "#e6e3f2",
@@ -2313,7 +2306,6 @@
    "hardness": 0.5
   },
   "tower": {
-   "splay": 0.35,
    "colors": [
     "#fbf0dc",
     "#f7e2bd",
@@ -2355,7 +2347,6 @@
    "ridge": 0.4
   },
   "band1": {
-   "splay": 0.35,
    "colors": [
     "#ee8a6f",
     "#d8695a",
@@ -2390,7 +2381,6 @@
    "ridge": 0.4
   },
   "band2": {
-   "splay": 0.35,
    "colors": [
     "#ee8a6f",
     "#d8695a",
@@ -2425,7 +2415,6 @@
    "ridge": 0.4
   },
   "beam": {
-   "splay": 0,
    "colors": [
     "#fff0c0",
     "#fde3a8",
@@ -2463,10 +2452,10 @@
    "hardness": 0.3,
    "ridge": 0.2,
    "levee": 0,
-   "stiff": 0.1
+   "stiff": 0.1,
+   "splay": 0
   },
   "halo": {
-   "splay": 0,
    "colors": [
     "#fff3c8",
     "#ffe9a8",
@@ -2495,11 +2484,11 @@
    "ridge": 0.1,
    "levee": 0,
    "furrow": 0,
+   "splay": 0,
    "snap": 0.6,
    "body": 0.8
   },
   "lantern": {
-   "splay": 0,
    "colors": [
     "#fff2c0",
     "#ffe9a0",
@@ -2538,10 +2527,10 @@
    "stiff": 0.1,
    "ridge": 0.25,
    "marble": 0,
-   "hardness": 0.6
+   "hardness": 0.6,
+   "splay": 0
   },
   "roof": {
-   "splay": 0,
    "colors": [
     "#352e5e",
     "#3c3565",
@@ -2566,11 +2555,11 @@
     2
    ],
    "hardness": 0.8,
+   "splay": 0,
    "ridge": 0.3,
    "lFloor": 25
   },
   "gallery": {
-   "splay": 0,
    "colors": [
     "#5d4f82",
     "#6a5a8c",
@@ -2595,11 +2584,11 @@
     2
    ],
    "hardness": 0.8,
+   "splay": 0,
    "ridge": 0.3,
    "lFloor": 25
   },
   "foot": {
-   "splay": 0,
    "colors": [
     "#4a4a7c",
     "#3c4270",
@@ -2631,10 +2620,10 @@
    "hardness": 0.75,
    "ridge": 0.35,
    "levee": 0.15,
+   "splay": 0,
    "spill": 0
   },
   "crest": {
-   "splay": 0.35,
    "colors": [
     "#5a8fc0",
     "#5a8fc0",
@@ -2676,7 +2665,6 @@
    ]
   },
   "rain": {
-   "splay": 0.35,
    "colors": [
     "#efe1d6",
     "#e6d3d0",

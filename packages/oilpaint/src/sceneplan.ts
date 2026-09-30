@@ -176,7 +176,17 @@ export type TargetOp =
     }
   | {
       beam: Beam;
+    }
+  | {
+      image: ImageOp;
     };
+/**
+ * How a picture of another aspect ratio fills the canvas.
+ *
+ * This interface was referenced by `ScenePlan`'s JSON-Schema
+ * via the `definition` "Fit".
+ */
+export type Fit = "cover" | "contain" | "stretch";
 
 /**
  * A ScenePlan: the declarative description of a painting. With the plan options `{seed, planWidth, mixer}` and an
@@ -206,6 +216,11 @@ export interface ScenePlan {
    * Contributions to the light map (drives `warmth` and `opacityByLight`).
    */
   lights?: Light[];
+  /**
+   * A style preset (for example `"impressionist"`): its style values sit between the engine's neutral defaults and
+   * the region styles.
+   */
+  preset?: string | null;
   /**
    * Regions, in order: later regions override earlier ones in the hard region map.
    */
@@ -303,6 +318,10 @@ export interface Layer {
    */
   dab?: boolean;
   /**
+   * 0..1: share of strokes that are short dabs, one to `minAspect` widths long (default 0).
+   */
+  dabShare?: number | null;
+  /**
    * Load lost per unit length (default 0.02).
    */
   deplete?: number | null;
@@ -328,6 +347,10 @@ export interface Layer {
    */
   endPressure?: number | null;
   /**
+   * 0..1: per-stroke variation of `endWidth` and `endPressure` (default 0).
+   */
+  endVariation?: number | null;
+  /**
    * Width factor at the stroke's end (default 0.5).
    */
   endWidth?: number | null;
@@ -343,6 +366,10 @@ export interface Layer {
    * Complementary touches: [colour, probability].
    */
   flecks?: [ColorSpec, number][] | null;
+  /**
+   * 0..1: share of strokes that end in a flick, a curl of up to 40 degrees over the last third (default 0).
+   */
+  flick?: number | null;
   /**
    * Trough along the centre, x hgain (default 0.15).
    */
@@ -382,7 +409,7 @@ export interface Layer {
   jitter?: [number, number] | null;
   jitterPos?: number;
   /**
-   * Stroke colours are never darker than this L* (default 20).
+   * Stroke colours are never darker than this L* (default 0; the impressionist preset sets 20).
    */
   lFloor?: number | null;
   /**
@@ -392,6 +419,10 @@ export interface Layer {
    * @maxItems 2
    */
   length?: [number, number] | null;
+  /**
+   * >= 0: skews stroke lengths toward the short end of `length` (default 0: uniform).
+   */
+  lengthSkew?: number | null;
   /**
    * Raised paint along both edges, x hgain (default 0.35).
    */
@@ -472,6 +503,11 @@ export interface Layer {
    */
   relief?: number;
   /**
+   * 0..1: paint thickness follows the colour's value, thick in the lights and thin in the darks
+   * (default 0).
+   */
+  reliefByValue?: number | null;
+  /**
    * Chance to run against the flow (default 0).
    */
   reverseP?: number | null;
@@ -480,6 +516,11 @@ export interface Layer {
    */
   ridge?: number | null;
   seedOffset?: number;
+  /**
+   * 0..1: stroke width follows the reference's local detail, narrower where it is busy and wider where it
+   * is flat, within `width` (default 0: uniform in the range).
+   */
+  sizeByDetail?: number | null;
   /**
    * [y0, y1, s0, s1]: scale width and length by s0 at y0 .. s1 at y1 (perspective).
    *
@@ -500,7 +541,7 @@ export interface Layer {
    */
   spill?: number | null;
   /**
-   * Stray hairs at the outline, 0..3 (default 1.0).
+   * Stray hairs at the outline, 0..3 (default 0.35).
    */
   splay?: number | null;
   /**
@@ -767,6 +808,10 @@ export interface Style {
    */
   curvature?: number | null;
   /**
+   * 0..1: share of strokes that are short dabs, one to `minAspect` widths long (default 0).
+   */
+  dabShare?: number | null;
+  /**
    * Load lost per unit length (default 0.02).
    */
   deplete?: number | null;
@@ -779,6 +824,10 @@ export interface Style {
    */
   endPressure?: number | null;
   /**
+   * 0..1: per-stroke variation of `endWidth` and `endPressure` (default 0).
+   */
+  endVariation?: number | null;
+  /**
    * Width factor at the stroke's end (default 0.5).
    */
   endWidth?: number | null;
@@ -790,6 +839,10 @@ export interface Style {
    * Complementary touches: [colour, probability].
    */
   flecks?: [ColorSpec, number][] | null;
+  /**
+   * 0..1: share of strokes that end in a flick, a curl of up to 40 degrees over the last third (default 0).
+   */
+  flick?: number | null;
   /**
    * Trough along the centre, x hgain (default 0.15).
    */
@@ -818,7 +871,7 @@ export interface Style {
    */
   jitter?: [number, number] | null;
   /**
-   * Stroke colours are never darker than this L* (default 20).
+   * Stroke colours are never darker than this L* (default 0; the impressionist preset sets 20).
    */
   lFloor?: number | null;
   /**
@@ -828,6 +881,10 @@ export interface Style {
    * @maxItems 2
    */
   length?: [number, number] | null;
+  /**
+   * >= 0: skews stroke lengths toward the short end of `length` (default 0: uniform).
+   */
+  lengthSkew?: number | null;
   /**
    * Raised paint along both edges, x hgain (default 0.35).
    */
@@ -888,6 +945,11 @@ export interface Style {
    */
   release?: number | null;
   /**
+   * 0..1: paint thickness follows the colour's value, thick in the lights and thin in the darks
+   * (default 0).
+   */
+  reliefByValue?: number | null;
+  /**
    * Chance to run against the flow (default 0).
    */
   reverseP?: number | null;
@@ -895,6 +957,11 @@ export interface Style {
    * Lane ridge/furrow relief, x hgain (default 0.5).
    */
   ridge?: number | null;
+  /**
+   * 0..1: stroke width follows the reference's local detail, narrower where it is busy and wider where it
+   * is flat, within `width` (default 0: uniform in the range).
+   */
+  sizeByDetail?: number | null;
   /**
    * [y0, y1, s0, s1]: scale width and length by s0 at y0 .. s1 at y1 (perspective).
    *
@@ -911,7 +978,7 @@ export interface Style {
    */
   spill?: number | null;
   /**
-   * Stray hairs at the outline, 0..3 (default 1.0).
+   * Stray hairs at the outline, 0..3 (default 0.35).
    */
   splay?: number | null;
   /**
@@ -1043,5 +1110,18 @@ export interface Beam {
   length: number;
   softness?: number;
   spread: number;
+  strength?: number;
+}
+/**
+ * This interface was referenced by `ScenePlan`'s JSON-Schema
+ * via the `definition` "ImageOp".
+ */
+export interface ImageOp {
+  /**
+   * Name of an rgb field in `fields` (sRGB in [0, 1]).
+   */
+  field: string;
+  fit?: Fit;
+  mask?: Shape | null;
   strength?: number;
 }

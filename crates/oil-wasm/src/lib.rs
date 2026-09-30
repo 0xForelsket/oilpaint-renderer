@@ -52,7 +52,7 @@ pub fn guides(text: &str, width: u32, mixer: u32, fields: &BTreeMap<String, Fiel
                 .names
                 .iter()
                 .enumerate()
-                .map(|(i, name)| json!({ "id": i, "name": name, "pixels": counts[i], "share": counts[i] as f64 / n, "flow": g.region_flows[i].is_some() }))
+                .map(|(i, name)| json!({ "id": i, "name": name, "pixels": counts[i], "share": counts[i] as f64 / n, "flow": g.flows[i].is_some() }))
                 .collect();
             let summary = json!({
                 "engine": oil_kernel::ENGINE_VERSION,
@@ -83,18 +83,24 @@ pub fn plane(g: &Guides, which: u32) -> Option<Vec<u8>> {
     Some(match which {
         0 => f32s(&mut g.target.iter().flatten().copied()),
         1 => g.region_id.clone(),
-        2 => f32s(&mut g.masks.iter().flatten().copied()),
-        3 => f32s(&mut g.flow.iter().flatten().copied()),
+        2 => f32s(&mut g.masks.iter().flat_map(|m| m.to_full(g.w, g.h))),
+        3 => f32s(&mut g.flow_raster().into_iter().flatten()),
         4 => f32s(&mut g.light.iter().copied()),
         10 => img(preview::target(g)),
         11 => img(preview::regions(g)),
         12 => img(preview::flow(g)),
         13 => img(preview::light(g)),
         14 => img(preview::sheet(g)),
-        n if n >= 100 => match g.region_flows.get((n - 100) as usize)? {
-            Some(rf) => f32s(&mut rf.iter().flatten().copied()),
-            None => Vec::new(),
-        },
+        n if n >= 100 => {
+            let r = (n - 100) as usize;
+            if r >= g.flows.len() {
+                return None;
+            }
+            match g.region_flow_raster(r) {
+                Some(rf) => f32s(&mut rf.into_iter().flatten()),
+                None => Vec::new(),
+            }
+        }
         _ => return None,
     })
 }

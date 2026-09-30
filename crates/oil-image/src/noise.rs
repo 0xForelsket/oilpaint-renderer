@@ -96,6 +96,26 @@ pub fn fbm_window(px_per_cw: f64, (x0, y0, x1, y1): (usize, usize, usize, usize)
     acc.iter().map(|v| (v / tot) as f32).collect()
 }
 
+/// Fractal value noise at one point (x, y) in cw: the same sums in the same order as `fbm_window`, so it gives the
+/// same bits at a pixel centre.
+pub fn fbm_at(x: f64, y: f64, scale: f64, octaves: u32, seed: u32) -> f64 {
+    let mut c = 1.0 / scale.max(1e-3);
+    let (mut amp, mut tot, mut acc) = (1.0f64, 0.0f64, 0.0f64);
+    for o in 0..octaves {
+        let (i0, wx) = taps(x * c);
+        let (j0, wy) = taps(y * c);
+        let row = |j: i64| {
+            wx[0] * lattice(seed, o, i0, j) + wx[1] * lattice(seed, o, i0 + 1, j) + wx[2] * lattice(seed, o, i0 + 2, j) + wx[3] * lattice(seed, o, i0 + 3, j)
+        };
+        let v = wy[0] * row(j0) + wy[1] * row(j0 + 1) + wy[2] * row(j0 + 2) + wy[3] * row(j0 + 3);
+        acc += amp * v;
+        tot += amp;
+        amp *= 0.5;
+        c *= 2.0;
+    }
+    acc / tot
+}
+
 /// `fbm_window` over a whole `w` x `h` raster whose width is one canvas width.
 pub fn fbm(w: usize, h: usize, scale: f64, octaves: u32, seed: u32) -> Vec<f32> {
     fbm_window(w as f64, (0, 0, w, h), scale, octaves, seed)
@@ -131,5 +151,17 @@ mod tests {
         let b = 0.25 * (hi[80 * 128 + 64] + hi[80 * 128 + 65] + hi[81 * 128 + 64] + hi[81 * 128 + 65]);
         assert!((a - b).abs() < 0.05, "{a} {b}");
         assert_ne!(fbm(16, 16, 0.2, 2, 1), fbm(16, 16, 0.2, 2, 2));
+    }
+
+    #[test]
+    fn point_matches_window() {
+        let (w, h) = (48usize, 60usize);
+        let win = fbm(w, h, 0.13, 3, 5);
+        for j in 0..h {
+            for i in 0..w {
+                let (x, y) = ((i as f64 + 0.5) / w as f64, (j as f64 + 0.5) / w as f64);
+                assert_eq!((fbm_at(x, y, 0.13, 3, 5) as f32).to_bits(), win[j * w + i].to_bits(), "({i}, {j})");
+            }
+        }
     }
 }

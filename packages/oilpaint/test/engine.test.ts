@@ -98,3 +98,29 @@ test("invalid plans throw OilError with every issue", () => {
     assert.equal(e.issues.find((i) => i.code === "UNKNOWN_REGION")?.fix, 'did you mean "sky"?');
   }
 });
+
+test("a picture as the target (image op), fitted to the canvas", () => {
+  const w = 8, h = 10;
+  const px = new Uint8Array(w * h * 4);
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) px.set(i < w / 2 ? [255, 0, 0, 255] : [0, 0, 255, 255], (j * w + i) * 4);
+  const s = scene((S) => {
+    S.canvas({ aspect: [4, 5], ground: "#ffffff" });
+    S.picture("photo", { width: w, height: h, data: px });
+    S.target.fill("#00ff00").image("photo", { fit: "cover" });
+    S.region("all", all());
+    S.layers([]);
+  });
+  const g = engine.guides(s, { width: 64 });
+  const t = g.target();
+  const at = (i: number, j: number) => Array.from(t.subarray((j * 64 + i) * 3, (j * 64 + i) * 3 + 3));
+  assert.deepEqual(at(5, 40).map(Math.round), [1, 0, 0]);
+  assert.deepEqual(at(58, 40).map(Math.round), [0, 0, 1]);
+});
+
+test("an unknown preset is reported with a suggestion", () => {
+  const spec = small().spec;
+  spec.preset = "impresionist";
+  const v = engine.validate(spec);
+  assert.equal(v.errors[0].code, "UNKNOWN_PRESET");
+  assert.equal(v.errors[0].fix, 'did you mean "impressionist"?');
+});

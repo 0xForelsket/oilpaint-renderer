@@ -1,0 +1,10 @@
+{
+  "lFloor": 20,
+  "jitter": [5, 4],
+  "sizeByDetail": 0.4,
+  "lengthSkew": 0.6,
+  "dabShare": 0.15,
+  "endVariation": 0.3,
+  "flick": 0.15,
+  "reliefByValue": 0.3
+}

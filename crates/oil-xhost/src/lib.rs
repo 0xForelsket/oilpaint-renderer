@@ -112,10 +112,27 @@ fn scene_cases(v: &mut Vec<Case>) {
     let name = |plane: &str| format!("scene.storm_v3@{GUIDE_WIDTH}.{plane}");
     v.push(case(name("target"), Expect::Identical, || f32_bytes(storm_guides().target.iter().flatten().copied())));
     v.push(case(name("regionId"), Expect::Identical, || storm_guides().region_id.clone()));
-    v.push(case(name("masks"), Expect::Identical, || f32_bytes(storm_guides().masks.iter().flatten().copied())));
-    v.push(case(name("flow"), Expect::Identical, || f32_bytes(storm_guides().flow.iter().flatten().copied())));
-    v.push(case(name("regionFlows"), Expect::Identical, || {
-        f32_bytes(storm_guides().region_flows.iter().flatten().flatten().flatten().copied())
+    v.push(case(name("masks"), Expect::Identical, || {
+        let mut out = Vec::new();
+        for m in &storm_guides().masks {
+            for v in [m.x0, m.y0, m.w, m.h] {
+                out.extend_from_slice(&(v as u32).to_le_bytes());
+            }
+            out.extend(m.data.iter().flat_map(|v| v.to_le_bytes()));
+        }
+        out
+    }));
+    v.push(case(name("flow"), Expect::Identical, || f32_bytes(storm_guides().flow_raster().into_iter().flatten())));
+    // every region's flow at 20,000 fixed points: the evaluation the planner uses
+    v.push(case(name("flowPoints"), Expect::Identical, || {
+        let g = storm_guides();
+        let mut s: u32 = 0x1234_5678;
+        let mut next = || {
+            s = s.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+            (s >> 8) as f64 / 16_777_216.0
+        };
+        let pts: Vec<(f64, f64)> = (0..20_000).map(|_| (next() * 1.2 - 0.1, next() * (g.canvas_h + 0.2) - 0.1)).collect();
+        f32_bytes((0..g.names.len()).flat_map(|r| pts.iter().flat_map(move |&(x, y)| g.flow_at(Some(r), x, y))))
     }));
     v.push(case(name("light"), Expect::Identical, || f32_bytes(storm_guides().light.iter().copied())));
     // every error of a broken plan: codes, paths and offending values, in order, must not depend on the host
