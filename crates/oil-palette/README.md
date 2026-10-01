@@ -80,3 +80,24 @@ cross-platform logarithm/exponential bit parity has not been established.
 Local models and fitted accuracy results live under the sibling project's
 `target/measured-oils/unified-eight/` and `experiments/oil_unified_eight/`.
 The default renderer and public distribution remain unchanged.
+
+The subsequent balanced full-data package is the preferred local experimental
+measured choice for recipe painting. It lives at the sibling Ochrell path
+`target/measured-oils/balanced-eight/old-holland-eight-balanced-empirical.opp`.
+The previous package remains available. The decision and measured tradeoffs are
+in Ochrell's `experiments/oil_balanced_package/REPORT.md`; this is not a global
+default switch or a claim that arbitrary RGB targets become reachable.
+
+Compare two local packages with identical recipes, RGB targets and stroke
+geometry, including exact saved-job and future-mixture replay:
+
+```text
+cargo run --release --offline -p oil-palette --example compare_old_holland -- <previous.opp> <balanced.opp> <output-directory>
+```
+
+The example writes six PNG/OPJ2 pairs, per-recipe and per-target CSVs, all-plane
+hashes and seven alternating warmed timing observations. At 384x480 on the study
+host, the balanced 94-stroke fixture took a median 224 ms; direct display decode
+was about 1.02 microseconds per recipe. Target matching is an authoring cost,
+separate from these paint timings. There is no eight-paint LUT in this package;
+all eight material proportions and the exact direct decoder are retained.
