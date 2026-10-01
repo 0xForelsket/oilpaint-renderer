@@ -162,6 +162,21 @@ version = "0.2.0"
 source = "git+file:///C:/Users/sdhui/projects/ochrell?rev=17c13d018c1ac569755dadb41b9b169f7f3cd1ea#17c13d018c1ac569755dadb41b9b169f7f3cd1ea"
 
 [[package]]
+name = "oil-author"
+version = "2.0.0-dev.0"
+dependencies = [
+ "oil-kernel",
+ "oil-light",
+ "oil-mix",
+ "oil-paint",
+ "oil-strokes",
+ "schemars",
+ "serde",
+ "serde_json",
+ "sha2",
+]
+
+[[package]]
 name = "oil-cli"
 version = "2.0.0-dev.0"
 dependencies = [
@@ -311,6 +326,7 @@ dependencies = [
 name = "oil-wasm"
 version = "2.0.0-dev.0"
 dependencies = [
+ "oil-author",
  "oil-kernel",
  "oil-mix",
  "oil-plan",

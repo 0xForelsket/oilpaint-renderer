@@ -143,6 +143,19 @@ mod wasm_abi {
     static GUIDES: Mutex<Option<Guides>> = Mutex::new(None);
     static STROKES: Mutex<Vec<u8>> = Mutex::new(Vec::new());
     static FIELDS: Mutex<BTreeMap<String, FieldData>> = Mutex::new(BTreeMap::new());
+    static AUTHOR: std::sync::LazyLock<Mutex<oil_author::session::Session>> = std::sync::LazyLock::new(|| Mutex::new(Default::default()));
+
+    #[no_mangle]
+    pub extern "C" fn oil_author_call() -> u32 {
+        let result = AUTHOR.lock().unwrap().call(&input_text());
+        put_json(&result.unwrap_or_else(|error| json!({"error":error})))
+    }
+
+    #[no_mangle]
+    pub extern "C" fn oil_author_bytes(which: u32) -> u32 {
+        let s = AUTHOR.lock().unwrap();
+        put(if which == 0 { s.pixels.clone() } else { s.strokes.clone() })
+    }
 
     fn put(bytes: Vec<u8>) -> u32 {
         let len = bytes.len() as u32;

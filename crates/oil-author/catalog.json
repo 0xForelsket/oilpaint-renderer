@@ -1,0 +1,327 @@
+{
+  "version": 1,
+  "presets": [
+    {
+      "id": "loaded-flat",
+      "name": "Loaded flat",
+      "status": "candidate",
+      "mode": 0,
+      "width": [
+        0.002,
+        0.024,
+        0.12
+      ],
+      "widthProfile": [
+        0.8,
+        1,
+        0.72
+      ],
+      "pressureProfile": [
+        0.84,
+        1,
+        0.65
+      ],
+      "depletion": 0.65,
+      "paint": {
+        "opacity": 0.99,
+        "pickup": 0.015,
+        "load": 1,
+        "vdry": 0.36,
+        "hgain": 0.55,
+        "flatten": 0.75,
+        "streak": 0.22,
+        "hardness": 0.8,
+        "grain": 0.04,
+        "nb": 16,
+        "dropout": 0.035,
+        "ragged": 0.65,
+        "body": 0.97,
+        "release": 0.3,
+        "streakMix": 0.8,
+        "ridge": 0.4,
+        "levee": 0.08,
+        "furrow": 0.15,
+        "blob": 0.32,
+        "stiff": 0.4,
+        "marble": 0,
+        "splay": 0.35
+      }
+    },
+    {
+      "id": "rounded-dab",
+      "name": "Rounded dab",
+      "status": "candidate",
+      "mode": 0,
+      "width": [
+        0.002,
+        0.03,
+        0.12
+      ],
+      "widthProfile": [
+        0.25,
+        1,
+        0.32
+      ],
+      "pressureProfile": [
+        0.6,
+        1,
+        0.58
+      ],
+      "depletion": 0.3,
+      "paint": {
+        "opacity": 0.99,
+        "pickup": 0.015,
+        "load": 1,
+        "vdry": 0.36,
+        "hgain": 0.75,
+        "flatten": 0.75,
+        "streak": 0.22,
+        "hardness": 0.8,
+        "grain": 0.04,
+        "nb": 16,
+        "dropout": 0.035,
+        "ragged": 0.8,
+        "body": 0.97,
+        "release": 0.3,
+        "streakMix": 0.8,
+        "ridge": 0.4,
+        "levee": 0.08,
+        "furrow": 0.15,
+        "blob": 0.4,
+        "stiff": 0.4,
+        "marble": 0,
+        "splay": 0.35
+      }
+    },
+    {
+      "id": "dry-drag",
+      "name": "Dry drag",
+      "status": "candidate",
+      "mode": 0,
+      "width": [
+        0.002,
+        0.026,
+        0.12
+      ],
+      "widthProfile": [
+        0.75,
+        1,
+        0.38
+      ],
+      "pressureProfile": [
+        1,
+        0.85,
+        0.18
+      ],
+      "depletion": 1.2,
+      "paint": {
+        "opacity": 0.99,
+        "pickup": 0.015,
+        "load": 0.62,
+        "vdry": 0.44,
+        "hgain": 0.55,
+        "flatten": 0.75,
+        "streak": 0.4,
+        "hardness": 0.8,
+        "grain": 0.17,
+        "nb": 16,
+        "dropout": 0.09,
+        "ragged": 0.65,
+        "body": 0.24,
+        "release": 0.3,
+        "streakMix": 0.8,
+        "ridge": 0.4,
+        "levee": 0.08,
+        "furrow": 0.15,
+        "blob": 0.32,
+        "stiff": 0.4,
+        "marble": 0,
+        "splay": 0.35
+      }
+    },
+    {
+      "id": "scumble",
+      "name": "Scumble",
+      "status": "candidate",
+      "mode": 1,
+      "width": [
+        0.003,
+        0.032,
+        0.12
+      ],
+      "widthProfile": [
+        0.8,
+        1,
+        0.65
+      ],
+      "pressureProfile": [
+        0.7,
+        0.8,
+        0.35
+      ],
+      "depletion": 0.6,
+      "paint": {
+        "opacity": 0.99,
+        "pickup": 0.01,
+        "load": 0.65,
+        "vdry": 0.36,
+        "hgain": 0.35,
+        "flatten": 0.75,
+        "streak": 0.22,
+        "hardness": 0.8,
+        "grain": 0.2,
+        "nb": 16,
+        "dropout": 0.035,
+        "ragged": 0.65,
+        "body": 0.38,
+        "release": 0.3,
+        "streakMix": 0.8,
+        "ridge": 0.4,
+        "levee": 0.08,
+        "furrow": 0.15,
+        "blob": 0.32,
+        "stiff": 0.4,
+        "marble": 0,
+        "splay": 0.35
+      }
+    },
+    {
+      "id": "impasto-accent",
+      "name": "Impasto accent",
+      "status": "candidate",
+      "mode": 0,
+      "width": [
+        0.002,
+        0.018,
+        0.08
+      ],
+      "widthProfile": [
+        0.45,
+        1,
+        0.55
+      ],
+      "pressureProfile": [
+        0.7,
+        1,
+        0.65
+      ],
+      "depletion": 0.3,
+      "paint": {
+        "opacity": 0.99,
+        "pickup": 0.015,
+        "load": 1,
+        "vdry": 0.36,
+        "hgain": 1.5,
+        "flatten": 0.5,
+        "streak": 0.22,
+        "hardness": 0.8,
+        "grain": 0.04,
+        "nb": 16,
+        "dropout": 0.035,
+        "ragged": 0.65,
+        "body": 0.97,
+        "release": 0.3,
+        "streakMix": 0.8,
+        "ridge": 0.55,
+        "levee": 0.08,
+        "furrow": 0.15,
+        "blob": 0.4,
+        "stiff": 0.55,
+        "marble": 0,
+        "splay": 0.35
+      }
+    },
+    {
+      "id": "fine-detail",
+      "name": "Fine detail",
+      "status": "candidate",
+      "mode": 0,
+      "width": [
+        0.0005,
+        0.004,
+        0.025
+      ],
+      "widthProfile": [
+        0.4,
+        0.8,
+        0.1
+      ],
+      "pressureProfile": [
+        0.75,
+        0.95,
+        0.2
+      ],
+      "depletion": 0.4,
+      "paint": {
+        "opacity": 0.99,
+        "pickup": 0.015,
+        "load": 1,
+        "vdry": 0.36,
+        "hgain": 0.35,
+        "flatten": 0.75,
+        "streak": 0.22,
+        "hardness": 0.8,
+        "grain": 0.02,
+        "nb": 7,
+        "dropout": 0.035,
+        "ragged": 0.35,
+        "body": 0.97,
+        "release": 0.3,
+        "streakMix": 0.8,
+        "ridge": 0.4,
+        "levee": 0.08,
+        "furrow": 0.15,
+        "blob": 0.32,
+        "stiff": 0.4,
+        "marble": 0,
+        "splay": 0.15
+      }
+    },
+    {
+      "id": "wet-mixing",
+      "name": "Wet mixing",
+      "status": "candidate",
+      "mode": 0,
+      "width": [
+        0.002,
+        0.025,
+        0.12
+      ],
+      "widthProfile": [
+        0.8,
+        1,
+        0.6
+      ],
+      "pressureProfile": [
+        0.8,
+        1,
+        0.5
+      ],
+      "depletion": 0.7,
+      "paint": {
+        "opacity": 0.99,
+        "pickup": 0.55,
+        "load": 0.65,
+        "vdry": 0.36,
+        "hgain": 0.3,
+        "flatten": 0.85,
+        "streak": 0.22,
+        "hardness": 0.8,
+        "grain": 0.04,
+        "nb": 16,
+        "dropout": 0.035,
+        "ragged": 0.65,
+        "body": 0.9,
+        "release": 0.45,
+        "streakMix": 0.8,
+        "ridge": 0.4,
+        "levee": 0.08,
+        "furrow": 0.15,
+        "blob": 0.32,
+        "stiff": 0.4,
+        "marble": 0,
+        "splay": 0.35
+      }
+    }
+  ]
+}

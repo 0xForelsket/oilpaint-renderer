@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Document",
+  "type": "object",
+  "properties": {
+    "aspect": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "format": "uint32",
+        "minimum": 0
+      },
+      "maxItems": 2,
+      "minItems": 2
+    },
+    "catalog": {
+      "description": "Embedded immutable definitions; catalog changes cannot silently change a saved painting.",
+      "$ref": "#/$defs/Catalog"
+    },
+    "engine": {
+      "type": "string"
+    },
+    "format": {
+      "type": "string"
+    },
+    "ground": {
+      "type": "array",
+      "items": {
+        "type": "number",
+        "format": "float"
+      },
+      "maxItems": 3,
+      "minItems": 3
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Group"
+      }
+    },
+    "seed": {
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0
+    },
+    "version": {
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "version",
+    "engine",
+    "seed",
+    "aspect",
+    "ground",
+    "catalog",
+    "groups"
+  ],
+  "$defs": {
+    "Catalog": {
+      "type": "object",
+      "properties": {
+        "presets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Preset"
+          }
+        },
+        "version": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "presets"
+      ]
+    },
+    "Group": {
+      "type": "object",
+      "properties": {
+        "dryAfter": {
+          "description": "Wetness multiplier after this group: 0 dry, 1 wet.",
+          "type": "number",
+          "format": "float"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "strokes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Mark"
+          }
+        },
+        "visible": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "visible",
+        "dryAfter",
+        "strokes"
+      ]
+    },
+    "Mark": {
+      "type": "object",
+      "properties": {
+        "color": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "format": "float"
+          },
+          "maxItems": 3,
+          "minItems": 3
+        },
+        "controls": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number",
+            "format": "float"
+          }
+        },
+        "id": {
+          "type": "string"
+        },
+        "path": {
+          "description": "x,y,pressure in cw. Pressure is multiplied by the preset envelope.",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "format": "float"
+            },
+            "maxItems": 3,
+            "minItems": 3
+          }
+        },
+        "preset": {
+          "type": "string"
+        },
+        "width": {
+          "type": "number",
+          "format": "float"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "path",
+        "width",
+        "color",
+        "preset",
+        "controls"
+      ]
+    },
+    "Preset": {
+      "type": "object",
+      "properties": {
+        "depletion": {
+          "type": "number",
+          "format": "float"
+        },
+        "id": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "name": {
+          "type": "string"
+        },
+        "paint": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number",
+            "format": "float"
+          }
+        },
+        "pressureProfile": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "format": "float"
+          },
+          "maxItems": 3,
+          "minItems": 3
+        },
+        "status": {
+          "type": "string"
+        },
+        "width": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "format": "float"
+          },
+          "maxItems": 3,
+          "minItems": 3
+        },
+        "widthProfile": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "format": "float"
+          },
+          "maxItems": 3,
+          "minItems": 3
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "status",
+        "mode",
+        "width",
+        "widthProfile",
+        "pressureProfile",
+        "depletion",
+        "paint"
+      ]
+    }
+  }
+}

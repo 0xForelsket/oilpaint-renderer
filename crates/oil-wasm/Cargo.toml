@@ -19,3 +19,6 @@ serde_json = "1"
 
 [lints]
 workspace = true
+
+[dependencies.oil-author]
+path = '../oil-author'

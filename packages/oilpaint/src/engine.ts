@@ -92,6 +92,9 @@ export interface Plan {
 }
 
 export interface Engine {
+  /** Low-level authoring RPC; use createAuthor for typed catalog/document/replay operations. */
+  author(request: object): any;
+  authorBytes(kind: "image" | "strokes"): Uint8Array;
   readonly version: string;
   /** Plan a scene into a StrokeList. Throws OilError on invalid input. */
   plan(scene: ScenePlan | Scene | string, o?: { width?: number; seed?: number; mixer?: MixerId; strictEngine?: boolean }): Plan;
@@ -102,6 +105,8 @@ export interface Engine {
 }
 
 type Exports = {
+  oil_author_call(): number;
+  oil_author_bytes(which: number): number;
   memory: WebAssembly.Memory;
   oil_buf_ptr(): number;
   oil_input(len: number): number;
@@ -171,6 +176,13 @@ export async function loadEngine(source?: string | URL | BufferSource): Promise<
   const f32 = (b: Uint8Array) => new Float32Array(b.buffer, b.byteOffset, b.byteLength / 4);
 
   return {
+    author(request) {
+      input(new TextEncoder().encode(JSON.stringify(request)));
+      const result = json(e.oil_author_call());
+      if (result.error) throw new OilError([{code: String(result.error).split(":")[0], message: result.error}]);
+      return result;
+    },
+    authorBytes: kind => bytes(e.oil_author_bytes(kind === "image" ? 0 : 1)),
     version,
     schema: () => json(e.oil_scene_schema()),
     validate(s) {

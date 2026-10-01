@@ -39,13 +39,19 @@ pub struct PaintStats {
 /// contact sheets and progress).
 pub fn paint<M: Mixer>(m: &M, list: &StrokeList, w: u32, mut after_layer: impl FnMut(usize, &Canvas<M>)) -> (Canvas<M>, PaintStats) {
     let (wu, hu) = (w as usize, list.height_for(w) as usize);
-    let wf = w as f32;
     let mut cv = Canvas::new(m, wu, hu, list.ground);
+    let stats = paint_layers(m, list, &mut cv, 0, list.layers.len(), &mut after_layer);
+    (cv, stats)
+}
+
+/// Replay a contiguous layer suffix into a complete saved canvas, including its blurred height.
+pub fn paint_layers<M: Mixer>(m: &M, list: &StrokeList, cv: &mut Canvas<M>, start: usize, end: usize, mut after_layer: impl FnMut(usize, &Canvas<M>)) -> PaintStats {
+    let (wu, hu, wf) = (cv.w, cv.h, cv.w as f32);
     let mut stats = PaintStats::default();
     let mut pts_px: Vec<[f32; 4]> = Vec::new();
-    for (li, layer) in list.layers.iter().enumerate() {
+    for (li, layer) in list.layers.iter().enumerate().take(end).skip(start) {
         if let Some(sigma) = layer.hblur_sigma {
-            cv.hblur = oil_image::blur(&cv.hgt, wu, hu, (sigma as f64 * w as f64).max(1.0));
+            cv.hblur = oil_image::blur(&cv.hgt, wu, hu, (sigma as f64 * wu as f64).max(1.0));
         }
         for i in layer.start as usize..layer.end as usize {
             let s = &list.strokes[i];
@@ -63,9 +69,9 @@ pub fn paint<M: Mixer>(m: &M, list: &StrokeList, w: u32, mut after_layer: impl F
         if let Some(d) = layer.dry_after {
             cv.dry(d);
         }
-        after_layer(li, &cv);
+        after_layer(li, cv);
     }
-    (cv, stats)
+    stats
 }
 
 /// Canvas planes that `plane_bytes` serialises.
