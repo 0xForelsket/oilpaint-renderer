@@ -8,9 +8,9 @@ pub use ::ochrell::palette::{
 pub use ::ochrell::palette_lut::{LutError, PaletteLut};
 use ::ochrell::{conversion, palette_match::ColorMatcherN};
 
-pub struct PaletteMixerN<const N: usize, const PREPARED: bool = false> {
+pub struct PaletteMixerN<const N: usize, const PREPARED: bool = false, const B: usize = 81> {
     table: Option<PaletteLut<'static>>,
-    matcher: ColorMatcherN<'static, N>,
+    matcher: ColorMatcherN<'static, N, B>,
 }
 
 #[derive(Debug)]
@@ -57,9 +57,9 @@ impl PaletteMixerN<4, true> {
     }
 }
 
-impl<const N: usize> PaletteMixerN<N> {
+impl<const N: usize, const B: usize> PaletteMixerN<N, false, B> {
     /// Own the optical model and evaluate mixtures directly. No exponential LUT.
-    pub fn direct(palette: PaletteN<N>) -> Result<Self, PaletteError> {
+    pub fn direct(palette: PaletteN<N, B>) -> Result<Self, PaletteError> {
         let matcher = ColorMatcherN::with_cbrt(&palette, oil_math::cbrt)?.into_owned();
         Ok(Self {
             table: None,
@@ -72,14 +72,15 @@ impl<const N: usize> PaletteMixerN<N> {
     }
 }
 
-impl<const N: usize, const PREPARED: bool> PaletteMixerN<N, PREPARED> {
+impl<const N: usize, const PREPARED: bool, const B: usize> PaletteMixerN<N, PREPARED, B> {
     /// Prepared mode requires a four-paint OPL1; direct mode requires an empty
     /// table section, so a saved decoder cannot silently change on reload.
     pub fn from_bytes(palette: &[u8], table: &[u8]) -> Result<Self, PrepareError> {
-        if (PREPARED && (N != 4 || table.is_empty())) || (!PREPARED && !table.is_empty()) {
+        if (PREPARED && (N != 4 || B != 81 || table.is_empty())) || (!PREPARED && !table.is_empty())
+        {
             return Err(PrepareError::Palette(PaletteError::InvalidFormat));
         }
-        let p = PaletteN::<N>::from_bytes(palette).map_err(PrepareError::Palette)?;
+        let p = PaletteN::<N, B>::from_bytes(palette).map_err(PrepareError::Palette)?;
         let prepared = if PREPARED {
             let four = Palette::from_bytes(palette).map_err(PrepareError::Palette)?;
             Some(
@@ -98,7 +99,7 @@ impl<const N: usize, const PREPARED: bool> PaletteMixerN<N, PREPARED> {
             matcher,
         })
     }
-    pub fn palette(&self) -> &PaletteN<N> {
+    pub fn palette(&self) -> &PaletteN<N, B> {
         self.matcher.palette()
     }
     pub fn prepared_table(&self) -> Option<&PaletteLut<'static>> {
@@ -153,7 +154,7 @@ fn distance(a: [f64; 3], b: [f64; 3]) -> f64 {
             .sqrt()
 }
 
-impl<const N: usize, const PREPARED: bool> Mixer for PaletteMixerN<N, PREPARED> {
+impl<const N: usize, const PREPARED: bool, const B: usize> Mixer for PaletteMixerN<N, PREPARED, B> {
     const ID: &'static str = if PREPARED {
         "ochrell-palette-1"
     } else {

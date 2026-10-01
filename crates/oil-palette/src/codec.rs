@@ -6,7 +6,7 @@ use super::*;
 use sha2::{Digest, Sha256};
 const MAX_BYTES: usize = 128 * 1024 * 1024;
 
-impl<const N: usize, const PREPARED: bool> PaletteJobN<N, PREPARED> {
+impl<const N: usize, const PREPARED: bool, const B: usize> PaletteJobN<N, PREPARED, B> {
     pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
         let mut out = if PREPARED {
             b"OPJ1".to_vec()
@@ -52,7 +52,7 @@ impl<const N: usize, const PREPARED: bool> PaletteJobN<N, PREPARED> {
         if !(1..=oil_mix::palette::MAX_PAINTS).contains(&N)
             || bytes.len() < 68
             || bytes.len() > MAX_BYTES
-            || (PREPARED && (N != 4 || &bytes[..4] != b"OPJ1"))
+            || (PREPARED && (N != 4 || B != 81 || &bytes[..4] != b"OPJ1"))
             || (!PREPARED && &bytes[..4] != b"OPJ2")
         {
             return Err(Error(
@@ -91,7 +91,7 @@ impl<const N: usize, const PREPARED: bool> PaletteJobN<N, PREPARED> {
         }
         // Parse the LUT after all cheap framing/version checks.
         Self::new(
-            PaletteMixerN::<N, PREPARED>::from_bytes(palette, table)?,
+            PaletteMixerN::<N, PREPARED, B>::from_bytes(palette, table)?,
             geometry,
             ground,
             loads,

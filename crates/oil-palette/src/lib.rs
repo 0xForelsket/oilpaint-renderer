@@ -56,8 +56,8 @@ pub struct MatchReportN<const N: usize> {
     pub strokes: Vec<[TargetMatchN<N>; 2]>,
 }
 
-pub struct PaletteJobN<const N: usize, const PREPARED: bool = false> {
-    mixer: PaletteMixerN<N, PREPARED>,
+pub struct PaletteJobN<const N: usize, const PREPARED: bool = false, const B: usize = 81> {
+    mixer: PaletteMixerN<N, PREPARED, B>,
     geometry: StrokeList,
     ground: [f32; N],
     loads: Vec<RecipeLoadN<N>>,
@@ -72,11 +72,11 @@ pub type PaletteJob = PaletteJobN<4, true>;
 pub type RecipeLoad = RecipeLoadN<4>;
 pub type MatchReport = MatchReportN<4>;
 
-impl<const N: usize, const PREPARED: bool> PaletteJobN<N, PREPARED> {
+impl<const N: usize, const PREPARED: bool, const B: usize> PaletteJobN<N, PREPARED, B> {
     /// Geometry's RGB fields remain authoring provenance; the supplied recipe
     /// loads and ground are the only material inputs consumed by painting.
     pub fn new(
-        mixer: PaletteMixerN<N, PREPARED>,
+        mixer: PaletteMixerN<N, PREPARED, B>,
         geometry: StrokeList,
         ground: [f32; N],
         loads: Vec<RecipeLoadN<N>>,
@@ -112,7 +112,7 @@ impl<const N: usize, const PREPARED: bool> PaletteJobN<N, PREPARED> {
     /// Optional import path: match existing authored RGB once, then retain the
     /// resulting recipes. Call `new` to author recipes directly with no search.
     pub fn from_rgb(
-        mixer: PaletteMixerN<N, PREPARED>,
+        mixer: PaletteMixerN<N, PREPARED, B>,
         geometry: StrokeList,
     ) -> Result<(Self, MatchReportN<N>), Error> {
         let errors = geometry.validate();
@@ -146,7 +146,7 @@ impl<const N: usize, const PREPARED: bool> PaletteJobN<N, PREPARED> {
             MatchReportN { ground, strokes },
         ))
     }
-    pub fn mixer(&self) -> &PaletteMixerN<N, PREPARED> {
+    pub fn mixer(&self) -> &PaletteMixerN<N, PREPARED, B> {
         &self.mixer
     }
     pub fn geometry(&self) -> &StrokeList {
@@ -164,8 +164,8 @@ impl<const N: usize, const PREPARED: bool> PaletteJobN<N, PREPARED> {
     pub fn paint(
         &self,
         width: u32,
-        mut after_layer: impl FnMut(usize, &Canvas<PaletteMixerN<N, PREPARED>>),
-    ) -> Result<(Canvas<PaletteMixerN<N, PREPARED>>, PaintStats), Error> {
+        mut after_layer: impl FnMut(usize, &Canvas<PaletteMixerN<N, PREPARED, B>>),
+    ) -> Result<(Canvas<PaletteMixerN<N, PREPARED, B>>, PaintStats), Error> {
         if width == 0 || width > 16384 {
             return Err(Error("Canvas width must be in 1..=16384".into()));
         }

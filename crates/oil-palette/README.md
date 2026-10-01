@@ -39,7 +39,7 @@ from the prepared four-paint path; no equal-throughput claim is made.
 
 OPJ1 retains its original layout. OPJ2 contains:
 
-1. Magic `OPJ2`, u32 paint count, u32 decoder kind (0 = direct K-M).
+1. Magic `OPJ2`, u32 paint count, u32 decoder kind (0 = direct optical package).
 2. Three u32-length-prefixed sections: optical palette, empty table section,
    and version-gated StrokeList geometry.
 3. N f32 ground proportions, u32 load count, then 3*N f32 per stroke (main,
@@ -55,6 +55,28 @@ the current complete canvas accounting is `28 + 4*N` bytes/pixel (60 for eight,
 Run `cargo test --release --offline -p oil-mix -p oil-palette`. Checks cover
 legacy four-paint behavior, all-plane bit-identical replay with 8/10/16 paints,
 high-index recipe corruption, RGB-independent explicit painting, bounded streaks
-and sixteen-paint target import. Test coefficients are synthetic. A measured
-Old Holland Eight package and empirical optical-model integration remain separate
-work; supporting eight recipe slots does not supply those coefficients.
+and sixteen-paint target import. These test coefficients are synthetic.
+
+## Local Old Holland Eight packages
+
+The sibling Ochrell study now exports plain K-M and empirical-pair OPP3 packages
+on the source's native 31-band 400-700 nm grid. Load either using
+`PaletteMixerN::<8,false,31>::from_palette_bytes` and `PaletteJobN<8,false,31>`.
+The B=31 parameter is the spectral sample count; it does not change the eight
+stored material fractions. OPP3 carries the grid, display projection, model kind
+and all empirical controls, and OPJ2 embeds that whole definition. A plain K-M
+package and an empirical package have different identities. An incompatible grid
+is rejected instead of resampled. Four-paint prepared APIs remain unchanged.
+
+```text
+cargo run --release --offline -p oil-palette --example old_holland_eight -- <palette.opp> <output-directory>
+```
+
+The example expects the Old Holland paint names. It renders 94 strokes with
+matched colors and explicit eight-component recipes, writes PNG and OPJ2 files,
+and checks all canvas planes for exact same-host replay. The RGB preview covers
+only 400-700 nm; it is not a full-visible color measurement. The empirical path's
+cross-platform logarithm/exponential bit parity has not been established.
+Local models and fitted accuracy results live under the sibling project's
+`target/measured-oils/unified-eight/` and `experiments/oil_unified_eight/`.
+The default renderer and public distribution remain unchanged.
