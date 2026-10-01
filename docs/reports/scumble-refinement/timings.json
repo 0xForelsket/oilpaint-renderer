@@ -1,0 +1,49 @@
+{
+  "reference": "2.0.0-dev.5",
+  "current": "2.0.0-dev.6",
+  "method": "Node WASM, 384x192, two scumble strokes on flat ground, six warmed paired seeds, alternating order; author.render including compile/replay, excluding relighting. Process affinity 0xF, other verification active.",
+  "samples": [
+    {
+      "seed": 720,
+      "current": 22.028099999999995,
+      "before": 21.97969999999998
+    },
+    {
+      "seed": 721,
+      "before": 9.591200000000015,
+      "current": 10.577399999999983
+    },
+    {
+      "seed": 722,
+      "current": 11.1353,
+      "before": 9.839100000000002
+    },
+    {
+      "seed": 723,
+      "before": 9.2543,
+      "current": 10.926699999999983
+    },
+    {
+      "seed": 724,
+      "current": 10.543299999999988,
+      "before": 8.665200000000027
+    },
+    {
+      "seed": 725,
+      "before": 9.001300000000015,
+      "current": 11.362599999999986
+    }
+  ],
+  "summary": {
+    "before": {
+      "min": 8.665200000000027,
+      "median": 9.422750000000008,
+      "max": 21.97969999999998
+    },
+    "current": {
+      "min": 10.543299999999988,
+      "median": 11.030999999999992,
+      "max": 22.028099999999995
+    }
+  }
+}

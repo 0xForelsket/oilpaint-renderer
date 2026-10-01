@@ -9,8 +9,8 @@ and local editing, and an interactive paint preview. From this directory run `np
 See [authoring API, format and controls](docs/BRUSH_AUTHORING.md), the
 [native/browser review gallery](docs/reports/brush-review-3/index.html), and
 [verification and measured latency](docs/reports/BRUSH_ITERATION_3.md).
-The separate `oil-author` source format keeps existing painting files intact; engine dev.5 / author 2 explicitly reject older formats. These presets
-await artist review; this work does not complete the remaining renderer roadmap.
+The separate `oil-author` source format keeps existing painting files intact; engine dev.6 / author 2 explicitly reject older formats. These presets
+remain a working set; the six retained brushes are held stable while scumble is refined separately. See the [focused scumble review](docs/reports/scumble-refinement/index.html). This work does not complete the remaining renderer roadmap.
 
 **Ochrell integration:** `--mixer ochrell` now runs the existing planner, bristle
 renderer and relighting with persistent synthetic K/S material states. It needs

@@ -209,14 +209,28 @@ fn vnoise(x: f32, y: f32, seed: u32) -> f32 {
     (a * (1.0 - tx) + b * tx) * (1.0 - ty) + (c * (1.0 - tx) + d * tx) * ty
 }
 
-/// Cluster contacts follow the brush, with short dragged connections. Fine tooth stays
-/// fixed on the canvas across strokes; existing relief can recruit or reject contact.
+/// A hierarchy of solid contacts, smaller catches and short connections. Small detail
+/// is recruited near a contact cluster, never sprayed uniformly across the footprint.
+/// Canvas-fixed tooth and deposited relief affect the same contact thresholds.
 fn scumble_contact(x: f32, y: f32, u: f32, s: f32, pressure: f32, relief: f32, seed: u32) -> f32 {
-    let cluster = vnoise(s * 2.4, u * 3.4, seed.wrapping_add(313));
-    let dragged = vnoise((s - 0.18) * 2.4, u * 3.4, seed.wrapping_add(313));
+    let warp = vnoise(s * 3.1, u * 3.7, seed.wrapping_add(419)) - 0.5;
+    let along = s + warp * 0.11;
+    let across = u + warp * 0.18;
+    let cluster = vnoise(along * 1.7, across * 1.9, seed.wrapping_add(313));
+    let medium = vnoise(along * 6.2, across * 6.7, seed.wrapping_add(701));
+    let trailing = vnoise((along - 0.065) * 6.2, across * 6.7, seed.wrapping_add(701));
+    let fine = vnoise(along * 16.5, across * 15.3, seed.wrapping_add(991));
     let tooth = vnoise(x * 180.0, y * 180.0, 0x51fa_ce01);
-    let field = cluster.max(dragged * 0.94) + (tooth - 0.5) * 0.09;
-    smoothstep(0.50, 0.62, field + relief * 0.23 + (pressure - 0.7) * 0.16)
+    let bias = relief * 0.19 + (pressure - 0.7) * 0.14 + (tooth - 0.5) * 0.06;
+    let ragged = (fine - 0.5) * 0.19;
+    let solid = smoothstep(0.63, 0.77, cluster + ragged + bias)
+        * smoothstep(0.20, 0.38, medium + fine * 0.18);
+    let core = smoothstep(0.48, 0.64, medium + ragged + bias);
+    let connection = 0.85 * smoothstep(0.48, 0.64, trailing + ragged + bias);
+    let patches = smoothstep(0.32, 0.56, cluster + bias) * core.max(connection);
+    let catches = smoothstep(0.28, 0.54, cluster + bias)
+        * smoothstep(0.65, 0.79, fine + (medium - 0.5) * 0.12 + bias);
+    solid.max(patches).max(catches)
 }
 
 // ---------------- bristle lanes ----------------
@@ -965,6 +979,84 @@ mod contact_tests {
             "contacts should form clusters, not fine spray"
         );
         assert!(components.iter().filter(|&&n| n <= 2).sum::<usize>() < hits / 10);
+    }
+    #[test]
+    fn scumble_has_a_range_of_contact_sizes_without_dominant_spray() {
+        let (w, h) = (512usize, 64usize);
+        let mut sizes = Vec::new();
+        let (mut hits, mut partial, mut boundary, mut perimeter) = (0usize, 0usize, 0usize, 0usize);
+        for seed in [17, 71, 1907, 3241] {
+            let mut mask = vec![false; w * h];
+            for y in 0..h {
+                for x in 0..w {
+                    let s = x as f32 / 64.;
+                    let u = 2. * y as f32 / 64. - 1.;
+                    let a = scumble_contact(0.1 + s * 0.06, 0.3 + u * 0.03, u, s, 0.85, 0., seed);
+                    mask[y * w + x] = a > 0.65;
+                    partial += usize::from(a > 0.1 && a < 0.6);
+                }
+            }
+            hits += mask.iter().filter(|&&v| v).count();
+            // Contacts should have irregular perimeters, not clean rectangular islands.
+            for y in 1..h - 1 {
+                for x in 1..w - 1 {
+                    let i = y * w + x;
+                    if mask[i] {
+                        let edges = [mask[i - 1], mask[i + 1], mask[i - w], mask[i + w]]
+                            .iter()
+                            .filter(|&&v| !v)
+                            .count();
+                        perimeter += edges;
+                        boundary += usize::from(edges > 0);
+                    }
+                }
+            }
+            for i in 0..mask.len() {
+                if !mask[i] {
+                    continue;
+                }
+                let mut stack = vec![i];
+                mask[i] = false;
+                let mut count = 0;
+                while let Some(j) = stack.pop() {
+                    count += 1;
+                    let (x, y) = (j % w, j / w);
+                    for (nx, ny) in [
+                        (x.wrapping_sub(1), y),
+                        (x + 1, y),
+                        (x, y.wrapping_sub(1)),
+                        (x, y + 1),
+                    ] {
+                        if nx < w && ny < h && mask[ny * w + nx] {
+                            mask[ny * w + nx] = false;
+                            stack.push(ny * w + nx);
+                        }
+                    }
+                }
+                sizes.push(count);
+            }
+        }
+        let small = sizes.iter().filter(|&&n| (3..=30).contains(&n)).count();
+        let medium = sizes.iter().filter(|&&n| (31..=180).contains(&n)).count();
+        let large = sizes.iter().filter(|&&n| n > 180).count();
+        let single_area: usize = sizes.iter().filter(|&&n| n <= 2).sum();
+        eprintln!("contacts: small={small}, medium={medium}, large={large}, singleton_area={single_area}/{hits}, boundary={boundary}, perimeter={perimeter}, partial={partial}");
+        assert!(
+            small > 10 && medium > 10 && large > 2,
+            "expected several contact size classes"
+        );
+        assert!(
+            single_area < hits / 12,
+            "isolated fine dots must not dominate"
+        );
+        assert!(
+            boundary > hits / 5,
+            "contacts need broken boundaries, not only large filled islands"
+        );
+        assert!(
+            partial > hits / 4,
+            "some edges/connections must have partial contact"
+        );
     }
     #[test]
     fn neighbouring_bundles_change_width_and_spacing_over_distance() {

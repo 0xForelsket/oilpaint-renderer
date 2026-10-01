@@ -1,0 +1,995 @@
+{
+  "referenceEngine": "2.0.0-dev.5",
+  "width": 384,
+  "catalog": {
+    "presets": [
+      {
+        "contact": "flat",
+        "depletion": 0.6499999761581421,
+        "id": "loaded-flat",
+        "mode": 0,
+        "name": "Loaded flat",
+        "paint": {
+          "blob": 0.3199999928474426,
+          "body": 0.9700000286102295,
+          "dropout": 0.03500000014901161,
+          "flatten": 0.75,
+          "furrow": 0.15000000596046448,
+          "grain": 0.03999999910593033,
+          "hardness": 0.800000011920929,
+          "hgain": 0.550000011920929,
+          "levee": 0.07999999821186066,
+          "load": 1,
+          "marble": 0,
+          "nb": 16,
+          "opacity": 0.9900000095367432,
+          "pickup": 0.014999999664723873,
+          "ragged": 0.6499999761581421,
+          "release": 0.30000001192092896,
+          "ridge": 0.4000000059604645,
+          "splay": 0.3499999940395355,
+          "stiff": 0.4000000059604645,
+          "streak": 0.2199999988079071,
+          "streakMix": 0.800000011920929,
+          "vdry": 0.36000001430511475
+        },
+        "pressureProfile": [
+          0.550000011920929,
+          1,
+          0.18000000715255737
+        ],
+        "status": "candidate",
+        "variation": 0.10000000149011612,
+        "width": [
+          0.0020000000949949026,
+          0.024000000208616257,
+          0.11999999731779099
+        ],
+        "widthProfile": [
+          0.47999998927116394,
+          1,
+          0.10000000149011612
+        ]
+      },
+      {
+        "contact": "round",
+        "depletion": 0.30000001192092896,
+        "id": "rounded-dab",
+        "mode": 0,
+        "name": "Rounded dab",
+        "paint": {
+          "blob": 0.4000000059604645,
+          "body": 0.9700000286102295,
+          "dropout": 0.03500000014901161,
+          "flatten": 0.75,
+          "furrow": 0.15000000596046448,
+          "grain": 0.03999999910593033,
+          "hardness": 0.800000011920929,
+          "hgain": 0.75,
+          "levee": 0.07999999821186066,
+          "load": 1,
+          "marble": 0,
+          "nb": 16,
+          "opacity": 0.9900000095367432,
+          "pickup": 0.014999999664723873,
+          "ragged": 0.800000011920929,
+          "release": 0.30000001192092896,
+          "ridge": 0.4000000059604645,
+          "splay": 0.3499999940395355,
+          "stiff": 0.4000000059604645,
+          "streak": 0.2199999988079071,
+          "streakMix": 0.800000011920929,
+          "vdry": 0.36000001430511475
+        },
+        "pressureProfile": [
+          0.550000011920929,
+          1,
+          0.18000000715255737
+        ],
+        "status": "candidate",
+        "variation": 0.14000000059604645,
+        "width": [
+          0.0020000000949949026,
+          0.029999999329447746,
+          0.11999999731779099
+        ],
+        "widthProfile": [
+          0.029999999329447746,
+          1,
+          0.014999999664723873
+        ]
+      },
+      {
+        "contact": "flat",
+        "depletion": 1.2000000476837158,
+        "id": "dry-drag",
+        "mode": 0,
+        "name": "Dry drag",
+        "paint": {
+          "blob": 0.3199999928474426,
+          "body": 0.11999999731779099,
+          "dropout": 0.12999999523162842,
+          "flatten": 0.75,
+          "furrow": 0.15000000596046448,
+          "grain": 0.03500000014901161,
+          "hardness": 0.800000011920929,
+          "hgain": 0.550000011920929,
+          "levee": 0.07999999821186066,
+          "load": 0.6200000047683716,
+          "marble": 0,
+          "nb": 16,
+          "opacity": 0.9900000095367432,
+          "pickup": 0.014999999664723873,
+          "ragged": 0.8999999761581421,
+          "release": 0.30000001192092896,
+          "ridge": 0.4000000059604645,
+          "splay": 0.3499999940395355,
+          "stiff": 0.4000000059604645,
+          "streak": 0.4000000059604645,
+          "streakMix": 0.800000011920929,
+          "vdry": 0.4399999976158142
+        },
+        "pressureProfile": [
+          0.8500000238418579,
+          0.8999999761581421,
+          0.11999999731779099
+        ],
+        "status": "candidate",
+        "variation": 0.10000000149011612,
+        "width": [
+          0.0020000000949949026,
+          0.026000000536441803,
+          0.11999999731779099
+        ],
+        "widthProfile": [
+          0.47999998927116394,
+          1,
+          0.10000000149011612
+        ]
+      },
+      {
+        "contact": "flat",
+        "depletion": 0.6000000238418579,
+        "id": "scumble",
+        "mode": 1,
+        "name": "Scumble",
+        "paint": {
+          "blob": 0.3199999928474426,
+          "body": 0.9200000166893005,
+          "dropout": 0.02500000037252903,
+          "flatten": 0.75,
+          "furrow": 0.15000000596046448,
+          "grain": 0,
+          "hardness": 0.800000011920929,
+          "hgain": 0.44999998807907104,
+          "levee": 0.07999999821186066,
+          "load": 0.949999988079071,
+          "marble": 0,
+          "nb": 16,
+          "opacity": 1,
+          "pickup": 0.009999999776482582,
+          "ragged": 0.6499999761581421,
+          "release": 0.30000001192092896,
+          "ridge": 0.4000000059604645,
+          "splay": 0.3499999940395355,
+          "stiff": 0.4000000059604645,
+          "streak": 0.2199999988079071,
+          "streakMix": 0.800000011920929,
+          "vdry": 0.36000001430511475
+        },
+        "pressureProfile": [
+          0.550000011920929,
+          1,
+          0.18000000715255737
+        ],
+        "status": "candidate",
+        "variation": 0.10000000149011612,
+        "width": [
+          0.003000000026077032,
+          0.03200000151991844,
+          0.11999999731779099
+        ],
+        "widthProfile": [
+          0.47999998927116394,
+          1,
+          0.10000000149011612
+        ]
+      },
+      {
+        "contact": "flat",
+        "depletion": 0.30000001192092896,
+        "id": "impasto-accent",
+        "mode": 0,
+        "name": "Impasto accent",
+        "paint": {
+          "blob": 0.3199999928474426,
+          "body": 0.9700000286102295,
+          "dropout": 0.03500000014901161,
+          "flatten": 0.5,
+          "furrow": 0.15000000596046448,
+          "grain": 0.03999999910593033,
+          "hardness": 0.800000011920929,
+          "hgain": 1.5,
+          "levee": 0.019999999552965164,
+          "load": 1,
+          "marble": 0,
+          "nb": 16,
+          "opacity": 0.9900000095367432,
+          "pickup": 0.014999999664723873,
+          "ragged": 0.6499999761581421,
+          "release": 0.30000001192092896,
+          "ridge": 0.47999998927116394,
+          "splay": 0.3499999940395355,
+          "stiff": 0.2199999988079071,
+          "streak": 0.2199999988079071,
+          "streakMix": 0.800000011920929,
+          "vdry": 0.36000001430511475
+        },
+        "pressureProfile": [
+          0.550000011920929,
+          1,
+          0.18000000715255737
+        ],
+        "status": "candidate",
+        "variation": 0.10000000149011612,
+        "width": [
+          0.0020000000949949026,
+          0.017999999225139618,
+          0.07999999821186066
+        ],
+        "widthProfile": [
+          0.47999998927116394,
+          1,
+          0.10000000149011612
+        ]
+      },
+      {
+        "contact": "point",
+        "depletion": 0.4000000059604645,
+        "id": "fine-detail",
+        "mode": 0,
+        "name": "Fine detail",
+        "paint": {
+          "blob": 0.3199999928474426,
+          "body": 0.9700000286102295,
+          "dropout": 0.004999999888241291,
+          "flatten": 0.75,
+          "furrow": 0.15000000596046448,
+          "grain": 0.014999999664723873,
+          "hardness": 0.800000011920929,
+          "hgain": 0.3499999940395355,
+          "levee": 0.07999999821186066,
+          "load": 1,
+          "marble": 0,
+          "nb": 7,
+          "opacity": 0.9900000095367432,
+          "pickup": 0.014999999664723873,
+          "ragged": 0.11999999731779099,
+          "release": 0.30000001192092896,
+          "ridge": 0.4000000059604645,
+          "splay": 0,
+          "stiff": 0.1599999964237213,
+          "streak": 0.2199999988079071,
+          "streakMix": 0.800000011920929,
+          "vdry": 0.36000001430511475
+        },
+        "pressureProfile": [
+          0.550000011920929,
+          1,
+          0.18000000715255737
+        ],
+        "status": "candidate",
+        "variation": 0.014999999664723873,
+        "width": [
+          0.0005000000237487257,
+          0.004000000189989805,
+          0.02500000037252903
+        ],
+        "widthProfile": [
+          0.20000000298023224,
+          1,
+          0.019999999552965164
+        ]
+      },
+      {
+        "contact": "flat",
+        "depletion": 0.699999988079071,
+        "id": "wet-mixing",
+        "mode": 0,
+        "name": "Wet mixing",
+        "paint": {
+          "blob": 0.3199999928474426,
+          "body": 0.800000011920929,
+          "dropout": 0.03500000014901161,
+          "flatten": 0.8500000238418579,
+          "furrow": 0.15000000596046448,
+          "grain": 0.03999999910593033,
+          "hardness": 0.800000011920929,
+          "hgain": 0.30000001192092896,
+          "levee": 0.07999999821186066,
+          "load": 0.6499999761581421,
+          "marble": 0,
+          "nb": 12,
+          "opacity": 0.9900000095367432,
+          "pickup": 0.699999988079071,
+          "ragged": 0.6499999761581421,
+          "release": 0.25999999046325684,
+          "ridge": 0.4000000059604645,
+          "splay": 0.3499999940395355,
+          "stiff": 0.4000000059604645,
+          "streak": 0.2199999988079071,
+          "streakMix": 1,
+          "vdry": 0.36000001430511475
+        },
+        "pressureProfile": [
+          0.550000011920929,
+          1,
+          0.18000000715255737
+        ],
+        "status": "candidate",
+        "variation": 0.10000000149011612,
+        "width": [
+          0.0020000000949949026,
+          0.02500000037252903,
+          0.11999999731779099
+        ],
+        "widthProfile": [
+          0.47999998927116394,
+          1,
+          0.10000000149011612
+        ]
+      }
+    ],
+    "version": 2
+  },
+  "cases": [
+    {
+      "id": "loaded-flat",
+      "document": {
+        "format": "oil-author",
+        "version": 2,
+        "engine": "2.0.0-dev.5",
+        "seed": 901,
+        "aspect": [
+          2,
+          1
+        ],
+        "ground": [
+          0.68,
+          0.65,
+          0.59
+        ],
+        "groups": [
+          {
+            "id": "wet-base",
+            "name": "Wet base",
+            "visible": true,
+            "dryAfter": 1,
+            "strokes": [
+              {
+                "id": "blue",
+                "preset": "loaded-flat",
+                "width": 0.09,
+                "path": [
+                  [
+                    0.46,
+                    0.07,
+                    1
+                  ],
+                  [
+                    0.46,
+                    0.43,
+                    1
+                  ]
+                ],
+                "color": [
+                  0.12,
+                  0.32,
+                  0.68
+                ],
+                "controls": {}
+              }
+            ]
+          },
+          {
+            "id": "candidate",
+            "name": "Loaded flat",
+            "visible": true,
+            "dryAfter": 0.7,
+            "strokes": [
+              {
+                "id": "candidate",
+                "preset": "loaded-flat",
+                "width": 0.065,
+                "path": [
+                  [
+                    0.12,
+                    0.21,
+                    0.4
+                  ],
+                  [
+                    0.35,
+                    0.27,
+                    1
+                  ],
+                  [
+                    0.63,
+                    0.27,
+                    0.8
+                  ],
+                  [
+                    0.9,
+                    0.2,
+                    0.3
+                  ]
+                ],
+                "color": [
+                  0.88,
+                  0.44,
+                  0.16
+                ],
+                "controls": {}
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "rgb": {
+          "cover": "7bb5b8e211e843e416e27350eaa0ef34b0b7d6fba375c8baf9d259d1dba7bfce",
+          "h": "a3e0837afe9d95c0a6ba7b5b82d2f68a0670f7927e34ef236cdf187e4ccee1ed",
+          "lat": "d742beaf811d11fe663a89ec90be9cb33dabaffadcb59aa1b426ffe5595d9edf",
+          "rgb": "d742beaf811d11fe663a89ec90be9cb33dabaffadcb59aa1b426ffe5595d9edf",
+          "wet": "7d2a94655889b2d08f9bb0d3a991905e928bc16f3c064f178032cae212d75601"
+        },
+        "ochrell": {
+          "cover": "7bb5b8e211e843e416e27350eaa0ef34b0b7d6fba375c8baf9d259d1dba7bfce",
+          "h": "a3e0837afe9d95c0a6ba7b5b82d2f68a0670f7927e34ef236cdf187e4ccee1ed",
+          "lat": "7b657ce2eb3feac6441e4d766d3af2856699245a3a9045e78b0f0f757a1f9877",
+          "rgb": "0dafda8dd789a1b07bf9a2e32356a3752a40715e5f3a898613fc6e0996c81600",
+          "wet": "7d2a94655889b2d08f9bb0d3a991905e928bc16f3c064f178032cae212d75601"
+        }
+      }
+    },
+    {
+      "id": "rounded-dab",
+      "document": {
+        "format": "oil-author",
+        "version": 2,
+        "engine": "2.0.0-dev.5",
+        "seed": 901,
+        "aspect": [
+          2,
+          1
+        ],
+        "ground": [
+          0.68,
+          0.65,
+          0.59
+        ],
+        "groups": [
+          {
+            "id": "wet-base",
+            "name": "Wet base",
+            "visible": true,
+            "dryAfter": 1,
+            "strokes": [
+              {
+                "id": "blue",
+                "preset": "loaded-flat",
+                "width": 0.09,
+                "path": [
+                  [
+                    0.46,
+                    0.07,
+                    1
+                  ],
+                  [
+                    0.46,
+                    0.43,
+                    1
+                  ]
+                ],
+                "color": [
+                  0.12,
+                  0.32,
+                  0.68
+                ],
+                "controls": {}
+              }
+            ]
+          },
+          {
+            "id": "candidate",
+            "name": "Rounded dab",
+            "visible": true,
+            "dryAfter": 0.7,
+            "strokes": [
+              {
+                "id": "candidate",
+                "preset": "rounded-dab",
+                "width": 0.065,
+                "path": [
+                  [
+                    0.12,
+                    0.21,
+                    0.4
+                  ],
+                  [
+                    0.35,
+                    0.27,
+                    1
+                  ],
+                  [
+                    0.63,
+                    0.27,
+                    0.8
+                  ],
+                  [
+                    0.9,
+                    0.2,
+                    0.3
+                  ]
+                ],
+                "color": [
+                  0.88,
+                  0.44,
+                  0.16
+                ],
+                "controls": {}
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "rgb": {
+          "cover": "801533d973405068900b8da14bcb65b9782740a534cd4e53cbcc3ce8d54e6a5d",
+          "h": "2277b8ee88e116df011705637a7ee80b6c11dad14ad852bd08ef43a320dbe4ca",
+          "lat": "db6693d942dc58c0bcad34136147ab11a9c424348cfdff5e69aa006eeae5ffdb",
+          "rgb": "db6693d942dc58c0bcad34136147ab11a9c424348cfdff5e69aa006eeae5ffdb",
+          "wet": "85b7c4fe7c73af269495b18bfd4c2e5fb763620fc4c8bc8f3188b3bdfb566719"
+        },
+        "ochrell": {
+          "cover": "801533d973405068900b8da14bcb65b9782740a534cd4e53cbcc3ce8d54e6a5d",
+          "h": "2277b8ee88e116df011705637a7ee80b6c11dad14ad852bd08ef43a320dbe4ca",
+          "lat": "b4731d0278a49650de7668acacff9da11ff0dd3bf0240eaccb8f7ed2fe4f10dd",
+          "rgb": "781b5eb01fd05568b58f7f47d10d2468ecb3c315af2c00a8620d91307451d6e5",
+          "wet": "85b7c4fe7c73af269495b18bfd4c2e5fb763620fc4c8bc8f3188b3bdfb566719"
+        }
+      }
+    },
+    {
+      "id": "dry-drag",
+      "document": {
+        "format": "oil-author",
+        "version": 2,
+        "engine": "2.0.0-dev.5",
+        "seed": 901,
+        "aspect": [
+          2,
+          1
+        ],
+        "ground": [
+          0.68,
+          0.65,
+          0.59
+        ],
+        "groups": [
+          {
+            "id": "wet-base",
+            "name": "Wet base",
+            "visible": true,
+            "dryAfter": 1,
+            "strokes": [
+              {
+                "id": "blue",
+                "preset": "loaded-flat",
+                "width": 0.09,
+                "path": [
+                  [
+                    0.46,
+                    0.07,
+                    1
+                  ],
+                  [
+                    0.46,
+                    0.43,
+                    1
+                  ]
+                ],
+                "color": [
+                  0.12,
+                  0.32,
+                  0.68
+                ],
+                "controls": {}
+              }
+            ]
+          },
+          {
+            "id": "candidate",
+            "name": "Dry drag",
+            "visible": true,
+            "dryAfter": 0.7,
+            "strokes": [
+              {
+                "id": "candidate",
+                "preset": "dry-drag",
+                "width": 0.065,
+                "path": [
+                  [
+                    0.12,
+                    0.21,
+                    0.4
+                  ],
+                  [
+                    0.35,
+                    0.27,
+                    1
+                  ],
+                  [
+                    0.63,
+                    0.27,
+                    0.8
+                  ],
+                  [
+                    0.9,
+                    0.2,
+                    0.3
+                  ]
+                ],
+                "color": [
+                  0.88,
+                  0.44,
+                  0.16
+                ],
+                "controls": {}
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "rgb": {
+          "cover": "64646c4109d53ed3455202c622ab8ac6e4ab6734ee22d43ab2184d91408a1a4f",
+          "h": "21929cd25a5b71f28338a3338fc72b0d986938956872b644dd25863a5bc81ba9",
+          "lat": "21016d74a04c6af15c47b917be9709aec188a09de006608d25ae34b1b431bab7",
+          "rgb": "21016d74a04c6af15c47b917be9709aec188a09de006608d25ae34b1b431bab7",
+          "wet": "a0c2c8b8a8952530d1545b110e78bac2aafb76a544734772127504907c10ce1e"
+        },
+        "ochrell": {
+          "cover": "64646c4109d53ed3455202c622ab8ac6e4ab6734ee22d43ab2184d91408a1a4f",
+          "h": "21929cd25a5b71f28338a3338fc72b0d986938956872b644dd25863a5bc81ba9",
+          "lat": "2f094493b2ee60758109cef74e71b639f357b4cddf68655b108e020136290ce6",
+          "rgb": "ba00dbafa3f1ad0239d8e50e4a9132fa8cb797cb30a2ac6b2b7f058f406ddbe6",
+          "wet": "a0c2c8b8a8952530d1545b110e78bac2aafb76a544734772127504907c10ce1e"
+        }
+      }
+    },
+    {
+      "id": "impasto-accent",
+      "document": {
+        "format": "oil-author",
+        "version": 2,
+        "engine": "2.0.0-dev.5",
+        "seed": 901,
+        "aspect": [
+          2,
+          1
+        ],
+        "ground": [
+          0.68,
+          0.65,
+          0.59
+        ],
+        "groups": [
+          {
+            "id": "wet-base",
+            "name": "Wet base",
+            "visible": true,
+            "dryAfter": 1,
+            "strokes": [
+              {
+                "id": "blue",
+                "preset": "loaded-flat",
+                "width": 0.09,
+                "path": [
+                  [
+                    0.46,
+                    0.07,
+                    1
+                  ],
+                  [
+                    0.46,
+                    0.43,
+                    1
+                  ]
+                ],
+                "color": [
+                  0.12,
+                  0.32,
+                  0.68
+                ],
+                "controls": {}
+              }
+            ]
+          },
+          {
+            "id": "candidate",
+            "name": "Impasto accent",
+            "visible": true,
+            "dryAfter": 0.7,
+            "strokes": [
+              {
+                "id": "candidate",
+                "preset": "impasto-accent",
+                "width": 0.065,
+                "path": [
+                  [
+                    0.12,
+                    0.21,
+                    0.4
+                  ],
+                  [
+                    0.35,
+                    0.27,
+                    1
+                  ],
+                  [
+                    0.63,
+                    0.27,
+                    0.8
+                  ],
+                  [
+                    0.9,
+                    0.2,
+                    0.3
+                  ]
+                ],
+                "color": [
+                  0.88,
+                  0.44,
+                  0.16
+                ],
+                "controls": {}
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "rgb": {
+          "cover": "7bb5b8e211e843e416e27350eaa0ef34b0b7d6fba375c8baf9d259d1dba7bfce",
+          "h": "41738883750b84f17499eda070472d8ae008f7d40de51f3b5f29fab7fc3736db",
+          "lat": "d742beaf811d11fe663a89ec90be9cb33dabaffadcb59aa1b426ffe5595d9edf",
+          "rgb": "d742beaf811d11fe663a89ec90be9cb33dabaffadcb59aa1b426ffe5595d9edf",
+          "wet": "7d2a94655889b2d08f9bb0d3a991905e928bc16f3c064f178032cae212d75601"
+        },
+        "ochrell": {
+          "cover": "7bb5b8e211e843e416e27350eaa0ef34b0b7d6fba375c8baf9d259d1dba7bfce",
+          "h": "41738883750b84f17499eda070472d8ae008f7d40de51f3b5f29fab7fc3736db",
+          "lat": "7b657ce2eb3feac6441e4d766d3af2856699245a3a9045e78b0f0f757a1f9877",
+          "rgb": "0dafda8dd789a1b07bf9a2e32356a3752a40715e5f3a898613fc6e0996c81600",
+          "wet": "7d2a94655889b2d08f9bb0d3a991905e928bc16f3c064f178032cae212d75601"
+        }
+      }
+    },
+    {
+      "id": "fine-detail",
+      "document": {
+        "format": "oil-author",
+        "version": 2,
+        "engine": "2.0.0-dev.5",
+        "seed": 901,
+        "aspect": [
+          2,
+          1
+        ],
+        "ground": [
+          0.68,
+          0.65,
+          0.59
+        ],
+        "groups": [
+          {
+            "id": "wet-base",
+            "name": "Wet base",
+            "visible": true,
+            "dryAfter": 1,
+            "strokes": [
+              {
+                "id": "blue",
+                "preset": "loaded-flat",
+                "width": 0.09,
+                "path": [
+                  [
+                    0.46,
+                    0.07,
+                    1
+                  ],
+                  [
+                    0.46,
+                    0.43,
+                    1
+                  ]
+                ],
+                "color": [
+                  0.12,
+                  0.32,
+                  0.68
+                ],
+                "controls": {}
+              }
+            ]
+          },
+          {
+            "id": "candidate",
+            "name": "Fine detail",
+            "visible": true,
+            "dryAfter": 0.7,
+            "strokes": [
+              {
+                "id": "candidate",
+                "preset": "fine-detail",
+                "width": 0.02500000037252903,
+                "path": [
+                  [
+                    0.12,
+                    0.21,
+                    0.4
+                  ],
+                  [
+                    0.35,
+                    0.27,
+                    1
+                  ],
+                  [
+                    0.63,
+                    0.27,
+                    0.8
+                  ],
+                  [
+                    0.9,
+                    0.2,
+                    0.3
+                  ]
+                ],
+                "color": [
+                  0.88,
+                  0.44,
+                  0.16
+                ],
+                "controls": {}
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "rgb": {
+          "cover": "21491162c27c231e96138dbe11341d46e27b9889b009a02486569ae0bdcb67e3",
+          "h": "1a6e9f9133f685d21b362dc1b3080eb88f8e3cb792a7f9dc1aa25c2556c73448",
+          "lat": "9ce86f0dfff8e8efc7a330b88000b329f330bd89368dc9b58b030c63f1fb3d3b",
+          "rgb": "9ce86f0dfff8e8efc7a330b88000b329f330bd89368dc9b58b030c63f1fb3d3b",
+          "wet": "d2314dfd7541225bd93698069a73c5b059210e41a29f135c6a06444a2a67deb9"
+        },
+        "ochrell": {
+          "cover": "21491162c27c231e96138dbe11341d46e27b9889b009a02486569ae0bdcb67e3",
+          "h": "1a6e9f9133f685d21b362dc1b3080eb88f8e3cb792a7f9dc1aa25c2556c73448",
+          "lat": "37f81e78a237c62210eb93d322dd2f133de53eb3a6969402408f96a7c1a88145",
+          "rgb": "d04b2b8943827f1a0432e22c156fc47e9e293d65b7e55e0f5d76fbe312091481",
+          "wet": "d2314dfd7541225bd93698069a73c5b059210e41a29f135c6a06444a2a67deb9"
+        }
+      }
+    },
+    {
+      "id": "wet-mixing",
+      "document": {
+        "format": "oil-author",
+        "version": 2,
+        "engine": "2.0.0-dev.5",
+        "seed": 901,
+        "aspect": [
+          2,
+          1
+        ],
+        "ground": [
+          0.68,
+          0.65,
+          0.59
+        ],
+        "groups": [
+          {
+            "id": "wet-base",
+            "name": "Wet base",
+            "visible": true,
+            "dryAfter": 1,
+            "strokes": [
+              {
+                "id": "blue",
+                "preset": "loaded-flat",
+                "width": 0.09,
+                "path": [
+                  [
+                    0.46,
+                    0.07,
+                    1
+                  ],
+                  [
+                    0.46,
+                    0.43,
+                    1
+                  ]
+                ],
+                "color": [
+                  0.12,
+                  0.32,
+                  0.68
+                ],
+                "controls": {}
+              }
+            ]
+          },
+          {
+            "id": "candidate",
+            "name": "Wet mixing",
+            "visible": true,
+            "dryAfter": 0.7,
+            "strokes": [
+              {
+                "id": "candidate",
+                "preset": "wet-mixing",
+                "width": 0.065,
+                "path": [
+                  [
+                    0.12,
+                    0.21,
+                    0.4
+                  ],
+                  [
+                    0.35,
+                    0.27,
+                    1
+                  ],
+                  [
+                    0.63,
+                    0.27,
+                    0.8
+                  ],
+                  [
+                    0.9,
+                    0.2,
+                    0.3
+                  ]
+                ],
+                "color": [
+                  0.88,
+                  0.44,
+                  0.16
+                ],
+                "controls": {}
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "rgb": {
+          "cover": "eea4e3be8b164b3e62d14d3bf4bd89a32b90f081b30588214558144a40b5ff7c",
+          "h": "de37627ec7baa37616d7b3552e9e5b7098bd4a297b079bf953e43f06f8f99558",
+          "lat": "3b1e56d1df99021fd8da09cf50a9a71e69e34bc1b7fffccaf7147dadfb86243d",
+          "rgb": "3b1e56d1df99021fd8da09cf50a9a71e69e34bc1b7fffccaf7147dadfb86243d",
+          "wet": "e8c9ac2f3f2e9d18506e6654432c037d1273bac322034e45417e1098acaf0872"
+        },
+        "ochrell": {
+          "cover": "eea4e3be8b164b3e62d14d3bf4bd89a32b90f081b30588214558144a40b5ff7c",
+          "h": "de37627ec7baa37616d7b3552e9e5b7098bd4a297b079bf953e43f06f8f99558",
+          "lat": "072c8760809f263779aae143761fe6c883aa7012aeb51fb106df465b87acd53d",
+          "rgb": "653a46217653f8c6c97e28d522e657609c3d2a9dce4e78b5adc8b07de348fe6c",
+          "wet": "e8c9ac2f3f2e9d18506e6654432c037d1273bac322034e45417e1098acaf0872"
+        }
+      }
+    }
+  ]
+}

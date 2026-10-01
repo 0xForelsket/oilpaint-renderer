@@ -1,0 +1,250 @@
+{
+  "engine": "2.0.0-dev.6",
+  "hosts": [
+    "native",
+    "Node",
+    "chromium",
+    "firefox"
+  ],
+  "stableBrushes": [
+    {
+      "preset": "loaded-flat",
+      "mixer": "rgb",
+      "planes": {
+        "cover": "7bb5b8e211e843e416e27350eaa0ef34b0b7d6fba375c8baf9d259d1dba7bfce",
+        "h": "a3e0837afe9d95c0a6ba7b5b82d2f68a0670f7927e34ef236cdf187e4ccee1ed",
+        "lat": "d742beaf811d11fe663a89ec90be9cb33dabaffadcb59aa1b426ffe5595d9edf",
+        "rgb": "d742beaf811d11fe663a89ec90be9cb33dabaffadcb59aa1b426ffe5595d9edf",
+        "wet": "7d2a94655889b2d08f9bb0d3a991905e928bc16f3c064f178032cae212d75601"
+      }
+    },
+    {
+      "preset": "loaded-flat",
+      "mixer": "ochrell",
+      "planes": {
+        "cover": "7bb5b8e211e843e416e27350eaa0ef34b0b7d6fba375c8baf9d259d1dba7bfce",
+        "h": "a3e0837afe9d95c0a6ba7b5b82d2f68a0670f7927e34ef236cdf187e4ccee1ed",
+        "lat": "7b657ce2eb3feac6441e4d766d3af2856699245a3a9045e78b0f0f757a1f9877",
+        "rgb": "0dafda8dd789a1b07bf9a2e32356a3752a40715e5f3a898613fc6e0996c81600",
+        "wet": "7d2a94655889b2d08f9bb0d3a991905e928bc16f3c064f178032cae212d75601"
+      }
+    },
+    {
+      "preset": "rounded-dab",
+      "mixer": "rgb",
+      "planes": {
+        "cover": "801533d973405068900b8da14bcb65b9782740a534cd4e53cbcc3ce8d54e6a5d",
+        "h": "2277b8ee88e116df011705637a7ee80b6c11dad14ad852bd08ef43a320dbe4ca",
+        "lat": "db6693d942dc58c0bcad34136147ab11a9c424348cfdff5e69aa006eeae5ffdb",
+        "rgb": "db6693d942dc58c0bcad34136147ab11a9c424348cfdff5e69aa006eeae5ffdb",
+        "wet": "85b7c4fe7c73af269495b18bfd4c2e5fb763620fc4c8bc8f3188b3bdfb566719"
+      }
+    },
+    {
+      "preset": "rounded-dab",
+      "mixer": "ochrell",
+      "planes": {
+        "cover": "801533d973405068900b8da14bcb65b9782740a534cd4e53cbcc3ce8d54e6a5d",
+        "h": "2277b8ee88e116df011705637a7ee80b6c11dad14ad852bd08ef43a320dbe4ca",
+        "lat": "b4731d0278a49650de7668acacff9da11ff0dd3bf0240eaccb8f7ed2fe4f10dd",
+        "rgb": "781b5eb01fd05568b58f7f47d10d2468ecb3c315af2c00a8620d91307451d6e5",
+        "wet": "85b7c4fe7c73af269495b18bfd4c2e5fb763620fc4c8bc8f3188b3bdfb566719"
+      }
+    },
+    {
+      "preset": "dry-drag",
+      "mixer": "rgb",
+      "planes": {
+        "cover": "64646c4109d53ed3455202c622ab8ac6e4ab6734ee22d43ab2184d91408a1a4f",
+        "h": "21929cd25a5b71f28338a3338fc72b0d986938956872b644dd25863a5bc81ba9",
+        "lat": "21016d74a04c6af15c47b917be9709aec188a09de006608d25ae34b1b431bab7",
+        "rgb": "21016d74a04c6af15c47b917be9709aec188a09de006608d25ae34b1b431bab7",
+        "wet": "a0c2c8b8a8952530d1545b110e78bac2aafb76a544734772127504907c10ce1e"
+      }
+    },
+    {
+      "preset": "dry-drag",
+      "mixer": "ochrell",
+      "planes": {
+        "cover": "64646c4109d53ed3455202c622ab8ac6e4ab6734ee22d43ab2184d91408a1a4f",
+        "h": "21929cd25a5b71f28338a3338fc72b0d986938956872b644dd25863a5bc81ba9",
+        "lat": "2f094493b2ee60758109cef74e71b639f357b4cddf68655b108e020136290ce6",
+        "rgb": "ba00dbafa3f1ad0239d8e50e4a9132fa8cb797cb30a2ac6b2b7f058f406ddbe6",
+        "wet": "a0c2c8b8a8952530d1545b110e78bac2aafb76a544734772127504907c10ce1e"
+      }
+    },
+    {
+      "preset": "impasto-accent",
+      "mixer": "rgb",
+      "planes": {
+        "cover": "7bb5b8e211e843e416e27350eaa0ef34b0b7d6fba375c8baf9d259d1dba7bfce",
+        "h": "41738883750b84f17499eda070472d8ae008f7d40de51f3b5f29fab7fc3736db",
+        "lat": "d742beaf811d11fe663a89ec90be9cb33dabaffadcb59aa1b426ffe5595d9edf",
+        "rgb": "d742beaf811d11fe663a89ec90be9cb33dabaffadcb59aa1b426ffe5595d9edf",
+        "wet": "7d2a94655889b2d08f9bb0d3a991905e928bc16f3c064f178032cae212d75601"
+      }
+    },
+    {
+      "preset": "impasto-accent",
+      "mixer": "ochrell",
+      "planes": {
+        "cover": "7bb5b8e211e843e416e27350eaa0ef34b0b7d6fba375c8baf9d259d1dba7bfce",
+        "h": "41738883750b84f17499eda070472d8ae008f7d40de51f3b5f29fab7fc3736db",
+        "lat": "7b657ce2eb3feac6441e4d766d3af2856699245a3a9045e78b0f0f757a1f9877",
+        "rgb": "0dafda8dd789a1b07bf9a2e32356a3752a40715e5f3a898613fc6e0996c81600",
+        "wet": "7d2a94655889b2d08f9bb0d3a991905e928bc16f3c064f178032cae212d75601"
+      }
+    },
+    {
+      "preset": "fine-detail",
+      "mixer": "rgb",
+      "planes": {
+        "cover": "21491162c27c231e96138dbe11341d46e27b9889b009a02486569ae0bdcb67e3",
+        "h": "1a6e9f9133f685d21b362dc1b3080eb88f8e3cb792a7f9dc1aa25c2556c73448",
+        "lat": "9ce86f0dfff8e8efc7a330b88000b329f330bd89368dc9b58b030c63f1fb3d3b",
+        "rgb": "9ce86f0dfff8e8efc7a330b88000b329f330bd89368dc9b58b030c63f1fb3d3b",
+        "wet": "d2314dfd7541225bd93698069a73c5b059210e41a29f135c6a06444a2a67deb9"
+      }
+    },
+    {
+      "preset": "fine-detail",
+      "mixer": "ochrell",
+      "planes": {
+        "cover": "21491162c27c231e96138dbe11341d46e27b9889b009a02486569ae0bdcb67e3",
+        "h": "1a6e9f9133f685d21b362dc1b3080eb88f8e3cb792a7f9dc1aa25c2556c73448",
+        "lat": "37f81e78a237c62210eb93d322dd2f133de53eb3a6969402408f96a7c1a88145",
+        "rgb": "d04b2b8943827f1a0432e22c156fc47e9e293d65b7e55e0f5d76fbe312091481",
+        "wet": "d2314dfd7541225bd93698069a73c5b059210e41a29f135c6a06444a2a67deb9"
+      }
+    },
+    {
+      "preset": "wet-mixing",
+      "mixer": "rgb",
+      "planes": {
+        "cover": "eea4e3be8b164b3e62d14d3bf4bd89a32b90f081b30588214558144a40b5ff7c",
+        "h": "de37627ec7baa37616d7b3552e9e5b7098bd4a297b079bf953e43f06f8f99558",
+        "lat": "3b1e56d1df99021fd8da09cf50a9a71e69e34bc1b7fffccaf7147dadfb86243d",
+        "rgb": "3b1e56d1df99021fd8da09cf50a9a71e69e34bc1b7fffccaf7147dadfb86243d",
+        "wet": "e8c9ac2f3f2e9d18506e6654432c037d1273bac322034e45417e1098acaf0872"
+      }
+    },
+    {
+      "preset": "wet-mixing",
+      "mixer": "ochrell",
+      "planes": {
+        "cover": "eea4e3be8b164b3e62d14d3bf4bd89a32b90f081b30588214558144a40b5ff7c",
+        "h": "de37627ec7baa37616d7b3552e9e5b7098bd4a297b079bf953e43f06f8f99558",
+        "lat": "072c8760809f263779aae143761fe6c883aa7012aeb51fb106df465b87acd53d",
+        "rgb": "653a46217653f8c6c97e28d522e657609c3d2a9dce4e78b5adc8b07de348fe6c",
+        "wet": "e8c9ac2f3f2e9d18506e6654432c037d1273bac322034e45417e1098acaf0872"
+      }
+    }
+  ],
+  "acceptedOrangeUnchanged": true,
+  "substrateUnchanged": true,
+  "substrate": {
+    "cover": "3551c4fde3ffc88369d1d5513166fdab644a8461d064daea1f311f7259e21ba3",
+    "h": "fadce5a9f936955e0f8f37779aacb684336cf52d6d5f2c6f0f417901bbc43a29",
+    "lat": "9affddd29b1ecddd63e871b515777bce7ae900ef3ade4f513b055b5dba03d0e0",
+    "rgb": "befc10ce8d31401f527d1eafa3c75a4674d66efe22c9c43ffe26e09c0733a756",
+    "wet": "a76c77fe203db862b48214c88fbdc1d5560655ccba2f7a2c7166baf6f846e856"
+  },
+  "evidence": [
+    {
+      "id": "flat",
+      "width": 384,
+      "planes": {
+        "cover": "2654a5486432110823751b2c4951b8b564354324efb85b4ffbe59e6b57bad095",
+        "h": "fbacbce811747aab932f8693d96c38d92b70c51b52104256bb97d8129d2e9672",
+        "lat": "0839aabb5ba12d180c2f4b1cec44f480cd37f7fa86015f99581162703d8161b5",
+        "rgb": "7ca04d00a162f92b7b586c823da2709de79ab5c837a70aebc132a2794d58aa5d",
+        "wet": "b9c048de34d844a2381155656d249036a85a52b60cb9fd06bf1600e44d7aa3ae"
+      },
+      "image": "069d333d48b83f71fbcc7e176cdf735d5c2e03887e76d8f3bb1f0b833b674809",
+      "times": {
+        "chromium": 63.400000005960464,
+        "firefox": 174
+      }
+    },
+    {
+      "id": "flat",
+      "width": 768,
+      "planes": {
+        "cover": "80e2c4aa8c5ae5361bcff4912782350c097147d451a7fe1a15bd3d9db24590ec",
+        "h": "cc15a6ada02ac10869c604fbca28db504ce7cf35d9cc69608e28bbba37ed5ff3",
+        "lat": "14f402b37e2cf6f5dc278dfbea4fea7170fcb32528ab9194a69f344706df2a8a",
+        "rgb": "e0cf778e3718898a455e6572974c524c45811b634da4b889a581599555a6d5e6",
+        "wet": "a76c77fe203db862b48214c88fbdc1d5560655ccba2f7a2c7166baf6f846e856"
+      },
+      "image": "31cd81b996407b758e148129b882b1f27373130fc8913c0926c8563ee8290d54",
+      "times": {
+        "chromium": 74,
+        "firefox": 858
+      }
+    },
+    {
+      "id": "irregular",
+      "width": 384,
+      "planes": {
+        "cover": "2c43416746b2670d626459cb3dd906a81fa43eb81c0572edd2071f0b1069cb83",
+        "h": "fe001b04ee2d8a66dfbee61b46d2f877ea894731e886093f1bf2dc6875e65d92",
+        "lat": "c0cd2ef27024bb9332f663c0aa16b731aaeaf2cf6874d254e7d8631b36d5b202",
+        "rgb": "8ae1f7357f4ec9b3c82e35c2a1fc69974af8da5d2acd1e57e9289df766f93f85",
+        "wet": "b9c048de34d844a2381155656d249036a85a52b60cb9fd06bf1600e44d7aa3ae"
+      },
+      "image": "8d62b3b92edc8f34fc97214cf565eab9b7c9511eadcf3f8ff608dd3278397c43",
+      "times": {
+        "chromium": 41.900000005960464,
+        "firefox": 557
+      }
+    },
+    {
+      "id": "irregular",
+      "width": 768,
+      "planes": {
+        "cover": "665c1b2ee4137283021386f97f33c39bbbe997766e08cf3b9bea394ce22117a3",
+        "h": "37c9a3e199968e4789f3cc55a78c2474d6baa5dcb0644d403641a4139897a0e7",
+        "lat": "7ac854fa92e9453ac686eed7f20e96a401566475d9812720ad1f94993b155f09",
+        "rgb": "265c5ebe9fda813902bda3b07eb353d8cc00a93c5a11455201fb06a7cd2e52ca",
+        "wet": "a76c77fe203db862b48214c88fbdc1d5560655ccba2f7a2c7166baf6f846e856"
+      },
+      "image": "152a9df4c9733170cd4fe44d19fd6848cf857c691f65a837492637adda855252",
+      "times": {
+        "chromium": 136.7000000178814,
+        "firefox": 2080
+      }
+    },
+    {
+      "id": "overlap",
+      "width": 384,
+      "planes": {
+        "cover": "67bc006798d71f199d42e7615ba9a2ed5159c9b11030b04777b18397764dd45f",
+        "h": "dc99d72abbac1304bedc23e6804429ba0c74e9780ed36c5c2d41b882f95a7147",
+        "lat": "8dddf3dd2e250578ca5d107532f93b3f2a16140203df17c980374ab08acd11e8",
+        "rgb": "8a69e48a99f39c105820a3c7956bd3979835f9a3e14ad18910793b4368f4d68c",
+        "wet": "b9c048de34d844a2381155656d249036a85a52b60cb9fd06bf1600e44d7aa3ae"
+      },
+      "image": "bd449fe038c462358d8c77f5f266725ac29c85435329988dc6f9edbcaed7dacb",
+      "times": {
+        "chromium": 48.19999998807907,
+        "firefox": 660
+      }
+    },
+    {
+      "id": "overlap",
+      "width": 768,
+      "planes": {
+        "cover": "4cd9ed1679d44784b8a3c359c8baa9286a21bcdb3e2da5f17ec0bfb42c366df7",
+        "h": "3245357c5f3dd5f036ffe9f4283446e748c04163e58b38844ce81b069dd7d435",
+        "lat": "8b78023d10d452d9c60772df73b3cdd10724bf24a2d245c2e9e3223cbb9fdfc1",
+        "rgb": "c2f45255b5e34d4075f47b814ea48d47a453205135b9eba3e9f4921a29256e14",
+        "wet": "a76c77fe203db862b48214c88fbdc1d5560655ccba2f7a2c7166baf6f846e856"
+      },
+      "image": "8079dea3c74390f337ee45c607ac8e64de92b3f67f0187fb718d9efa26a7a335",
+      "times": {
+        "chromium": 160.90000000596046,
+        "firefox": 2796
+      }
+    }
+  ]
+}
