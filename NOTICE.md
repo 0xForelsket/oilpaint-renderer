@@ -58,3 +58,7 @@ written for this project (MIT is the planned licence; no LICENSE file yet).
   TypeScript 7.0.2 (Apache-2.0), for type checks; json-schema-to-typescript 16.0.0 (MIT), which generates
   `src/sceneplan.ts`, with its MIT dependencies (prettier, lodash, js-yaml, @apidevtools/json-schema-ref-parser and
   others) and argparse 2.0.1 (Python-2.0, a permissive licence); @types/node (MIT).
+
+## Orange painting-study reference
+
+The photograph docs/reports/orange-study/reference.jpg is Single Orange (Fruit) by Augustus Binu, CC BY-SA 3.0. Source: https://commons.wikimedia.org/wiki/File:Single_Orange_%28Fruit%29.jpg . License: https://creativecommons.org/licenses/by-sa/3.0/ . It is unchanged; the review displays it smaller. The painted interpretation and comparison in that study folder carry the same license. This asset-specific notice does not change the renderer/source-code license status.

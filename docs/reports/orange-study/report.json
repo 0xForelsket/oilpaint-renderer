@@ -1,0 +1,43 @@
+{
+  "engine": "2.0.0-dev.5",
+  "strokes": 15,
+  "studyLight": {
+    "mode": "lit",
+    "direction": [
+      -0.28,
+      -0.48,
+      0.78
+    ],
+    "bump": 0.65,
+    "contrast": 0.22,
+    "specular": 0.07
+  },
+  "frozen": {
+    "crates/oil-kernel/src/brush.rs": "f66581e797ccecd008638a3358049f75f07b67b319e486e9d547312820efdba1",
+    "crates/oil-author/catalog.json": "acba49f6eb70b635a38ea89f5d3a4d177efe1998e7cd370291c05f92be246da6"
+  },
+  "times": [
+    {
+      "width": 384,
+      "paintMs": 138.17669999999998,
+      "planes": {
+        "cover": "c2de0228aab981d7a342a461572ea7685e6e920877e5129d783098cf8d1588ee",
+        "h": "d897881a4037546e3ab248fb771bf4867657cefb1cc3e6ef7873ad3c3eb54afd",
+        "lat": "fcd4c7268e358f96fb5d8f79e8df3325bd2a59d6776a20cbae9a95b1ec1d75f8",
+        "rgb": "414a7fed5ed58ab409dd03ca04499f9ad91e9a99596938db61cbcb841432992d",
+        "wet": "6ba65107432942c6df3493e5bbff0670e1757aa17500035a0df065bc26affbff"
+      }
+    },
+    {
+      "width": 768,
+      "paintMs": 196.18700000000013,
+      "planes": {
+        "cover": "cee67d45c0835f303a75b43b2fdde8c81d8994cd89bc5ef92cecfd503bd91f97",
+        "h": "faa2efad574436a1fc4bd2dc69a7e5365192fa51afffc619c209469af4c17817",
+        "lat": "e47fc550b27439c494621b0a59e4f8e12584f84fd88164610709d2241ca981ca",
+        "rgb": "c97db1d2d50dc90b26983e8ed372a8bcbe62013af458d40a9642a22c4eec237c",
+        "wet": "c4d5d99cabc156f2ff44d04cac6408a4f44f44533447aad98a6f26e2ca8765c1"
+      }
+    }
+  ]
+}
