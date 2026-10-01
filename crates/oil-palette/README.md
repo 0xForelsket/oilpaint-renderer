@@ -101,3 +101,38 @@ host, the balanced 94-stroke fixture took a median 224 ms; direct display decode
 was about 1.02 microseconds per recipe. Target matching is an authoring cost,
 separate from these paint timings. There is no eight-paint LUT in this package;
 all eight material proportions and the exact direct decoder are retained.
+
+## Exact target-match cache
+
+Each `PaletteMixerN` now retains up to 1024 exact authoring results by default.
+Repeated calls to `match_target` or `encode`, including RGB import's streak
+variants, reuse those results. The key is the three original finite f32 RGB bit
+patterns. Nearby colors are not rounded into the same entry. Entries belong to
+one immutable palette/decoder instance; loading another package starts empty.
+
+`mixer.target_cache_stats()` reports hits, misses, evictions, entries and capacity.
+`mixer.with_target_cache_capacity(n)` configures a bounded FIFO cache and resets
+it; zero disables retention. `mixer.clear_target_cache()` requires mutable access
+and clears entries/counters while retaining capacity. A cache hit returns the
+entire original `TargetMatchN`, including its original solver evaluation count;
+use miss counts to measure actual new searches.
+
+The cache is synchronized for shared mixers, but the inverse solver runs outside
+the lock. Concurrent misses for the same target may both solve. No cache state
+is serialized, and neither painting nor forward decoding accesses it. Saved
+recipes, achieved colors, errors, optical definitions and OPJ bytes are unchanged.
+The cold path for unique targets still runs the full solver. A warm-cache timing
+assumes those exact colors were already matched; filling the cache has a cost.
+
+Run the profiling and equivalence benchmark with a local measured package:
+
+```text
+cargo run --release --offline -p oil-palette --example authoring_cache -- <palette.opp> <output-directory> [pre-change-fixture.opj]
+```
+
+The optional pre-change job checks exact compatibility against an archived
+uncached run. The benchmark checks the fixture and repeated/unique target sets
+under disabled, cold and warm modes, reporting seven rotated observations plus
+warm-cache priming time. Numerical results are in the sibling Ochrell report
+`experiments/palette_authoring_cache/REPORT.md`. This accelerates authoring;
+it is not a forward LUT or a change to the paint model.

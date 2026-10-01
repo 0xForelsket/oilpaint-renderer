@@ -7,10 +7,75 @@ pub use ::ochrell::palette::{
 };
 pub use ::ochrell::palette_lut::{LutError, PaletteLut};
 use ::ochrell::{conversion, palette_match::ColorMatcherN};
+use std::{
+    collections::{HashMap, VecDeque},
+    sync::Mutex,
+};
+
+/// Maximum retained exact authoring targets per mixer by default.
+pub const DEFAULT_TARGET_CACHE_CAPACITY: usize = 1024;
+
+/// Valid target requests since construction or the last cache reset.
+/// A miss runs the solver, including when capacity is zero. Concurrent misses
+/// for the same key may both solve; the solver runs outside the cache lock.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct TargetCacheStats {
+    pub hits: u64,
+    pub misses: u64,
+    pub evictions: u64,
+    pub entries: usize,
+    pub capacity: usize,
+}
+
+struct TargetCache<const N: usize> {
+    results: HashMap<[u32; 3], TargetMatchN<N>>,
+    order: VecDeque<[u32; 3]>,
+    stats: TargetCacheStats,
+}
+
+impl<const N: usize> TargetCache<N> {
+    fn new(capacity: usize) -> Self {
+        Self {
+            results: HashMap::new(),
+            order: VecDeque::new(),
+            stats: TargetCacheStats {
+                capacity,
+                ..TargetCacheStats::default()
+            },
+        }
+    }
+    fn get(&mut self, key: &[u32; 3]) -> Option<TargetMatchN<N>> {
+        let found = self.results.get(key).copied();
+        if found.is_some() {
+            self.stats.hits = self.stats.hits.saturating_add(1);
+        } else {
+            self.stats.misses = self.stats.misses.saturating_add(1);
+        }
+        found
+    }
+    fn insert(&mut self, key: [u32; 3], result: TargetMatchN<N>) {
+        if self.stats.capacity == 0 || self.results.contains_key(&key) {
+            return;
+        }
+        if self.results.len() == self.stats.capacity {
+            let oldest = self
+                .order
+                .pop_front()
+                .expect("one FIFO key per cached target");
+            self.results.remove(&oldest);
+            self.stats.evictions = self.stats.evictions.saturating_add(1);
+        }
+        self.results.insert(key, result);
+        self.order.push_back(key);
+        self.stats.entries = self.results.len();
+    }
+}
 
 pub struct PaletteMixerN<const N: usize, const PREPARED: bool = false, const B: usize = 81> {
     table: Option<PaletteLut<'static>>,
     matcher: ColorMatcherN<'static, N, B>,
+    // Owned by this immutable palette/decoder instance, never global or serialized.
+    target_cache: Mutex<TargetCache<N>>,
 }
 
 #[derive(Debug)]
@@ -37,6 +102,8 @@ pub struct TargetMatchN<const N: usize> {
     pub error_ok100: f64,
     /// Direct reference solver's error, before f32 storage and LUT approximation.
     pub reference_error_ok100: f64,
+    /// Evaluations used to find this result originally, retained on cache hits.
+    /// Use target_cache_stats() to count actual new searches.
     pub evaluations: usize,
 }
 
@@ -49,6 +116,7 @@ impl PaletteMixerN<4, true> {
         Ok(Self {
             table: Some(table),
             matcher,
+            target_cache: Mutex::new(TargetCache::new(DEFAULT_TARGET_CACHE_CAPACITY)),
         })
     }
     /// Prepared four-paint construction always supplies a table.
@@ -64,6 +132,7 @@ impl<const N: usize, const B: usize> PaletteMixerN<N, false, B> {
         Ok(Self {
             table: None,
             matcher,
+            target_cache: Mutex::new(TargetCache::new(DEFAULT_TARGET_CACHE_CAPACITY)),
         })
     }
     pub fn from_palette_bytes(palette: &[u8]) -> Result<Self, PrepareError> {
@@ -97,6 +166,7 @@ impl<const N: usize, const PREPARED: bool, const B: usize> PaletteMixerN<N, PREP
         Ok(Self {
             table: prepared,
             matcher,
+            target_cache: Mutex::new(TargetCache::new(DEFAULT_TARGET_CACHE_CAPACITY)),
         })
     }
     pub fn palette(&self) -> &PaletteN<N, B> {
@@ -104,6 +174,30 @@ impl<const N: usize, const PREPARED: bool, const B: usize> PaletteMixerN<N, PREP
     }
     pub fn prepared_table(&self) -> Option<&PaletteLut<'static>> {
         self.table.as_ref()
+    }
+
+    /// Set the bounded FIFO authoring cache size, clearing entries and counters.
+    /// Zero disables retention. This affects no optical values or saved bytes.
+    pub fn with_target_cache_capacity(mut self, capacity: usize) -> Self {
+        self.target_cache = Mutex::new(TargetCache::new(capacity));
+        self
+    }
+
+    /// Drop authoring results and counters, retaining the configured capacity.
+    /// Exclusive access prevents in-flight searches from refilling a cleared cache.
+    pub fn clear_target_cache(&mut self) {
+        let cache = self
+            .target_cache
+            .get_mut()
+            .expect("target cache lock poisoned");
+        *cache = TargetCache::new(cache.stats.capacity);
+    }
+
+    pub fn target_cache_stats(&self) -> TargetCacheStats {
+        self.target_cache
+            .lock()
+            .expect("target cache lock poisoned")
+            .stats
     }
 
     /// Normalize nonnegative relative amounts once for persistent f32 storage.
@@ -117,6 +211,8 @@ impl<const N: usize, const PREPARED: bool, const B: usize> PaletteMixerN<N, PREP
     pub fn paint(&self, name: &str) -> Result<[f32; N], PaletteError> {
         Ok(self.palette().paint(name)?.proportions().map(|v| v as f32))
     }
+    /// Reuse a result only for identical finite f32 RGB bits in this palette.
+    /// Nearby targets are never quantized. Painting/decoding never consults this cache.
     pub fn match_target(&self, target: [f32; 3]) -> Result<TargetMatchN<N>, PaletteError> {
         if target
             .iter()
@@ -124,17 +220,31 @@ impl<const N: usize, const PREPARED: bool, const B: usize> PaletteMixerN<N, PREP
         {
             return Err(PaletteError::InvalidTarget);
         }
+        let key = target.map(f32::to_bits);
+        if let Some(found) = self
+            .target_cache
+            .lock()
+            .expect("target cache lock poisoned")
+            .get(&key)
+        {
+            return Ok(found);
+        }
         let linear = target.map(|v| oil_math::srgb_to_linear(v as f64));
         let found = self.matcher.match_linear(linear)?;
         let recipe = found.recipe.proportions().map(|v| v as f32);
         let achieved = self.decode_linear_rgb(&recipe);
-        Ok(TargetMatchN {
+        let result = TargetMatchN {
             recipe,
             achieved_srgb: achieved.map(srgb::from_linear),
             error_ok100: distance(achieved.map(|v| v as f64), linear),
             reference_error_ok100: found.error_ok100,
             evaluations: found.evaluations,
-        })
+        };
+        self.target_cache
+            .lock()
+            .expect("target cache lock poisoned")
+            .insert(key, result);
+        Ok(result)
     }
 }
 

@@ -111,6 +111,49 @@ fn rgb_import_exposes_gamut_error_and_saves_streaks() {
     }
     assert!(PaletteJob::from_bytes(&job.to_bytes().unwrap()).is_ok());
 }
+
+#[test]
+fn authoring_cache_preserves_jobs_reports_and_canvas_and_is_not_serialized() {
+    let geometry = oil_paint::testsheet::testsheet();
+    let (uncached, original) =
+        PaletteJob::from_rgb(mixer(false).with_target_cache_capacity(0), geometry.clone()).unwrap();
+    let (cached, found) = PaletteJob::from_rgb(mixer(false), geometry).unwrap();
+    assert!(cached.mixer().target_cache_stats().hits > 0);
+    assert!(
+        cached.mixer().target_cache_stats().misses < uncached.mixer().target_cache_stats().misses
+    );
+    assert_eq!(cached.to_bytes().unwrap(), uncached.to_bytes().unwrap());
+    for (a, b) in std::iter::once((original.ground, found.ground)).chain(
+        original
+            .strokes
+            .into_iter()
+            .flatten()
+            .zip(found.strokes.into_iter().flatten()),
+    ) {
+        assert_eq!(a.recipe.map(f32::to_bits), b.recipe.map(f32::to_bits));
+        assert_eq!(
+            a.achieved_srgb.map(f32::to_bits),
+            b.achieved_srgb.map(f32::to_bits)
+        );
+        assert_eq!(a.error_ok100.to_bits(), b.error_ok100.to_bits());
+        assert_eq!(
+            a.reference_error_ok100.to_bits(),
+            b.reference_error_ok100.to_bits()
+        );
+        assert_eq!(a.evaluations, b.evaluations);
+    }
+    let before = cached.mixer().target_cache_stats();
+    let a = uncached.paint(96, |_, _| {}).unwrap().0;
+    let b = cached.paint(96, |_, _| {}).unwrap().0;
+    assert_eq!(before, cached.mixer().target_cache_stats());
+    for plane in PLANES {
+        assert_eq!(plane_bytes(&a, plane), plane_bytes(&b, plane));
+    }
+    assert_eq!(a.hblur, b.hblur);
+    let restored = PaletteJob::from_bytes(&cached.to_bytes().unwrap()).unwrap();
+    assert_eq!(restored.mixer().target_cache_stats().entries, 0);
+    assert_eq!(restored.to_bytes().unwrap(), cached.to_bytes().unwrap());
+}
 fn checksum(bytes: &mut [u8]) {
     let end = bytes.len() - 32;
     let hash = Sha256::digest(&bytes[..end]);
