@@ -12,7 +12,7 @@ pub use planes::{Canvas, Planes};
 
 /// The engine version (spec/README.md): bump it with every change that can move an output bit, and regenerate
 /// `golden/<version>.json` with it. History: spec/ENGINE_VERSIONS.md.
-pub const ENGINE_VERSION: &str = "2.0.0-dev.4";
+pub const ENGINE_VERSION: &str = "2.0.0-dev.5";
 
 #[cfg(test)]
 mod tests {

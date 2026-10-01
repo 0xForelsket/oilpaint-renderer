@@ -101,9 +101,20 @@ export function sampleMark(id: string, preset: string, width: number, kind = "st
   for (let i = 0; i <= 32; i++) {
     const t = i / 32;
     path.push([
-      kind === "dab" ? 0.5 + (t - 0.5) * width * 1.2 : kind === "reverse" ? 0.88 - 0.76 * t : 0.12 + 0.76 * t,
-      y + (kind === "curve" ? 0.16 * 4 * t * (1 - t) : 0),
-      kind === "dab"
+      kind === "twist"
+        ? 0.4 + 0.18 * t
+        : kind === "dab"
+          ? 0.5 + (t - 0.5) * width * 1.2
+          : kind === "reverse"
+            ? 0.88 - 0.76 * t
+            : 0.12 + 0.76 * t,
+      y +
+        (kind === "twist"
+          ? 0.15 * (2 * t - 1) * (1 - (2 * t - 1) * (2 * t - 1))
+          : kind === "curve"
+            ? 0.16 * 4 * t * (1 - t)
+            : 0),
+      kind === "dab" || kind === "twist"
         ? 0.1 + 0.9 * 4 * t * (1 - t)
         : kind === "pressure"
           ? 0.08 + 0.92 * t

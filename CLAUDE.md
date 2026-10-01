@@ -23,7 +23,7 @@ State of the repo:
 - **Ochrell** (`../ochrell`, MIT OR Apache-2.0 code, CC BY-SA 4.0 data): the default mixer of the new engine.
   Its integration evidence is in `docs/OCHRELL.md` and `../ochrell/docs/integration-results.md`.
 - **The new engine:** the Rust workspace in `crates/`, the TypeScript packages in `packages/` (from L2), and the
-  specs in `spec/`. Engine version `2.0.0-dev.4` (L3 in progress; `dev.2` after L1: v1's paint transport with
+  specs in `spec/`. Engine version `2.0.0-dev.5` (L3 in progress; `dev.2` after L1: v1's paint transport with
   Ochrell, Sean's decision);
   Ochrell is pinned by commit (Cargo git dependency in `crates/oil-mix/Cargo.toml`). Milestone reports:
   `docs/reports/`. A film spike (F0) runs before L7.

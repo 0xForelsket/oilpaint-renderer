@@ -1,3 +1,4 @@
+import { denseDryControls, formStudy, reviewCases } from "./study-cases.js";
 import { loadEngine } from "../src/engine.ts";
 import { createAuthor, editGroup, moveGroup, sampleMark, defaultView, softView, rakingView } from "../src/author.ts";
 const $ = (id) => document.getElementById(id);
@@ -238,6 +239,28 @@ function addSample(kind) {
 }
 for (const button of document.querySelectorAll("[data-sample]"))
   button.onclick = () => addSample(button.dataset.sample);
+$("denseDry").onclick = () => {
+  $("preset").value = "dry-drag";
+  brushUi();
+  editBrush("preset");
+  doc = editGroup(doc, selected, (g) => {
+    for (const s of g.strokes) Object.assign(s.controls, denseDryControls);
+  });
+  brushUi(group().strokes[0]);
+  schedule(true);
+};
+function openStudy(d) {
+  doc = d;
+  selected = d.groups.at(-1).id;
+  serial = Date.now();
+  refreshCatalog();
+  refreshGroups();
+  brushUi(group().strokes[0]);
+  $("ground").value = hex(d.ground);
+  schedule(true);
+}
+$("formStudy").onclick = () => openStudy(formStudy(author));
+$("pickupTail").onclick = () => openStudy(reviewCases(author).find((c) => c.id === "pickup-tail").d);
 $("preset").onchange = () => {
   brushUi();
   editBrush("preset");

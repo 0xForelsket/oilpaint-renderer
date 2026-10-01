@@ -1,0 +1,157 @@
+{
+  "engine": "2.0.0-dev.5",
+  "verification": "native, Node, Chromium and Firefox",
+  "width": 960,
+  "evidence": [
+    {
+      "id": "scumble-flat",
+      "strokeHash": "4f341ac138c1984a06696e9e5f6c1e89891b7ab3f6b98d71d081e594787ba374",
+      "planes": {
+        "cover": "c043ead754b2cd2d7dcbf0a5932bc3ea8b739366a22c7ac2b0bfedcdd19402a6",
+        "h": "9ae00f7efc44c74e4c76d55287185e69e0544f34901a8a04df445dbea1b89275",
+        "lat": "acc3889aaf55154c9edb763bf11bf8a51549d1659e1880dae89f6a46b8527a4e",
+        "rgb": "c524e6db3de65dc99dfc8aff3d920d3908ba49d8eda2e10c9480ddf817379f93",
+        "wet": "fedf45f690bdfc8611cc194c3f0c4ceb6fe6d5ab10f9ba1bd68cf1d1c49f8b14"
+      },
+      "hostTimings": {
+        "chromium": 280.2999999821186,
+        "firefox": 2825
+      }
+    },
+    {
+      "id": "scumble-relief",
+      "strokeHash": "40850d3ea4c9ed9d9e01dcab300261446986a0f6ad6cdfab3f2b13ee0a9f3969",
+      "planes": {
+        "cover": "ebb68b9c3e95cb758f77c95968f5466d45dedd10aff5a97c764734063b34cb0b",
+        "h": "27145a81c525a3da80a653ca12bfa8887f299aed3452f017d406e7b104b32261",
+        "lat": "052e1ab5c16cbab97e70fc1b84dd210af66696d94fa32c71c277119cff690708",
+        "rgb": "a6ecaa1c52635cbe4611f650f98accfa5722722455ae3bd2b72e2108f095ace4",
+        "wet": "d73de4023adfa95d95188dac88cdac8c0de2954ff8f044251a44dd7a5397bf66"
+      },
+      "hostTimings": {
+        "chromium": 164.19999998807907,
+        "firefox": 2743
+      }
+    },
+    {
+      "id": "impasto",
+      "strokeHash": "8014c45270eaa75bcd5a8c9cce3f4fd5f9d1db714645268688a9196275bd9bc8",
+      "planes": {
+        "cover": "43f5104f2ed5145c3aba95e19ed287caa91f78153227e1bb12f2a6672e508826",
+        "h": "ff51ef7545b08ea7b44a30ef4aca31312feed6d235824a05ea0a4115449d7c37",
+        "lat": "40b279b7f69bc8bd6b3bfab523c058b0a38789909f79a3f2a7f236533df9f1d7",
+        "rgb": "58f565a16e251652b1f263ff825a32bea3f865025c76b90301214c8a23caa733",
+        "wet": "43f5104f2ed5145c3aba95e19ed287caa91f78153227e1bb12f2a6672e508826"
+      },
+      "hostTimings": {
+        "chromium": 94,
+        "firefox": 979
+      }
+    },
+    {
+      "id": "pressure",
+      "strokeHash": "2174c9105754a357d58b3826541f9eebd9e78127963be5c6f0a8a6c42b7677c3",
+      "planes": {
+        "cover": "511da3e1a8c011067b4ae2a71d20b28adafba2e6e859ac8662724abddd8ae4bf",
+        "h": "3a2bf6697c074fa2fb1a8ac4097c9246ca88d0afc46856667870fa01a8912cb8",
+        "lat": "69fd3cdacccb90064675377b46565ca473cd92f8a89e0ece661cc7e2d4c0b966",
+        "rgb": "23d733b83ab2b0348d982261b752cb5eed50cde7473ec84559f17e8921399646",
+        "wet": "49639ad2f25bf1881f6a0ca084217f87980153e3f1d11550b224f68909424728"
+      },
+      "hostTimings": {
+        "chromium": 384,
+        "firefox": 4952
+      }
+    },
+    {
+      "id": "dry-density",
+      "strokeHash": "df57138386a92cccb7ecfbcf64328fa53318ef65670749f2bda9dcbe56ea0ff3",
+      "planes": {
+        "cover": "5237d61bb57783d52b53da37fbecc645aebfbecf03d35e053d0845e8abf3fe4b",
+        "h": "8fdcc0f5c0d56e923e496a7320b12051c1a2c5f518db05f2d8ecdc95a63551e5",
+        "lat": "f9acd6625aa69b1918e3642f475b77eed58bb35d47a71128b09097eb628ac777",
+        "rgb": "e823bd12d45aef522cddbc125d9e1e9feb26f869484952550ec953b25115e471",
+        "wet": "ee40a371ed2ade7848846b4c1cb3ee999956782bea9f78a4620d8b2c1811f9fe"
+      },
+      "hostTimings": {
+        "chromium": 272.59999999403954,
+        "firefox": 4704
+      }
+    },
+    {
+      "id": "rounded-turn",
+      "strokeHash": "d9cab58ca34212fec422bf31e2b190ef2c175799efcc42a71668da4058ba5d4a",
+      "planes": {
+        "cover": "308a0fea5b667afabea255ce67b1c00a6131232ca1924c4d859365d000629458",
+        "h": "50a63ac109a4253f1e3d8b147d998486d5788f1257357d08acac0e1572427a89",
+        "lat": "16a4c428e69ecd91795c9a6c10da014299568c8db73df846d8f9862391bb980f",
+        "rgb": "fb40abec3f66aa6200ae7bd18d9271c31078d26cc49f69385f108d4cdcc5e818",
+        "wet": "ccf12630db7d6b9b8dd19160ed481234edbe866e3e31f8ce6fbd7894cc3cf675"
+      },
+      "hostTimings": {
+        "chromium": 76.40000000596046,
+        "firefox": 886
+      }
+    },
+    {
+      "id": "pickup-tail",
+      "strokeHash": "dc71a0f225c084c3d88ee36a0d4033a9637726405db3fd71cdc0c8b962b4defb",
+      "planes": {
+        "cover": "5574614b8ce8b5bda8b07ae26e5ca4c1c13291c98aeee45deb0e78d46a23c518",
+        "h": "7318822abcbc5ec7bff7eae78d5560f2c8a727552f9aa16cce25ff9cb0387f9f",
+        "lat": "7a72b876d82417e9cd02ed7fcd39af7f8886e403720046c811bfaa9dd4e8b364",
+        "rgb": "27a7f76c189e6f398054fcea5a4493f573e12cedd49341d2d0ed98c40b4fa001",
+        "wet": "51b2868bb5ec21f0ddfcccaac7fbb3ed38a4b9fd3e0c40fdf89d92fbbd037dd7"
+      },
+      "hostTimings": {
+        "chromium": 112.69999998807907,
+        "firefox": 1500
+      }
+    },
+    {
+      "id": "fine-detail",
+      "strokeHash": "8b344b35ca47eb7f0f1d1ed37ad54143e70c15b390bab46c2f7b2c313628da30",
+      "planes": {
+        "cover": "ba2ebe80dd1a269462c5daf214b3ee69fb97b9593efe808806a60d3c551a7dc2",
+        "h": "221ac58590b2ff4bcfe6d2cde4582781b28d5385d2b9fe75e80f8b46e83373b3",
+        "lat": "a100aafe2eeb92b50b28c1d9fd1f3c18fc927e5eab9552549bdfd24da7d16159",
+        "rgb": "bbee927f9e4aa0b5f16c18e690ea4c6435e098d09dec1d77d91636d69e2e7ed7",
+        "wet": "ba5fe07f3f3de04c68f888897d500bbb9e34dcf468f530894e14d5e0ab581880"
+      },
+      "hostTimings": {
+        "chromium": 38.29999998211861,
+        "firefox": 239
+      }
+    },
+    {
+      "id": "overlap",
+      "strokeHash": "987c34e6282778c8c5d54adc18a2be2ff207fd5bf550643c097fc6c85720eff8",
+      "planes": {
+        "cover": "358329cf8ab473b5ba66fd47e84f92693f9a7ebea05c76ce6a3fd8a388f4fcb3",
+        "h": "fa62606ede067a8559e6209a832bb4ddaf2f0d453ad7dcf7fb1024c4078dd3f6",
+        "lat": "f29868e597d4a5f8e8e04172e3d572090995bfb175cfa330510efa57ff72ff4b",
+        "rgb": "ff5880c6bd24e046793e240a89f5582ab8dfb2900a883165af6675e144a64aca",
+        "wet": "92b51611879a852d1bbd7e77357e154d9e4f2e46d350ab7635992516f465b80d"
+      },
+      "hostTimings": {
+        "chromium": 111.90000000596046,
+        "firefox": 920
+      }
+    },
+    {
+      "id": "form-following",
+      "strokeHash": "2ecb694bd1fad821c0906c0d0041cfac48e77cb74931c84a7b030a22bf671e82",
+      "planes": {
+        "cover": "441cf2842d817f75bb624b32ca3723c0074506e12c03087ee3c25189138a786e",
+        "h": "0705c1593948e73954ad6d7ffbb140d4b7c6cdd4703008ea466a14161b88cd26",
+        "lat": "edd4a48f8799f41d5e20cc6cb0e70779af0dcf7d995e20702b6d51cf0eb45078",
+        "rgb": "733a3e7449846ccef9c0326cded2660413e03a7bca1a293c13970c5f65cc46f9",
+        "wet": "777f7926d0cc20a4df769d8bd2136b776b495c82d54fd6a8ab533c6f1f5034df"
+      },
+      "hostTimings": {
+        "chromium": 336.09999999403954,
+        "firefox": 3639
+      }
+    }
+  ]
+}

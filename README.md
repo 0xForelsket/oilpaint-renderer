@@ -7,9 +7,9 @@ and local editing, and an interactive paint preview. From this directory run `np
 `npm run preview`, and open <http://127.0.0.1:4173>.
 
 See [authoring API, format and controls](docs/BRUSH_AUTHORING.md), the
-[native/browser review gallery](docs/reports/brush-review-2/index.html), and
-[verification and measured latency](docs/reports/BRUSH_ITERATION_2.md).
-The separate `oil-author` source format keeps existing painting files intact; engine dev.4 / author 2 explicitly reject older formats. These presets
+[native/browser review gallery](docs/reports/brush-review-3/index.html), and
+[verification and measured latency](docs/reports/BRUSH_ITERATION_3.md).
+The separate `oil-author` source format keeps existing painting files intact; engine dev.5 / author 2 explicitly reject older formats. These presets
 await artist review; this work does not complete the remaining renderer roadmap.
 
 **Ochrell integration:** `--mixer ochrell` now runs the existing planner, bristle

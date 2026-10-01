@@ -25,9 +25,7 @@ const range = async (id, value) =>
     e.dispatchEvent(new Event("input", { bubbles: true }));
   }, value);
 const download = async (id) => {
-  const promise = page.waitForEvent("download");
-  await page.locator("#" + id).click();
-  const d = await promise;
+  const [d] = await Promise.all([page.waitForEvent("download", { timeout: 60000 }), page.locator("#" + id).click()]);
   return fs.readFile(await d.path());
 };
 try {
@@ -35,7 +33,7 @@ try {
   await wait(0);
   for (const p of ["loaded-flat", "rounded-dab", "dry-drag", "scumble", "impasto-accent", "fine-detail", "wet-mixing"])
     await change(() => page.selectOption("#preset", p), "preset " + p);
-  for (const kind of ["straight", "curve", "dab", "pressure", "taper", "runout", "reverse"])
+  for (const kind of ["straight", "curve", "dab", "pressure", "taper", "runout", "reverse", "twist"])
     await change(() => page.locator(`[data-sample="${kind}"]`).click(), "sample " + kind);
   for (const light of ["soft", "studio", "raking"]) {
     const m = await change(() => page.locator(`[data-light="${light}"]`).click(), "lighting preset " + light);
@@ -162,6 +160,9 @@ try {
     "catalog roundtrip",
   );
   assert.ok((await download("strokesExport")).length > 100);
+  await change(() => page.locator("#denseDry").click(), "dense dry controls");
+  await change(() => page.locator("#formStudy").click(), "form-following study");
+  await change(() => page.locator("#pickupTail").click(), "long pickup study");
   await change(() => page.selectOption("#resolution", "256"), "256 px");
   await page.locator("#capture").click();
   await page.screenshot({ path: "out/brush-review/preview.png", fullPage: true });

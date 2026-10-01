@@ -19,7 +19,9 @@
     "gen:author": "node packages/oilpaint/scripts/gen-author.mjs",
     "test:preview": "node packages/oilpaint/preview/verify.mjs",
     "review:brushes": "node packages/oilpaint/preview/gallery.mjs",
-    "review:iteration2": "node packages/oilpaint/preview/review-iteration-2.mjs"
+    "review:iteration2": "node packages/oilpaint/preview/review-iteration-2.mjs",
+    "review:iteration3": "node packages/oilpaint/preview/review-iteration-3.mjs",
+    "review:package3": "node packages/oilpaint/preview/package-iteration-3.mjs"
   },
   "devDependencies": {
     "@types/node": "24.19.0",

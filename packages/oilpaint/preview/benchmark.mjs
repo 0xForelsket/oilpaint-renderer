@@ -27,7 +27,7 @@ try {
       rows.push({ width, kind: "relight", ...(await change(() => range("bump", 0.5 + i * 0.03))) });
   }
   fs.writeFileSync(
-    "docs/reports/brush-review-2/latency.json",
+    "docs/reports/brush-review-3/latency.json",
     JSON.stringify(
       {
         conditions:

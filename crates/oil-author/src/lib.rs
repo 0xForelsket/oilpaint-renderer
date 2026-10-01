@@ -616,6 +616,38 @@ mod tests {
         );
     }
     #[test]
+    fn loaded_pressure_changes_contact_and_height_without_a_uniform_wash() {
+        let render = |pressure: f32| {
+            let mut d = doc();
+            d.groups.truncate(1);
+            let m = &mut d.groups[0].strokes[0];
+            m.width = 0.09;
+            m.path = vec![[0.12, 0.3, pressure], [0.88, 0.3, pressure]];
+            m.controls.insert("deplete".into(), 0.);
+            let mut list = d.compile().unwrap();
+            for p in &mut list.points {
+                p[2] = 0.09;
+                p[3] = pressure;
+            }
+            oil_paint::paint(&RgbMixer, &list, 384, |_, _| {}).0
+        };
+        let low = render(0.18);
+        let high = render(1.);
+        let zero = render(0.);
+        assert!(zero.cover.iter().all(|&a| a == 0.));
+        let occupied = |c: &Canvas<RgbMixer>| c.cover.iter().filter(|&&a| a > 0.01).count();
+        assert!(occupied(&low) < occupied(&high) * 4 / 5);
+        assert!(low.hgt.iter().sum::<f32>() < high.hgt.iter().sum::<f32>() * 0.7);
+        let center = (115 * 384 + 120..115 * 384 + 210)
+            .map(|i| low.cover[i])
+            .sum::<f32>()
+            / 90.;
+        assert!(
+            center > 0.65,
+            "loaded low-pressure contact should remain substantial: {center}"
+        );
+    }
+    #[test]
     fn schema_matches_source() {
         let expected: serde_json::Value =
             serde_json::from_str(include_str!("../../../spec/author-2.schema.json")).unwrap();

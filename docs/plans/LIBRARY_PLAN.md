@@ -629,3 +629,5 @@ the physics after its alpha, at 26 days.
 4. **Preset names** (working names in section 11).
 
 **2026-10-01 brush review iteration 2:** Engine dev.4 and author/catalog 2 implement the requested contact, scumble, directional-pickup and lighting refinements. Earlier gallery evidence is retained. See [iteration report](../reports/BRUSH_ITERATION_2.md); no extra presets or broader roadmap milestones are claimed.
+
+**2026-10-02 brush review iteration 3:** dev.5 refines clustered scumble, local relief, pressure contact and lane grouping, and tests form-following placement. Seven presets retained; author/catalog schema 2 unchanged. See [report](../reports/BRUSH_ITERATION_3.md).

@@ -1,0 +1,43 @@
+{
+ "engine": "2.0.0-dev.5",
+ "hosts": [
+  "chromium-145.0.7632.6",
+  "firefox-146.0.1",
+  "native-windows-x86_64",
+  "node-v24.21.0-win32-x64",
+  "webkit-26.0"
+ ],
+ "cases": {
+  "kernel.testsheet@mixbox@400.cover": "399b3786da40b1ae884ec391be0296b93ce35f9a7a252a41657260be24e67b7b",
+  "kernel.testsheet@mixbox@400.h": "847f6babb31d12f91b8f2bfa1bd59e2669287b97cc317b4c496d6fe353573e21",
+  "kernel.testsheet@mixbox@400.lat": "e1fb5c93ee1802fb827d35caa16d3e68b61fd1a960c0f4e9f470013ac61fe387",
+  "kernel.testsheet@mixbox@400.rgb": "7a0732674776330f3b253908e0cfd166150e0ff7fd71c0452e695535eb730897",
+  "kernel.testsheet@mixbox@400.wet": "5018bb75d26ce519af856b29f373fffdc24d6c3e3dee8985888b93439d885ed9",
+  "kernel.testsheet@ochrell@400.cover": "399b3786da40b1ae884ec391be0296b93ce35f9a7a252a41657260be24e67b7b",
+  "kernel.testsheet@ochrell@400.h": "847f6babb31d12f91b8f2bfa1bd59e2669287b97cc317b4c496d6fe353573e21",
+  "kernel.testsheet@ochrell@400.lat": "7c0f9b7a77bfe683a3d7a6261b884336aef02dffeb0ef62c0ddf3789bf67b27d",
+  "kernel.testsheet@ochrell@400.rgb": "a8eb1ede26f25600d236f115fb03c4ebf852a02bdd3cb4445a6dd42d2192b1e6",
+  "kernel.testsheet@ochrell@400.wet": "5018bb75d26ce519af856b29f373fffdc24d6c3e3dee8985888b93439d885ed9",
+  "kernel.testsheet@rgb@400.cover": "399b3786da40b1ae884ec391be0296b93ce35f9a7a252a41657260be24e67b7b",
+  "kernel.testsheet@rgb@400.h": "847f6babb31d12f91b8f2bfa1bd59e2669287b97cc317b4c496d6fe353573e21",
+  "kernel.testsheet@rgb@400.lat": "5b0e0546fe76e69f598a30270a870ddeeaeeef497f9d3e0ffdee3ad179fa1d72",
+  "kernel.testsheet@rgb@400.rgb": "65dca72c3e5c8b893f6fb379b5d97efd636f716a0b3f41bb896fb4e3b580b9b0",
+  "kernel.testsheet@rgb@400.wet": "5018bb75d26ce519af856b29f373fffdc24d6c3e3dee8985888b93439d885ed9",
+  "light.testsheet@mixbox@400.lit": "826949933ebec955db3fbeafafc27b74446ae508f655779c1be636c1a3fe3396",
+  "light.testsheet@ochrell@400.lit": "31d0cd99283b111d1af7697f90ad982468e7fb6fa6e4e55c565f40e3e9a7ce6d",
+  "light.testsheet@rgb@400.lit": "eafc97f9f0cdd802afa1b2f95da56aae35c3e7b598861b2dce4aac68ac9f2e6f",
+  "math.exp.f64": "96c165b5039ad466d647fd6c7d11de58e1db28edc1749d0c2a41d2daeb4b614a",
+  "math.expf.f32": "a422eb3d4f5b12121303655da5547361b5b33206d14467ca329e2d2a59e48b53",
+  "math.sincos.f64": "95bef6dd8e069136656d63e9546b24417814a024cdc9d1f233cff98d1ac752ec",
+  "plan.still_life@300.ochrell": "8a5313e1589e767101d51f5f19d508caf75b12a2ac58fda99398f79b7f898ac3",
+  "plan.storm_v3@300.ochrell": "d6f7324b9ca8d45f0421f3a3efe2637843d491082717d63ed1957f3933f1477e",
+  "scene.storm_v3@600.flow": "786793e9e3c2aabe32adac52cea50b5c8376a7fee71735428d9f050ea5dfb6c6",
+  "scene.storm_v3@600.flowPoints": "f2068ff2645785ef2d8423b069be8b54ef125b6443be15725d443a34b003b846",
+  "scene.storm_v3@600.light": "e62f0cf3c6c391f78f488f37ebf9f3d71c65e5eedf4dd71dc1a6542fcc03d919",
+  "scene.storm_v3@600.masks": "404bd3d452302227ddc7ec13fb18b5faac8483959fd3f9bf0e70c2a205b8e93d",
+  "scene.storm_v3@600.regionId": "f452cd527b8c4c96f705898ab9b943a3b53c01e0ea494fcfd53122b5475d8d60",
+  "scene.storm_v3@600.target": "a5acb829e61aab7278e231419ca66c6942b81c28fc905ed80085a3aa1a6c4a12",
+  "scene.validate.codes": "31482fc2bccfca097ae37cb54c7dc4fa2b6792ee27976c560f68966d57ed7468",
+  "strokes.testsheet": "0ba051f0fa88c82623d13f48bc4bdb098be8e749d2bb8c92d0a0a7a45d7363c2"
+ }
+}

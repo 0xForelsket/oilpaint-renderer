@@ -53,13 +53,13 @@ const independentDraw = scopedRandom(document.seed, ['lilies', 'lily-1', 'placem
 
 Document format is explicitly `oil-author`, version **2**. It requires the exact running engine string and an embedded catalog version **2**. Unknown fields, versions, presets, controls, duplicate IDs, invalid ranges and nonfinite numbers fail validation. A group ID is unique in a document; stroke IDs are globally unique. Group and stroke array order is paint order. Renaming display names does not change seeds. Seed scopes use length-delimited UTF-8 FNV-1a; random draws should name the permanent group, subject, purpose and counter. Adding draws in one scope cannot consume another scope's stream.
 
-Iteration two uses engine `2.0.0-dev.4`, author format **2** and catalog **2**. It changes kernel deposition/pickup and contact compilation, so older documents and StrokeLists are explicitly refused. Use commit `a19d964` for dev.3 / author 1; its reference gallery and saved source files remain intact. No silent migration or legacy rendering switch is provided. The author compiler and catalog have their own version gates. Definitions remain embedded, so changing a built-in preset cannot reinterpret a saved document. Keep the JSON source for IDs/editing alongside flattened StrokeList exports.
+The current iteration uses engine `2.0.0-dev.5`, author format **2** and catalog **2**. The dev.5 kernel changes pressure/contact, surface deposition and lane grouping, so earlier-engine documents and StrokeLists are explicitly refused. Author/catalog schema 2 remains unchanged; dev.4 / schema 2 is preserved at commit `bc18d7b`. Use commit `a19d964` for dev.3 / author 1; its reference gallery and saved source files remain intact. No silent migration or legacy rendering switch is provided. The author compiler and catalog have their own version gates. Definitions remain embedded, so changing a built-in preset cannot reinterpret a saved document. Keep the JSON source for IDs/editing alongside flattened StrokeList exports.
 
 Each group compiles to an existing layer with pre-group height blur (0.002 cw) and post-group wetness multiplier. Paths are resampled at roughly 0.2 brush widths (16–2048 segments) using arc length in Rust. Stored pointer pressure multiplies the preset pressure envelope. Width/pressure envelopes use smooth interpolation into the landing and release after 58% of the path. Catalog 2 adds `contact` (`flat`, `round`, `point`) and `variation` (0–0.25). Round contact uses a curved, off-centre footprint; coherent variation is tied to stable stroke seeds. Fine detail uses very low variation. Depletion defaults to `preset.depletion / max(1, 2 * pathLength / width)`; a per-stroke `deplete` override is an advanced escape hatch.
 
 ## Candidate calibration and useful ranges
 
-Width is in canvas-width units (cw); pressure is 0–1. The catalog's width triplets are `[minimum, default, maximum]`. Minimum widths are authoring limits, not promises that a subpixel mark remains visible.
+Width is in canvas-width units (cw); pressure is 0–1. In paint mode it recruits contact width and deposited thickness; high-body loaded paint reaches substantial opacity earlier in the pressure range. Zero pressure deposits nothing. Other modes retain pressure-weighted alpha. The catalog's width triplets are `[minimum, default, maximum]`. Minimum widths are authoring limits, not promises that a subpixel mark remains visible.
 
 | Candidate | Width min / default / max | Main behavior |
 |---|---|---|
@@ -107,3 +107,9 @@ Remaining limits: the existing bristle primitive still makes geometric, sometime
 ## Iteration-two review
 
 See [larger contact/form review](reports/brush-review-2/index.html) and [report](reports/BRUSH_ITERATION_2.md). The new pressure ramp, long taper, press-and-lift, runout and reverse-crossing samples are available in the preview. `npm run review:iteration2` regenerates current native/Node/Chromium/Firefox evidence; it requires a running preview server and `cargo build --release -p oil-author --example author`. Before images use a dev.3 executable captured at `out/brush-iteration-2/baseline/author-dev3.exe`; without it the checked-in before images are retained. Regenerate those only with the matching `a19d964` engine. The earlier `review:brushes` command now writes `out/brush-review-current`, preserving the historical gallery.
+
+## Iteration-three studies
+
+The preview adds Short turn (a bent path, not simulated axial brush roll), Dense dry setting (existing Dry drag controls), Form study (all seven used for appropriate roles), and Long pickup test. The dense dry recipe uses body .48, load .85, deplete .04, dropout .055 and vdry .34. It is not an eighth preset. The shared authored studies are in packages/oilpaint/preview/study-cases.js.
+
+Run npm run review:iteration3 with the preview server running to verify ten 960 px documents and generate the gallery; npm run review:package3 produces the compact PNG. Before images use the captured dev.4 native executable in out/brush-iteration-3/baseline/author-dev4.exe. Without it, existing before images remain in place. The historical reviews are preserved.

@@ -209,8 +209,20 @@ fn vnoise(x: f32, y: f32, seed: u32) -> f32 {
     (a * (1.0 - tx) + b * tx) * (1.0 - ty) + (c * (1.0 - tx) + d * tx) * ty
 }
 
+/// Cluster contacts follow the brush, with short dragged connections. Fine tooth stays
+/// fixed on the canvas across strokes; existing relief can recruit or reject contact.
+fn scumble_contact(x: f32, y: f32, u: f32, s: f32, pressure: f32, relief: f32, seed: u32) -> f32 {
+    let cluster = vnoise(s * 2.4, u * 3.4, seed.wrapping_add(313));
+    let dragged = vnoise((s - 0.18) * 2.4, u * 3.4, seed.wrapping_add(313));
+    let tooth = vnoise(x * 180.0, y * 180.0, 0x51fa_ce01);
+    let field = cluster.max(dragged * 0.94) + (tooth - 0.5) * 0.09;
+    smoothstep(0.50, 0.62, field + relief * 0.23 + (pressure - 0.7) * 0.16)
+}
+
 // ---------------- bristle lanes ----------------
 struct Bristles {
+    seed: u32,
+    mobility: f32,
     nb: usize,
     ns: usize,
     ntot: usize,
@@ -238,6 +250,8 @@ fn make_bristles(bp: &BrushParams, total_s: f32) -> Bristles {
     let ns_i = (total_s * ALONG_PER_WIDTH).ceil() as i32 + 3;
     let ns = ns_i as usize;
     let mut b = Bristles {
+        seed,
+        mobility: bp.ragged.min(1.0),
         nb,
         ns,
         ntot,
@@ -396,14 +410,23 @@ struct SegLanes {
 #[inline(always)]
 fn prep_lanes(b: &Bristles, s_mid: f32, min_sig: f32, g: &mut SegLanes) {
     for l in 0..b.ntot {
-        g.uc[l] = b.u0[l] + b.wob_amp[l] * sinf(b.wob_k[l] * s_mid + b.wob_ph[l]);
-        let mut sf = b.sig_f[l];
+        // Small neighbouring bundles gather and part over distance. The entire bundle shares
+        // a contact history; this is not independent white noise on every hair or pixel.
+        let first = l / 3 * 3;
+        let last = (first + 2).min(b.ntot - 1);
+        let center = (b.u0[first] + b.u0[last]) * 0.5;
+        let phase = vnoise(s_mid * 0.65, (l / 3) as f32 * 1.71, b.seed.wrapping_add(419));
+        let gather = b.mobility * 0.75 * smoothstep(0.28, 0.72, phase);
+        g.uc[l] = b.u0[l] + (center - b.u0[l]) * gather
+            + b.wob_amp[l] * sinf(b.wob_k[l] * s_mid + b.wob_ph[l]);
+        let spread = 1.0 + b.mobility * (0.9 * phase - 0.25);
+        let mut sf = b.sig_f[l] * spread;
         let mut gf = 1.0f32;
         if sf < min_sig {
             gf = sf / min_sig;
             sf = min_sig;
         }
-        let mut sr = b.sig_r[l];
+        let mut sr = b.sig_r[l] * spread;
         let mut gr = 1.0f32;
         if sr < min_sig {
             gr = sr / min_sig;
@@ -607,6 +630,10 @@ fn render_stroke_len_impl<M: Mixer, const DISPLAY: bool>(
     for i in 0..n - 1 {
         let [x0, y0, w0, p0] = pts[i];
         let [x1, y1, w1, p1] = pts[i + 1];
+        // In paint mode pressure primarily recruits contact and changes deposited body.
+        // Other modes retain their authored width and pressure/opacity relationship.
+        let width_at_pressure = |w: f32, p: f32| if mode == MODE_PAINT { w * (0.3 + 0.7 * clamp01(p).sqrt()) } else { w };
+        let (w0, w1) = (width_at_pressure(w0, p0), width_at_pressure(w1, p1));
         let dx = x1 - x0;
         let dy = y1 - y0;
         let len = (dx * dx + dy * dy).sqrt();
@@ -702,21 +729,21 @@ fn render_stroke_len_impl<M: Mixer, const DISPLAY: bool>(
                     let acov = smoothstep(e0, e1, smp.cov);
                     let pres = p0 + (p1 - p0) * t;
                     let lanes = bodyf + (1.0 - bodyf) * smp.ridge;
-                    let mut alpha = acov * lanes * pres * bp.opacity * loadf;
+                    let pressure_coverage = if mode == MODE_PAINT {
+                        pres + bp.body * (1.0 - pres) * smoothstep(0.02, 0.22, pres)
+                    } else { pres };
+                    let mut alpha = acov * lanes * pressure_coverage * bp.opacity * loadf;
                     if bp.grain > 0.0 {
                         alpha *= 1.0 + bp.grain * (hash2(px, py, bp.seed) - 0.5);
                     }
                     let idx = row + px as usize;
                     if mode == MODE_SCUMBLE {
                         let hb = if cv.hblur.is_empty() { 0.0 } else { cv.hblur[idx] };
-                        // Sparse substantial contacts, anchored on the canvas so turning the brush does
-                        // not bend every patch into a parallel arc. Scale in brush-widths, never pixels.
-                        let cx = (px as f32 + 0.5) / wref;
-                        let cy = (py as f32 + 0.5) / wref;
-                        let patch = 0.72 * vnoise(cx * 18.0, cy * 18.0, bp.seed.wrapping_add(313))
-                            + 0.28 * vnoise(cx * 39.0 + 7.3, cy * 39.0 - 4.1, bp.seed.wrapping_add(991));
                         let relief = ((cv.hgt[idx] - hb - bp.dry_thresh) / bp.dry_width).clamp(-1.0, 1.0);
-                        let contact = smoothstep(0.56, 0.63, patch + relief * 0.18 + (pres - 0.7) * 0.12);
+                        let contact = scumble_contact(
+                            (px as f32 + 0.5) / wu as f32, (py as f32 + 0.5) / wu as f32,
+                            u, s, pres, relief, bp.seed,
+                        );
                         alpha = acov * pres * bp.opacity * loadf * contact;
                     }
                     if alpha <= 0.002 {
@@ -802,13 +829,14 @@ fn render_stroke_len_impl<M: Mixer, const DISPLAY: bool>(
                         let lv = expf(-((au - (1.0 - lw)) * (au - (1.0 - lw))) / (0.10f32 * 0.10f32));
                         let fur = expf(-(u * u) / (0.35f32 * 0.35f32));
                         let sb = expf(-(s * s) / (0.45f32 * 0.45f32));
-                        let nz = vnoise(u * bb.nb as f32 * 0.5 + bb.nph1, s * 4.0 + bb.nph2, bp.seed)
-                            + 0.5 * vnoise(u * bb.nb as f32 * 1.5 + bb.nph2, s * 12.0 + bb.nph1, bp.seed.wrapping_add(7))
-                            - 0.75;
+                        // Smooth body between selected ridges; local buildup rather than an
+                        // everywhere-present high-frequency orange-peel surface.
+                        let body_change = vnoise(u * 1.3 + bb.nph1, s * 0.75 + bb.nph2, bp.seed);
+                        let ridge_gain = smoothstep(0.32, 0.72, body_change);
                         let shape = acov * (1.0 + bp.levee * lv * thick - bp.furrow * fur * thick + bp.blob * sb * thick)
-                            + bp.ridge * (smp.ridge - 0.45) * acov * (0.5 + 0.5 * loadf)
-                            + bp.stiff * nz * acov;
-                        let hadd = bp.hgain * thick * shape;
+                            + bp.ridge * (smp.ridge - 0.45) * acov * (0.5 + 0.5 * loadf) * ridge_gain
+                            + bp.stiff * 0.3 * (body_change - 0.5) * acov;
+                        let hadd = bp.hgain * thick * shape * (0.25 + 0.75 * pres);
                         let fl = bp.flatten;
                         cv.hgt[idx] += a * fl * (base + hadd - cv.hgt[idx]) + a * (1.0 - fl) * 0.5 * hadd;
                         if cv.wet[idx] < a {
@@ -862,7 +890,8 @@ fn render_stroke_len_impl<M: Mixer, const DISPLAY: bool>(
                 if target > dirt[l] {
                     dirt[l] += r_approach * (target - dirt[l]);
                 } else {
-                    dirt[l] -= r_release * (dirt[l] - target);
+                    let lane_release = per_distance(bp.release * (0.6 + 0.8 * affinity), q);
+                    dirt[l] -= lane_release * (dirt[l] - target);
                 }
             }
         }
@@ -880,5 +909,90 @@ fn render_stroke_len_impl<M: Mixer, const DISPLAY: bool>(
         alpha: stat_alpha,
         pixels: stat_pix,
         wet: if sum_a_all > 0.0 { (sum_wet_all / sum_a_all) as f32 } else { 0.0 },
+    }
+}
+#[cfg(test)]
+mod contact_tests {
+    use super::*;
+    #[test]
+    fn scumble_clusters_follow_relief_and_leave_larger_gaps() {
+        let (w, h) = (160usize, 64usize);
+        let mut mask = vec![false; w * h];
+        let (mut raised, mut recessed) = (0f32, 0f32);
+        for y in 0..h {
+            for x in 0..w {
+                let s = x as f32 / w as f32 * 6.;
+                let u = y as f32 / h as f32 * 2. - 1.;
+                let (cx, cy) = (0.15 + s * 0.08, 0.3 + u * 0.04);
+                mask[y * w + x] = scumble_contact(cx, cy, u, s, 0.8, 0., 71) > 0.65;
+                raised += scumble_contact(cx, cy, u, s, 0.8, 0.8, 71);
+                recessed += scumble_contact(cx, cy, u, s, 0.8, -0.8, 71);
+            }
+        }
+        assert!(raised > recessed * 2.);
+        let hits = mask.iter().filter(|&&b| b).count();
+        assert!(
+            hits > w * h / 12 && hits < w * h * 3 / 4,
+            "sparse yet substantial contacts: {hits}"
+        );
+        let mut components = Vec::new();
+        for i in 0..mask.len() {
+            if !mask[i] {
+                continue;
+            }
+            let mut stack = vec![i];
+            mask[i] = false;
+            let mut count = 0;
+            while let Some(j) = stack.pop() {
+                count += 1;
+                let (x, y) = (j % w, j / w);
+                for (nx, ny) in [
+                    (x.wrapping_sub(1), y),
+                    (x + 1, y),
+                    (x, y.wrapping_sub(1)),
+                    (x, y + 1),
+                ] {
+                    if nx < w && ny < h && mask[ny * w + nx] {
+                        mask[ny * w + nx] = false;
+                        stack.push(ny * w + nx);
+                    }
+                }
+            }
+            components.push(count);
+        }
+        assert!(
+            components.iter().max().unwrap() > &80,
+            "contacts should form clusters, not fine spray"
+        );
+        assert!(components.iter().filter(|&&n| n <= 2).sum::<usize>() < hits / 10);
+    }
+    #[test]
+    fn neighbouring_bundles_change_width_and_spacing_over_distance() {
+        let b = make_bristles(
+            &BrushParams {
+                ragged: 0.9,
+                seed: 19,
+                ..BrushParams::default()
+            },
+            15.,
+        );
+        let prep = |s| {
+            let mut g = SegLanes {
+                uc: [0.; MAX_NB],
+                isf: [0.; MAX_NB],
+                gf: [0.; MAX_NB],
+                isr: [0.; MAX_NB],
+                gr: [0.; MAX_NB],
+                reach: 0,
+            };
+            prep_lanes(&b, s, 0.001, &mut g);
+            g
+        };
+        let a = prep(1.);
+        let z = prep(4.);
+        assert!((0..b.nb).any(|i| (a.isf[i] - z.isf[i]).abs() > 0.1));
+        assert!(
+            (0..b.nb - 1).any(|i| ((a.uc[i + 1] - a.uc[i]) - (z.uc[i + 1] - z.uc[i])).abs() > 0.01)
+        );
     }
 }
