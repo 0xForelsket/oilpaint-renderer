@@ -78,7 +78,8 @@ function showPath() {
   $("path").value = JSON.stringify(group().strokes.find((s) => s.id === $("stroke").value)?.path ?? [], null, 1);
 }
 function refreshCatalog() {
-  $("preset").replaceChildren(...doc.catalog.presets.map((p) => new Option(p.name + " · candidate", p.id)));
+  const retained=author.catalog().presets;
+  $("preset").replaceChildren(...doc.catalog.presets.map((p) => new Option(p.name + (JSON.stringify(p)===JSON.stringify(retained.find(b=>b.id===p.id))?" · retained":" · custom candidate"), p.id)));
 }
 function brushUi(mark) {
   const p = doc.catalog.presets.find((p) => p.id === (mark?.preset ?? $("preset").value)) ?? doc.catalog.presets[0];
@@ -379,7 +380,9 @@ for (const type of ["preset", "doc"])
       try {
         const text = await $("file").files[0].text();
         if (type === "doc") {
-          doc = author.parse(text);
+          const opened = author.parse(text);
+        if(opened.format==="oil-composition"){localStorage.setItem("oil-pending-composition",text);location.href="/packages/oilpaint/preview/composition.html";return;}
+        doc=opened;
           selected = doc.groups[0]?.id;
           if (!selected) {
             selected = "brush-study";

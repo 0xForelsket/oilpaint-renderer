@@ -1,3 +1,5 @@
+import type { Composition } from "./composition-types.ts";
+export type { Composition, PlannedGroup, ResolvedStroke, BrushParams } from "./composition-types.ts";
 import type { Engine, MixerId, RgbImage } from "./engine.ts";
 import type { Document, Catalog, Group, Mark } from "./author-types.ts";
 export type { Document, Catalog, Group, Mark, Preset } from "./author-types.ts";
@@ -45,12 +47,12 @@ export function createAuthor(engine: Engine) {
         groups: [],
       };
     },
-    compile(document: Document): Uint8Array {
+    compile(document: Document | Composition): Uint8Array {
       engine.author({ op: "compile", document });
       return engine.authorBytes("strokes");
     },
     render(
-      document: Document,
+      document: Document | Composition,
       width = 320,
       mixer: MixerId = "ochrell",
     ): { width: number; height: number; reusedGroups: number } {
@@ -61,7 +63,7 @@ export function createAuthor(engine: Engine) {
       return { ...size, data: engine.authorBytes("image") };
     },
     hashes: (): Record<string, string> => engine.author({ op: "hashes" }),
-    parse(text: string): Document {
+    parse(text: string): Document | Composition {
       const d = JSON.parse(text);
       this.compile(d);
       return d;

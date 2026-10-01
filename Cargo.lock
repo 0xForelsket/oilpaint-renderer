@@ -165,6 +165,7 @@ source = "git+file:///C:/Users/sdhui/projects/ochrell?rev=17c13d018c1ac569755dad
 name = "oil-author"
 version = "2.0.0-dev.0"
 dependencies = [
+ "oil-brush",
  "oil-kernel",
  "oil-light",
  "oil-mix",
@@ -174,6 +175,16 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+]
+
+[[package]]
+name = "oil-brush"
+version = "2.0.0-dev.0"
+dependencies = [
+ "oil-kernel",
+ "schemars",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -273,6 +284,8 @@ dependencies = [
 name = "oil-plan"
 version = "2.0.0-dev.0"
 dependencies = [
+ "oil-author",
+ "oil-brush",
  "oil-errors",
  "oil-image",
  "oil-kernel",
@@ -290,6 +303,7 @@ dependencies = [
 name = "oil-scene"
 version = "2.0.0-dev.0"
 dependencies = [
+ "oil-brush",
  "oil-errors",
  "oil-image",
  "oil-kernel",

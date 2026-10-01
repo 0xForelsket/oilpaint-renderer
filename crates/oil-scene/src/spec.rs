@@ -86,6 +86,9 @@ pub struct ScenePlan {
     /// the region styles.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub preset: Option<String>,
+    /// Optional embedded brush catalog. If omitted, use the engine's frozen built-in catalog.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub brush_catalog: Option<oil_brush::Catalog>,
     pub canvas: Canvas,
     /// Target-image operations, applied in order: the reference colours the planner paints toward.
     pub target: Vec<TargetOp>,
@@ -574,6 +577,18 @@ macro_rules! with_style_keys {
         $(#[$m])*
         pub struct $name {
             $($(#[$fm])* pub $f: $t,)*
+            /// Catalog brush ID, distinct from the scene/style preset. Layer selection overrides region selection.
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            pub brush_preset: Option<String>,
+            /// Pressure amplitude range before the brush's contact envelope (default [1, 1]).
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            pub pressure: Option<[f64; 2]>,
+            /// 0..1: reduce contact width, pressure and stroke opacity near the region's soft boundary.
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            pub edge_fade: Option<f64>,
+            /// 0..2: sample this many half brush widths on both sides when deciding whether a path fits its region.
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            pub edge_inset: Option<f64>,
             /// Palette-snapping targets.
             #[serde(default, skip_serializing_if = "Option::is_none")]
             pub colors: Option<Vec<ColorSpec>>,

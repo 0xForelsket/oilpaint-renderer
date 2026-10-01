@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import { chromium } from "playwright";
 const out = "docs/reports/brush-review-2";
-const catalog = JSON.parse(fs.readFileSync("crates/oil-author/catalog.json", "utf8"));
+const catalog = JSON.parse(fs.readFileSync("crates/oil-brush/catalog.json", "utf8"));
 const panel = (id, title, note) =>
   `<figure><h2>${title}</h2><p>${note}</p><img src="data:image/png;base64,${fs.readFileSync(out + "/" + id + ".png").toString("base64")}"></figure>`;
 const lighting = [

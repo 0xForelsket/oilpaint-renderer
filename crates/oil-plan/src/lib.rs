@@ -78,6 +78,14 @@ pub struct PlanReport {
     pub warnings: Vec<Error>,
 }
 
+/// Preserve exact resolved points/parameters and the pass/region partition for local edits.
+pub fn composition(list: &StrokeList, report: &PlanReport) -> oil_author::Composition {
+    let partitions = report.layers.iter().map(|l| {
+        l.regions.iter().map(|r| (r.region.clone(), r.strokes, r.brush_preset.clone())).collect()
+    }).collect::<Vec<_>>();
+    oil_author::composition::from_plan(list, &partitions)
+}
+
 fn hex(d: &[u8]) -> String {
     d.iter().map(|b| format!("{b:02x}")).collect()
 }

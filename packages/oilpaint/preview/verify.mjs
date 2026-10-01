@@ -168,7 +168,7 @@ try {
   await page.screenshot({ path: "out/brush-review/preview.png", fullPage: true });
   await page.reload();
   await wait(0);
-  assert.ok((await page.locator("#referenceLabel").textContent()).includes("candidate"));
+  assert.ok((await page.locator("#referenceLabel").textContent()).includes("retained"));
   await page.locator("#dropReference").click();
   assert.equal(await page.locator("#referenceLabel").textContent(), "No saved reference");
   await page.setViewportSize({ width: 390, height: 844 });

@@ -181,6 +181,12 @@ export class SceneBuilder {
     return this;
   }
 
+  /** Embed the shared catalog to pin named brushes in this scene source. */
+  brushCatalog(catalog: NonNullable<ScenePlan["brushCatalog"]>): this {
+    this.plan.brushCatalog = structuredClone(catalog);
+    return this;
+  }
+
   meta(o: { title?: string; engine?: string }): this {
     Object.assign(this.plan, clean(o));
     return this;

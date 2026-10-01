@@ -1,0 +1,17 @@
+{
+  "catalogVersion": 2,
+  "referenceEngine": "2.0.0-dev.6",
+  "referenceCommit": "858a22a",
+  "date": "2026-10-02",
+  "decision": "User accepted all seven brushes as the retained working set. Preserve their paint behavior; changes require a new review.",
+  "presets": [
+    "loaded-flat",
+    "rounded-dab",
+    "dry-drag",
+    "scumble",
+    "impasto-accent",
+    "fine-detail",
+    "wet-mixing"
+  ],
+  "regressionFixture": "spec/examples/approved-brushes.json"
+}

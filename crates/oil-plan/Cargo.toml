@@ -22,3 +22,9 @@ sha2 = "0.10"
 
 [lints]
 workspace = true
+
+[dependencies.oil-brush]
+path = "../oil-brush"
+
+[dependencies.oil-author]
+path = "../oil-author"

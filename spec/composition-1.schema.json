@@ -1,0 +1,321 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Composition",
+  "type": "object",
+  "properties": {
+    "aspect": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "format": "uint32",
+        "minimum": 0
+      },
+      "maxItems": 2,
+      "minItems": 2
+    },
+    "engine": {
+      "type": "string"
+    },
+    "format": {
+      "type": "string"
+    },
+    "ground": {
+      "type": "array",
+      "items": {
+        "type": "number",
+        "format": "float"
+      },
+      "maxItems": 3,
+      "minItems": 3
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/PlannedGroup"
+      }
+    },
+    "sourceHash": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "title": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "version": {
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "version",
+    "engine",
+    "aspect",
+    "ground",
+    "groups"
+  ],
+  "$defs": {
+    "BrushParams": {
+      "type": "object",
+      "properties": {
+        "blob": {
+          "type": "number",
+          "format": "float"
+        },
+        "body": {
+          "type": "number",
+          "format": "float"
+        },
+        "deplete": {
+          "type": "number",
+          "format": "float"
+        },
+        "dropout": {
+          "type": "number",
+          "format": "float"
+        },
+        "dryThresh": {
+          "type": "number",
+          "format": "float"
+        },
+        "dryWidth": {
+          "type": "number",
+          "format": "float"
+        },
+        "flatten": {
+          "type": "number",
+          "format": "float"
+        },
+        "furrow": {
+          "type": "number",
+          "format": "float"
+        },
+        "grain": {
+          "type": "number",
+          "format": "float"
+        },
+        "hardness": {
+          "type": "number",
+          "format": "float"
+        },
+        "hgain": {
+          "type": "number",
+          "format": "float"
+        },
+        "levee": {
+          "type": "number",
+          "format": "float"
+        },
+        "load": {
+          "type": "number",
+          "format": "float"
+        },
+        "marble": {
+          "type": "number",
+          "format": "float"
+        },
+        "mode": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "nb": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "opacity": {
+          "type": "number",
+          "format": "float"
+        },
+        "pickup": {
+          "type": "number",
+          "format": "float"
+        },
+        "ragged": {
+          "type": "number",
+          "format": "float"
+        },
+        "release": {
+          "type": "number",
+          "format": "float"
+        },
+        "ridge": {
+          "type": "number",
+          "format": "float"
+        },
+        "seed": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "splay": {
+          "type": "number",
+          "format": "float"
+        },
+        "stiff": {
+          "type": "number",
+          "format": "float"
+        },
+        "streak": {
+          "type": "number",
+          "format": "float"
+        },
+        "streakMix": {
+          "type": "number",
+          "format": "float"
+        },
+        "vdry": {
+          "type": "number",
+          "format": "float"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "opacity",
+        "pickup",
+        "load",
+        "deplete",
+        "vdry",
+        "hgain",
+        "flatten",
+        "streak",
+        "hardness",
+        "grain",
+        "dryThresh",
+        "dryWidth",
+        "nb",
+        "seed",
+        "dropout",
+        "ragged",
+        "body",
+        "release",
+        "streakMix",
+        "ridge",
+        "levee",
+        "furrow",
+        "blob",
+        "stiff",
+        "marble",
+        "splay"
+      ]
+    },
+    "PlannedGroup": {
+      "type": "object",
+      "properties": {
+        "dryAfter": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "hblurSigma": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "pass": {
+          "type": "string"
+        },
+        "region": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "strokes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResolvedStroke"
+          }
+        },
+        "visible": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "pass",
+        "visible",
+        "strokes"
+      ]
+    },
+    "ResolvedStroke": {
+      "type": "object",
+      "properties": {
+        "brush": {
+          "$ref": "#/$defs/BrushParams"
+        },
+        "color": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "format": "float"
+          },
+          "maxItems": 3,
+          "minItems": 3
+        },
+        "color2": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "format": "float"
+          },
+          "maxItems": 3,
+          "minItems": 3
+        },
+        "id": {
+          "type": "string"
+        },
+        "points": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "format": "float"
+            },
+            "maxItems": 4,
+            "minItems": 4
+          }
+        },
+        "preset": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "streakAmount": {
+          "type": "number",
+          "format": "float"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "points",
+        "color",
+        "color2",
+        "streakAmount",
+        "brush"
+      ]
+    }
+  }
+}

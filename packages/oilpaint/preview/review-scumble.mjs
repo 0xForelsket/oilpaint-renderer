@@ -18,7 +18,7 @@ const oldCatalog = spawnSync("git", ["show", "c4a8cd3:crates/oil-author/catalog.
 assert.equal(oldCatalog.status, 0);
 assert.equal(
   hash(normalize(oldCatalog.stdout)),
-  hash(normalize(fs.readFileSync("crates/oil-author/catalog.json"))),
+  hash(normalize(fs.readFileSync("crates/oil-brush/catalog.json"))),
   "catalog definitions changed",
 );
 function native(document, width, before = false, mixer = "ochrell", view = true) {

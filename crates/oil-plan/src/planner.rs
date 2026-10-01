@@ -9,7 +9,7 @@
 use crate::boundary::outer_contours;
 use crate::color::{self, dist_fast, lab_fast, Palette};
 use crate::rng::Rng;
-use crate::style::{mode_of, resolve, St};
+use crate::style::{mode_of, St};
 use oil_kernel::brush::{length_in_widths, render_stroke_len, BrushParams, MODE_SCUMBLE};
 use oil_kernel::{Canvas, Load};
 use oil_mix::Mixer;
@@ -106,6 +106,7 @@ impl References {
 #[serde(rename_all = "camelCase")]
 pub struct RegionReport {
     pub region: String,
+    pub brush_preset: Option<String>,
     pub sites: usize,
     pub strokes: usize,
     pub gap_strokes: usize,
@@ -133,6 +134,7 @@ pub struct Planner<'a, M: Mixer> {
     palettes: BTreeMap<Vec<u32>, Palette<M::State>>,
     detail: Option<Vec<f32>>,
     preset: Option<Style>,
+    catalog: oil_brush::Catalog,
     white: [f32; 3],
     pub points: Vec<[f32; 4]>,
     pub offsets: Vec<u32>,
@@ -187,6 +189,7 @@ impl<'a, M: Mixer> Planner<'a, M> {
             palettes: BTreeMap::new(),
             detail: None,
             preset,
+            catalog: plan.brush_catalog.clone().unwrap_or_else(oil_brush::catalog),
             white,
             points: Vec::new(),
             offsets: vec![0],
@@ -199,7 +202,7 @@ impl<'a, M: Mixer> Planner<'a, M> {
 
     fn style_of(&self, r: usize, layer: &Layer) -> St {
         let name = &self.g.names[r];
-        resolve(self.m, self.preset.as_ref(), self.plan.styles.get(name), layer)
+        crate::style::resolve_catalog(self.m, self.preset.as_ref(), self.plan.styles.get(name), layer, &self.catalog)
     }
 
     fn regions_of(&self, layer: &Layer) -> Vec<usize> {
@@ -249,7 +252,7 @@ impl<'a, M: Mixer> Planner<'a, M> {
     /// A stroke's colour at plan pixel (x, y): reference sample (or a palette colour), palette snap, Lab jitter and
     /// floor, flecks, warmth from the light map.
     #[allow(clippy::too_many_arguments)]
-    fn stroke_color(&mut self, reference: &[[f32; 3]], x: f64, y: f64, rpx: f64, st: &St, layer: &Layer, rng: &mut Rng) -> [f32; 3] {
+    fn stroke_color(&mut self, reference: &[[f32; 3]], x: f64, y: f64, rpx: f64, st: &St, layer: &Layer, rng: &mut Rng, region:usize) -> [f32; 3] {
         let (w, h) = (self.g.w, self.g.h);
         let r = (rpx as usize).max(1);
         let (xi, yi) = self.pixel(x, y);
@@ -258,15 +261,18 @@ impl<'a, M: Mixer> Planner<'a, M> {
         } else {
             let (x0, x1, y0, y1) = (xi.saturating_sub(r), (xi + r + 1).min(w), yi.saturating_sub(r), (yi + r + 1).min(h));
             let mut s = [0.0f64; 3];
+            let mut weight = 0.;
             for j in y0..y1 {
                 for i in x0..x1 {
+                    let mask = if st.brush.is_some() { self.g.masks[region].at(i, j) } else { 1. };
+                    weight += mask as f64;
                     for c in 0..3 {
-                        s[c] += reference[j * w + i][c] as f64;
+                        s[c] += reference[j * w + i][c] as f64 * mask as f64;
                     }
                 }
             }
-            let n = ((x1 - x0) * (y1 - y0)) as f64;
-            s.map(|v| (v / n) as f32)
+            let n = weight.max(1e-9);
+            if weight > 0. { s.map(|v| (v / n) as f32) } else { reference[yi * w + xi] }
         };
         if !st.colors.is_empty() && st.snap > 0.0 {
             let m = self.m;
@@ -317,7 +323,8 @@ impl<'a, M: Mixer> Planner<'a, M> {
     /// wobble, an optional flick at the end, stopping where the soft mask fades.
     #[allow(clippy::too_many_arguments)]
     fn path(&self, x0: f64, y0: f64, width: f64, length: f64, st: &St, r: usize, rng: &mut Rng, ignore_mask: bool) -> Vec<(f64, f64)> {
-        let step = (0.5 * width).max(1.0);
+        let step = if st.brush.is_some() { (0.25 * width).max(0.5) } else { (0.5 * width).max(1.0) };
+        let phase = rng.range(0., std::f64::consts::TAU);
         let mut n = ((length / step) as usize + 1).max(3);
         let mut d = self.flow(r, x0, y0);
         if (d.0 * d.0 + d.1 * d.1).sqrt() < 1e-3 {
@@ -342,6 +349,10 @@ impl<'a, M: Mixer> Planner<'a, M> {
             (usize::MAX, 0.0)
         };
         let (w, h) = (self.g.w as f64, self.g.h as f64);
+        if st.edge_inset > 0. && !ignore_mask && self.mask_at(r, x, y) < 0.5 {
+            x = x0;
+            y = y0;
+        }
         let mut pts = vec![(x, y)];
         for i in 1..n {
             let mut f = self.flow(r, x, y);
@@ -349,7 +360,12 @@ impl<'a, M: Mixer> Planner<'a, M> {
                 f = (-f.0, -f.1);
             }
             let nd = norm(((1.0 - fc) * d.0 + fc * f.0, (1.0 - fc) * d.1 + fc * f.1));
-            let mut wob = rng.normal() * (0.08 * (1.0 - st.align) + 0.02);
+            let mut wob = if st.brush.is_some() {
+                (0.08 * (1.0 - st.align) + 0.01)
+                    * oil_math::sin(phase + i as f64 / n as f64 * std::f64::consts::TAU) * (step / width)
+            } else {
+                rng.normal() * (0.08 * (1.0 - st.align) + 0.02)
+            };
             if i >= flick_from {
                 wob += flick_step;
             }
@@ -359,7 +375,10 @@ impl<'a, M: Mixer> Planner<'a, M> {
             if x < -width || y < -width || x > w + width || y > h + width {
                 break;
             }
-            if !ignore_mask && (self.mask_at(r, x, y) as f64) < rng.uniform() * st.stop_at_edge {
+            let support = self.mask_at(r, x, y)
+                .min(self.mask_at(r, x - d.1 * width * 0.5 * st.edge_inset, y + d.0 * width * 0.5 * st.edge_inset))
+                .min(self.mask_at(r, x + d.1 * width * 0.5 * st.edge_inset, y - d.0 * width * 0.5 * st.edge_inset));
+            if !ignore_mask && (support as f64) < rng.uniform() * st.stop_at_edge {
                 break;
             }
             pts.push((x, y));
@@ -378,6 +397,10 @@ impl<'a, M: Mixer> Planner<'a, M> {
             width *= sc;
             length *= sc;
         }
+        if let Some(p) = &st.brush {
+            width = width.clamp(p.width[0] as f64 * self.pw, p.width[2] as f64 * self.pw);
+        }
+        let pressure = rng.range(st.pressure[0], st.pressure[1]);
         let (sx, sy) = self.edge_start(x, y, width, r, rng);
         let ignore = ignore_mask.unwrap_or_else(|| rng.uniform() < st.spill);
         let path = self.path(sx, sy, width, length, st, r, rng, ignore);
@@ -396,15 +419,15 @@ impl<'a, M: Mixer> Planner<'a, M> {
             ep = (ep * (1.0 + st.end_variation * rng.range(-1.0, 1.0))).clamp(0.02, 1.0);
         }
         let pw = self.pw;
-        let pts_cw: Vec<[f32; 4]> = path
+        let mut pts_cw: Vec<[f32; 4]> = path
             .iter()
             .zip(&s_acc)
             .map(|(p, s)| {
                 let (wfac, pr) = profile(s / total, ew, ep);
-                [(p.0 / pw) as f32, (p.1 / pw) as f32, (width * wfac / pw) as f32, pr.max(pressure_floor) as f32]
+                [(p.0 / pw) as f32, (p.1 / pw) as f32, (width * wfac / pw) as f32, (pr * pressure).max(pressure_floor) as f32]
             })
             .collect();
-        let color = self.stroke_color(reference, x, y, rpx, st, layer, rng);
+        let color = self.stroke_color(reference, x, y, rpx, st, layer, rng, r);
         let color2 = if st.marble > 0.0 || st.load2.is_some() {
             match st.load2 {
                 Some(c) => c,
@@ -427,19 +450,54 @@ impl<'a, M: Mixer> Planner<'a, M> {
             let lm = self.g.light[yi * self.g.w + xi] as f64;
             opacity *= (1.0 - st.opacity_by_light * (1.0 - lm)).max(0.05);
         }
-        let nb = (st.nb_base + st.nb_per_cw * width / self.pw).clamp(3.0, 40.0) as i32;
+        let nb = if st.brush.is_some() {
+            (st.nb_base + st.nb_per_cw * width / self.pw).clamp(2., 68.)
+        } else {
+            (st.nb_base + st.nb_per_cw * width / self.pw).clamp(3., 40.)
+        } as i32;
         let mut hgain = st.hgain * layer.relief * rng.range(1.0 - st.hgain_jitter, 1.0 + st.hgain_jitter);
         if st.relief_by_value > 0.0 {
             let l = color::lab(color)[0];
             hgain *= (1.0 + st.relief_by_value * (l - 50.0) / 50.0).clamp(0.1, 2.0);
         }
         let seed = rng.below((1u32 << 31) - 2) + 1;
+        let mut catalog_deplete = st.deplete as f32;
+        if let Some(p) = &st.brush {
+            let mut p = p.clone();
+            p.width_profile[2] = ew as f32;
+            p.pressure_profile[2] = ep as f32;
+            let raw: Vec<[f32; 3]> = path.iter().map(|&(x, y)| {
+                let mask = self.mask_at(r, x, y) as f64;
+                let fade = 1. - st.edge_fade * (1. - mask);
+                [(x / pw) as f32, (y / pw) as f32, (pressure.max(pressure_floor) * fade) as f32]
+            }).collect();
+            let (mut pts, b) = oil_brush::compile_path(&p, &raw, (width / pw) as f32, seed).expect("validated planner path");
+            let original = pts.clone();
+            for (i, point) in pts.iter_mut().enumerate() {
+                let center = self.mask_at(r, point[0] as f64 * pw, point[1] as f64 * pw) as f64;
+                point[2] *= (1. - st.edge_fade * 0.65 * (1. - center)) as f32;
+                if st.edge_inset > 0. && !ignore {
+                    let a = original[i.saturating_sub(1)];
+                    let b = original[(i + 1).min(original.len() - 1)];
+                    let dir = norm(((b[0] - a[0]) as f64, (b[1] - a[1]) as f64));
+                    let half = point[2] as f64 * pw * 0.5 * st.edge_inset;
+                    let (x, y) = (point[0] as f64 * pw, point[1] as f64 * pw);
+                    let support = center.min(self.mask_at(r, x - dir.1 * half, y + dir.0 * half) as f64)
+                        .min(self.mask_at(r, x + dir.1 * half, y - dir.0 * half) as f64);
+                    point[2] *= support.sqrt().max(0.15) as f32;
+                    point[3] *= center as f32;
+                }
+            }
+            pts_cw = pts;
+            catalog_deplete = b.deplete;
+        }
+        opacity *= 1. - st.edge_fade * (1. - self.mask_at(r, x, y) as f64);
         let brush = BrushParams {
             mode: mode_of(st, layer),
             opacity: opacity as f32,
             pickup: st.pickup as f32,
             load: st.load as f32,
-            deplete: st.deplete as f32,
+            deplete: if st.explicit_deplete { st.deplete as f32 } else { catalog_deplete },
             vdry: st.vdry as f32,
             hgain: hgain as f32,
             flatten: st.flatten as f32,
@@ -467,10 +525,12 @@ impl<'a, M: Mixer> Planner<'a, M> {
         let m = self.m;
         let zcol = m.encode(color);
         let zcol2 = if color2 == color { zcol } else { m.encode(color2) };
-        let load = Load { zcol, zcol2, dz: oil_paint::streak_vector(m, &zcol, 1.0) };
+        let streak_amount = if st.brush.is_some() { 0.75 } else { 1.0 };
+        let load = Load { zcol, zcol2, dz: oil_paint::streak_vector(m, &zcol, streak_amount) };
         let wf = self.wf;
         let pts_px: Vec<[f32; 4]> = pts_cw.iter().map(|p| [p[0] * wf, p[1] * wf, p[2] * wf, p[3]]).collect();
-        render_stroke_len(m, &mut self.cv.planes(), &pts_px, &load, &brush, length_in_widths(&pts_cw));
+        let painted = render_stroke_len(m, &mut self.cv.planes(), &pts_px, &load, &brush, length_in_widths(&pts_cw));
+        if painted.pixels == 0 { return false; }
         let (mut x0, mut y0, mut x1, mut y1, mut wmax) = (f64::INFINITY, f64::INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY, 0.0f64);
         for p in &pts_px {
             x0 = x0.min(p[0] as f64);
@@ -483,7 +543,7 @@ impl<'a, M: Mixer> Planner<'a, M> {
         self.lab.mark(x0 - pad, y0 - pad, x1 + pad, y1 + pad);
         self.points.extend_from_slice(&pts_cw);
         self.offsets.push(self.points.len() as u32);
-        self.strokes.push(Stroke { layer: li as u32, region: r as u32, color, color2, streak_amount: 1.0, brush });
+        self.strokes.push(Stroke { layer: li as u32, region: r as u32, color, color2, streak_amount, brush });
         let d = &mut self.drawn[r];
         d.0 = [d.0[0].min(width / pw), d.0[1].max(width / pw)];
         if path.len() == 2 {
@@ -654,8 +714,13 @@ impl<'a, M: Mixer> Planner<'a, M> {
             self.cv.hblur = oil_image::blur(&self.cv.hgt, self.g.w, self.g.h, (s as f64 * self.g.w as f64).max(1.0));
         }
         for (r, st) in regs {
-            let mut rng = Rng::new(&[self.seed as u64, li as u64, layer.seed_offset as u64, r as u64]);
-            let mut rr = RegionReport { region: self.g.names[r].clone(), ..Default::default() };
+            let mut rng = Rng::new(&[
+                self.seed as u64, oil_brush::scoped_seed(0, &[&layer.name]) as u64,
+                layer.seed_offset as u64, oil_brush::scoped_seed(0, &[&self.g.names[r]]) as u64,
+            ]);
+            let mut rr = RegionReport {
+                region: self.g.names[r].clone(), brush_preset: st.brush.as_ref().map(|b| b.id.clone()), ..Default::default()
+            };
             let (wlo, whi) = (st.width[0], st.width[1]);
             let (llo, lhi) = (st.length[0], st.length[1]);
             let wmean_px = 0.5 * (wlo + whi) * self.pw;

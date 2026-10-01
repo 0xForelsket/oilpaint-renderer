@@ -6,6 +6,11 @@ use oil_scene::spec::{ColorSpec, Layer, Mode, Style};
 /// Every style key with a concrete value.
 #[derive(Clone, Debug, PartialEq)]
 pub struct St {
+    pub brush: Option<oil_brush::Preset>,
+    pub pressure: [f64; 2],
+    pub edge_fade: f64,
+    pub edge_inset: f64,
+    pub explicit_deplete: bool,
     pub colors: Vec<[f32; 3]>,
     pub flecks: Vec<([f32; 3], f64)>,
     pub width: [f64; 2],
@@ -66,6 +71,11 @@ impl St {
     /// impressionist preset; `splay` 1.0 read as pencil lines).
     pub fn defaults() -> St {
         St {
+            brush: None,
+            pressure: [1., 1.],
+            edge_fade: 0.,
+            edge_inset: 0.,
+            explicit_deplete: false,
             colors: Vec::new(),
             flecks: Vec::new(),
             width: [0.015, 0.03],
@@ -137,10 +147,11 @@ macro_rules! copy_some {
 macro_rules! overlay_fn {
     ($name:ident, $t:ty) => {
         pub fn $name<M: Mixer>(st: &mut St, s: &$t, m: &M) {
-            copy_some!(st, s; width, length, curvature, align, opacity, pickup, load, deplete, vdry, hgain, flatten, streak, streak_mix, body,
+            copy_some!(st, s; pressure, edge_fade, edge_inset, width, length, curvature, align, opacity, pickup, load, deplete, vdry, hgain, flatten, streak, streak_mix, body,
                   hardness, grain, nb_per_cw, nb_base, release, dropout, ragged, ridge, levee, furrow, blob, stiff, marble, splay,
                   snap, jitter, warmth, priority, reverse_p, spill, stop_at_edge, min_aspect, end_width, end_pressure, hgain_jitter,
                   opacity_by_light, l_floor, size_by_detail, length_skew, dab_share, end_variation, flick, relief_by_value);
+            if s.deplete.is_some() { st.explicit_deplete = true; }
             if let Some(v) = s.size_by_y {
                 st.size_by_y = Some(v);
             }
@@ -168,9 +179,19 @@ overlay_fn!(overlay_layer, Layer);
 
 /// The style of one region in one layer.
 pub fn resolve<M: Mixer>(m: &M, preset: Option<&Style>, region: Option<&Style>, layer: &Layer) -> St {
+    resolve_catalog(m, preset, region, layer, &oil_brush::catalog())
+}
+
+pub fn resolve_catalog<M: Mixer>(m: &M, preset: Option<&Style>, region: Option<&Style>, layer: &Layer, catalog: &oil_brush::Catalog) -> St {
     let mut st = St::defaults();
     if let Some(p) = preset {
         overlay_style(&mut st, p, m);
+    }
+    let id = layer.brush_preset.as_ref()
+        .or_else(|| region.and_then(|r| r.brush_preset.as_ref()))
+        .or_else(|| preset.and_then(|p| p.brush_preset.as_ref()));
+    if let Some(p) = id.and_then(|id| catalog.presets.iter().find(|p| &p.id == id)) {
+        apply_catalog(&mut st, p);
     }
     if let Some(r) = region {
         overlay_style(&mut st, r, m);
@@ -187,4 +208,41 @@ pub fn mode_of(st: &St, layer: &Layer) -> i32 {
         Mode::Smudge => oil_kernel::brush::MODE_SMUDGE,
         Mode::Glaze => oil_kernel::brush::MODE_GLAZE,
     }
+}
+
+fn apply_catalog(st: &mut St, p: &oil_brush::Preset) {
+    let mut b = oil_kernel::BrushParams::default();
+    oil_brush::apply(&mut b, &p.paint).expect("validated catalog");
+    st.brush = Some(p.clone());
+    st.width = [p.width[1] as f64; 2];
+    st.opacity = [b.opacity as f64; 2];
+    st.nb_base = b.nb as f64;
+    st.nb_per_cw = 0.;
+    st.end_width = p.width_profile[2] as f64;
+    st.end_pressure = p.pressure_profile[2] as f64;
+    st.hgain_jitter = 0.;
+    st.explicit_deplete = false;
+    st.spill = 0.;
+    st.stop_at_edge = 0.95;
+    st.mode = Some(match p.mode { 1 => Mode::Scumble, 2 => Mode::Smudge, 3 => Mode::Glaze, _ => Mode::Paint });
+    st.pickup = b.pickup as f64;
+    st.load = b.load as f64;
+    st.vdry = b.vdry as f64;
+    st.hgain = b.hgain as f64;
+    st.flatten = b.flatten as f64;
+    st.streak = b.streak as f64;
+    st.streak_mix = b.streak_mix as f64;
+    st.body = b.body as f64;
+    st.hardness = b.hardness as f64;
+    st.grain = b.grain as f64;
+    st.release = b.release as f64;
+    st.dropout = b.dropout as f64;
+    st.ragged = b.ragged as f64;
+    st.ridge = b.ridge as f64;
+    st.levee = b.levee as f64;
+    st.furrow = b.furrow as f64;
+    st.blob = b.blob as f64;
+    st.stiff = b.stiff as f64;
+    st.marble = b.marble as f64;
+    st.splay = b.splay as f64;
 }

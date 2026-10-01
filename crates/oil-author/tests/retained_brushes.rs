@@ -47,3 +47,20 @@ fn retained_six_match_dev5_in_both_mixers() {
         compare(OchrellMixer, &doc, &c["expected"]["ochrell"]);
     }
 }
+
+#[test]
+fn all_seven_match_approved_dev6_baseline() {
+    let fixture: Value =
+        serde_json::from_str(include_str!("../../../spec/examples/approved-brushes.json")).unwrap();
+    let expected: Catalog = serde_json::from_value(fixture["catalog"].clone()).unwrap();
+    assert_eq!(expected, oil_author::catalog());
+    assert_eq!(fixture["cases"].as_array().unwrap().len(), 7);
+    for c in fixture["cases"].as_array().unwrap() {
+        let mut v = c["document"].clone();
+        v["catalog"] = fixture["catalog"].clone();
+        v["engine"] = json!(oil_kernel::ENGINE_VERSION);
+        let d: Document = serde_json::from_value(v).unwrap();
+        compare(RgbMixer, &d, &c["expected"]["rgb"]);
+        compare(OchrellMixer, &d, &c["expected"]["ochrell"]);
+    }
+}

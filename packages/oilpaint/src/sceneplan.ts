@@ -197,6 +197,10 @@ export interface ScenePlan {
    * Ignored by the engine; lets editors validate.
    */
   $schema?: string | null;
+  /**
+   * Optional embedded brush catalog. If omitted, use the engine's frozen built-in catalog.
+   */
+  brushCatalog?: Catalog | null;
   canvas: Canvas;
   /**
    * Engine version the scene was authored and tuned with. A different engine warns (`ENGINE_VERSION_DIFFERS`).
@@ -240,6 +244,51 @@ export interface ScenePlan {
    */
   target: TargetOp[];
   title?: string | null;
+}
+/**
+ * This interface was referenced by `ScenePlan`'s JSON-Schema
+ * via the `definition` "Catalog".
+ */
+export interface Catalog {
+  presets: Preset[];
+  version: number;
+}
+/**
+ * This interface was referenced by `ScenePlan`'s JSON-Schema
+ * via the `definition` "Preset".
+ */
+export interface Preset {
+  /**
+   * Geometric contact profile, not a physical brush-shape claim.
+   */
+  contact: string;
+  depletion: number;
+  id: string;
+  mode: number;
+  name: string;
+  paint: {
+    [k: string]: number;
+  };
+  /**
+   * @minItems 3
+   * @maxItems 3
+   */
+  pressureProfile: [number, number, number];
+  status: string;
+  /**
+   * Coherent, seed-stable contact variation. Zero removes authored variation.
+   */
+  variation: number;
+  /**
+   * @minItems 3
+   * @maxItems 3
+   */
+  width: [number, number, number];
+  /**
+   * @minItems 3
+   * @maxItems 3
+   */
+  widthProfile: [number, number, number];
 }
 /**
  * This interface was referenced by `ScenePlan`'s JSON-Schema
@@ -291,6 +340,10 @@ export interface Layer {
    * Paint body between bristle lanes (default 0.9).
    */
   body?: number | null;
+  /**
+   * Catalog brush ID, distinct from the scene/style preset. Layer selection overrides region selection.
+   */
+  brushPreset?: string | null;
   colorFrom?: ColorFrom;
   /**
    * Palette-snapping targets.
@@ -341,6 +394,14 @@ export interface Layer {
    * Scumble: smoothstep width around `dryThresh` (default 0.15).
    */
   dryWidth?: number | null;
+  /**
+   * 0..1: reduce contact width, pressure and stroke opacity near the region's soft boundary.
+   */
+  edgeFade?: number | null;
+  /**
+   * 0..2: sample this many half brush widths on both sides when deciding whether a path fits its region.
+   */
+  edgeInset?: number | null;
   enabled?: boolean;
   /**
    * Pressure at the stroke's end (default 0.15).
@@ -478,6 +539,13 @@ export interface Layer {
    */
   pickup?: number | null;
   placement?: Placement;
+  /**
+   * Pressure amplitude range before the brush's contact envelope (default [1, 1]).
+   *
+   * @minItems 2
+   * @maxItems 2
+   */
+  pressure?: [number, number] | null;
   /**
    * Order among regions within a layer, low first (default 0).
    */
@@ -800,6 +868,10 @@ export interface Style {
    */
   body?: number | null;
   /**
+   * Catalog brush ID, distinct from the scene/style preset. Layer selection overrides region selection.
+   */
+  brushPreset?: string | null;
+  /**
    * Palette-snapping targets.
    */
   colors?: ColorSpec[] | null;
@@ -819,6 +891,14 @@ export interface Style {
    * Default 0.02.
    */
   dropout?: number | null;
+  /**
+   * 0..1: reduce contact width, pressure and stroke opacity near the region's soft boundary.
+   */
+  edgeFade?: number | null;
+  /**
+   * 0..2: sample this many half brush widths on both sides when deciding whether a path fits its region.
+   */
+  edgeInset?: number | null;
   /**
    * Pressure at the stroke's end (default 0.15).
    */
@@ -932,6 +1012,13 @@ export interface Style {
    * Share of wet paint picked up from the canvas (default 0.12).
    */
   pickup?: number | null;
+  /**
+   * Pressure amplitude range before the brush's contact envelope (default [1, 1]).
+   *
+   * @minItems 2
+   * @maxItems 2
+   */
+  pressure?: [number, number] | null;
   /**
    * Order among regions within a layer, low first (default 0).
    */

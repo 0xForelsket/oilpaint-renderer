@@ -207,6 +207,27 @@
       ],
       "type": "object"
     },
+    "Catalog": {
+      "additionalProperties": false,
+      "properties": {
+        "presets": {
+          "items": {
+            "$ref": "#/definitions/Preset"
+          },
+          "type": "array"
+        },
+        "version": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "version",
+        "presets"
+      ],
+      "type": "object"
+    },
     "ColorFrom": {
       "oneOf": [
         {
@@ -704,6 +725,13 @@
             "null"
           ]
         },
+        "brushPreset": {
+          "description": "Catalog brush ID, distinct from the scene/style preset. Layer selection overrides region selection.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "colorFrom": {
           "allOf": [
             {
@@ -811,6 +839,22 @@
         },
         "dryWidth": {
           "description": "Scumble: smoothstep width around `dryThresh` (default 0.15).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "edgeFade": {
+          "description": "0..1: reduce contact width, pressure and stroke opacity near the region's soft boundary.",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "edgeInset": {
+          "description": "0..2: sample this many half brush widths on both sides when deciding whether a path fits its region.",
           "format": "double",
           "type": [
             "number",
@@ -1129,6 +1173,19 @@
             }
           ],
           "default": "error"
+        },
+        "pressure": {
+          "description": "Pressure amplitude range before the brush's contact envelope (default [1, 1]).",
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": [
+            "array",
+            "null"
+          ]
         },
         "priority": {
           "description": "Order among regions within a layer, low first (default 0).",
@@ -1599,6 +1656,85 @@
       ],
       "type": "object"
     },
+    "Preset": {
+      "additionalProperties": false,
+      "properties": {
+        "contact": {
+          "description": "Geometric contact profile, not a physical brush-shape claim.",
+          "type": "string"
+        },
+        "depletion": {
+          "format": "float",
+          "type": "number"
+        },
+        "id": {
+          "type": "string"
+        },
+        "mode": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "paint": {
+          "additionalProperties": {
+            "format": "float",
+            "type": "number"
+          },
+          "type": "object"
+        },
+        "pressureProfile": {
+          "items": {
+            "format": "float",
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        },
+        "status": {
+          "type": "string"
+        },
+        "variation": {
+          "description": "Coherent, seed-stable contact variation. Zero removes authored variation.",
+          "format": "float",
+          "type": "number"
+        },
+        "width": {
+          "items": {
+            "format": "float",
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        },
+        "widthProfile": {
+          "items": {
+            "format": "float",
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "status",
+        "mode",
+        "width",
+        "widthProfile",
+        "pressureProfile",
+        "contact",
+        "variation",
+        "depletion",
+        "paint"
+      ],
+      "type": "object"
+    },
     "RadialFlow": {
       "additionalProperties": false,
       "properties": {
@@ -1892,6 +2028,13 @@
             "null"
           ]
         },
+        "brushPreset": {
+          "description": "Catalog brush ID, distinct from the scene/style preset. Layer selection overrides region selection.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "colors": {
           "description": "Palette-snapping targets.",
           "items": {
@@ -1928,6 +2071,22 @@
         },
         "dropout": {
           "description": "Default 0.02.",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "edgeFade": {
+          "description": "0..1: reduce contact width, pressure and stroke opacity near the region's soft boundary.",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "edgeInset": {
+          "description": "0..2: sample this many half brush widths on both sides when deciding whether a path fits its region.",
           "format": "double",
           "type": [
             "number",
@@ -2173,6 +2332,19 @@
           "format": "double",
           "type": [
             "number",
+            "null"
+          ]
+        },
+        "pressure": {
+          "description": "Pressure amplitude range before the brush's contact envelope (default [1, 1]).",
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": [
+            "array",
             "null"
           ]
         },
@@ -2609,6 +2781,17 @@
         "string",
         "null"
       ]
+    },
+    "brushCatalog": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/Catalog"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Optional embedded brush catalog. If omitted, use the engine's frozen built-in catalog."
     },
     "canvas": {
       "$ref": "#/definitions/Canvas"

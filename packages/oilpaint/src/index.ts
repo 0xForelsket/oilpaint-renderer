@@ -5,3 +5,6 @@ export { loadEngine, OilError, MIXERS } from "./engine.ts";
 export type { Engine, Guides, GuidesSummary, MixerId, OilIssue, Plan, PlanReport, PreviewName, RgbImage, Validation } from "./engine.ts";
 
 export * from './author.ts';
+
+export type { Catalog, Preset } from "./author.ts";
+export * from "./composition.ts";

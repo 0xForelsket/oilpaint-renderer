@@ -23,7 +23,7 @@ for (const width of [384, 768]) {
   times.push({ width, paintMs, planes: a.hashes() });
 }
 const frozen = Object.fromEntries(
-  ["crates/oil-kernel/src/brush.rs", "crates/oil-author/catalog.json"].map((p) => [
+  ["crates/oil-kernel/src/brush.rs", "crates/oil-brush/catalog.json"].map((p) => [
     p,
     createHash("sha256").update(fs.readFileSync(p)).digest("hex"),
   ]),

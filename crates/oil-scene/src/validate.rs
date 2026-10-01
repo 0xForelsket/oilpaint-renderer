@@ -142,7 +142,11 @@ fn schema_error(e: &serde_path_to_error::Error<serde_json::Error>) -> Error {
 
 /// All semantic checks: ranges, units, names, references and colours.
 pub fn validate(plan: &ScenePlan) -> Report {
-    let mut v = V { errs: Vec::new(), ar: 1.0, fields: &plan.fields };
+    let catalog = plan.brush_catalog.clone().unwrap_or_else(oil_brush::catalog);
+    let mut v = V { errs: Vec::new(), ar: 1.0, fields: &plan.fields, catalog: &catalog };
+    if let Err(e) = catalog.validate() {
+        v.errs.push(Error::new("INVALID_BRUSH_CATALOG", e).path("/brushCatalog"));
+    }
     let mut warnings = Vec::new();
     if let Some(e) = &plan.engine {
         if e != oil_kernel::ENGINE_VERSION {
@@ -222,6 +226,23 @@ pub fn validate(plan: &ScenePlan) -> Report {
             v.errs.push(Error::new("DUPLICATE_NAME", format!("layer {} is declared twice", l.name)).path(format!("{p}/name")).got(&l.name));
         }
         v.layer(&p, l, &names);
+        for region in &plan.regions {
+            let included = match &l.regions {
+                RegionSel::Name(n) => n == "all",
+                RegionSel::List(v) => v.contains(&region.name),
+            };
+            if !included { continue; }
+            let st = plan.styles.get(&region.name);
+            let id = l.brush_preset.as_ref().or_else(|| st.and_then(|s| s.brush_preset.as_ref()));
+            if let Some(b) = id.and_then(|id| catalog.presets.iter().find(|b| &b.id == id)) {
+                let width = l.width.or_else(|| st.and_then(|s| s.width)).unwrap_or([b.width[1] as f64; 2]);
+                if width[0] < b.width[0] as f64 - 1e-8 || width[1] > b.width[2] as f64 + 1e-8 {
+                    v.errs.push(Error::new("BRUSH_WIDTH_RANGE", format!(
+                        "{} in layer {} requires nominal width {}..{} cw", b.id, l.name, b.width[0], b.width[2]
+                    )).path(format!("{p}/width")).fix("set this layer's width within the selected brush range"));
+                }
+            }
+        }
     }
     Report { errors: v.errs, warnings }
 }
@@ -231,6 +252,7 @@ struct V<'a> {
     /// Canvas height in cw (aspect height / width).
     ar: f64,
     fields: &'a BTreeMap<String, FieldDecl>,
+    catalog: &'a oil_brush::Catalog,
 }
 
 /// A readable name for the value at a JSON Pointer: its key, or `key[i]` for an array element.
@@ -535,6 +557,13 @@ impl V<'_> {
 
     /// Style keys, shared by styles and layers, checked from their serialized form against one rules table.
     fn style_keys(&mut self, p: &str, v: &Value) {
+        if let Some(id) = v.get("brushPreset").and_then(Value::as_str) {
+            if !self.catalog.presets.iter().any(|b| b.id == id) {
+                self.errs.push(Error::new("UNKNOWN_BRUSH_PRESET", format!("unknown brush preset {id}"))
+                    .path(format!("{p}/brushPreset"))
+                    .expected(self.catalog.presets.iter().map(|b| b.id.as_str()).collect::<Vec<_>>().join(", ")));
+            }
+        }
         for (key, rule) in STYLE_RULES.iter() {
             let Some(x) = v.get(key) else { continue };
             let kp = format!("{p}/{key}");
@@ -671,7 +700,10 @@ enum R {
 }
 
 /// Every style key and its rule (the defaults are in spec/SCENEPLAN_V1.md).
-const STYLE_RULES: [(&str, R); 53] = [
+const STYLE_RULES: [(&str, R); 56] = [
+    ("pressure", R::Pair(0., 1., false)),
+    ("edgeFade", R::Range(0., 1.)),
+    ("edgeInset", R::Range(0., 2.)),
     ("mode", R::Any),
     ("colors", R::Colors),
     ("flecks", R::Flecks),

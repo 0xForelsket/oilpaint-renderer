@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>
+    Oilpaint · Planned composition</title
+  ><style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: #1d2420;
+      color: #e7e5d9;
+      font: 15px system-ui;
+    }
+    header,
+    main {
+      padding: 24px 30px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+    p {
+      color: #c0ccbc;
+      line-height: 1.5;
+    }
+    main {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 25px;
+    }
+    aside {
+      background: #2c362d;
+      padding: 18px;
+      border-radius: 8px;
+    }
+    label {
+      display: block;
+      margin: 12px 0 6px;
+    }
+    select,
+    input,
+    button,
+    textarea {
+      font: inherit;
+      background: #3a473c;
+      color: inherit;
+      border: 1px solid #657762;
+      border-radius: 4px;
+      padding: 7px;
+    }
+    select,
+    textarea {
+      width: 100%;
+    }
+    button {
+      cursor: pointer;
+      margin: 5px 4px 5px 0;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: wait;
+    }
+    input[type="number"] {
+      width: 85px;
+    }
+    input[type="color"] {
+      width: 60px;
+      height: 35px;
+      padding: 2px;
+    }
+    canvas {
+      max-width: 100%;
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    figure {
+      margin: 0;
+    }
+    figcaption {
+      padding: 9px 0;
+      color: #c0ccbc;
+    }
+    summary {
+      cursor: pointer;
+      margin: 12px 0;
+    }
+    #error {
+      color: #ffb29e;
+      white-space: pre-wrap;
+    }
+    #status {
+      font-variant-numeric: tabular-nums;
+    }
+    a {
+      color: #ccddb9;
+    }
+    @media (max-width: 900px) {
+      .pair {
+        grid-template-columns: 1fr;
+      }
+    }
+    @media (max-width: 640px) {
+      main {
+        display: block;
+      }
+      aside {
+        margin-bottom: 20px;
+      }
+    }
+  </style>
+  <header>
+    <h1>Planned composition</h1>
+    <p>
+      Plan with the retained brushes, then edit one subject while the other marks stay fixed.
+      <a href="/">Brush laboratory</a>
+    </p>
+  </header>
+  <main>
+    <aside>
+      <label>Subject<select id="region"></select></label
+      ><label>Tint <input id="color" type="color" value="#a39138" /></label
+      ><label>Amount<input id="amount" type="range" min="0" max="1" step=".05" value=".45" /></label
+      ><button id="tint">Apply tint</button><label><input id="visible" type="checkbox" checked /> Visible</label
+      ><label>Translate (cw)</label><input id="dx" type="number" value="0" step=".01" /><input
+        id="dy"
+        type="number"
+        value="0"
+        step=".01"
+      /><button id="translate">Move subject</button><label>Plan this subject with<select id="preset"></select></label
+      ><button id="replan">Replan selected subject</button>
+      <p>Replanning builds a candidate, then accepts only this subject's groups.</p>
+      <hr />
+      <button id="reference">Capture reference</button><button id="save">Save composition</button
+      ><button id="open">Open composition</button><button id="strokes">Export StrokeList</button
+      ><input id="file" type="file" accept=".json" hidden /><button id="reset">Reset still life</button>
+    </aside>
+    <div>
+      <div class="pair">
+        <figure>
+          <canvas id="live" width="384" height="256"></canvas>
+          <figcaption id="caption">Live composition</figcaption>
+        </figure>
+        <figure>
+          <canvas id="saved" width="384" height="256"></canvas>
+          <figcaption>Captured reference</figcaption>
+        </figure>
+      </div>
+      <p id="status" aria-live="polite">Loading renderer…</p>
+      <p id="error" role="alert"></p>
+      <label
+        >View
+        <select id="view">
+          <option value="lit">Lit</option>
+          <option value="unlit">Unlit</option>
+          <option value="height">Height</option>
+        </select></label
+      ><label
+        >Render width<select id="width">
+          <option selected>384</option>
+          <option>768</option>
+        </select></label
+      >
+      <details>
+        <summary>ScenePlan source</summary>
+        <textarea id="source" rows="20" spellcheck="false"></textarea><button id="plan">Plan complete scene</button>
+        <p>
+          The source selects brushes, flows and edge handling by region and pass. Local edits are saved in the
+          composition; they do not alter this source automatically.
+        </p>
+      </details>
+    </div>
+  </main>
+  <script type="module" src="/packages/oilpaint/preview/composition-app.js"></script>
+</html>

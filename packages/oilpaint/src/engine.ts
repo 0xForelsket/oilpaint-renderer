@@ -1,3 +1,4 @@
+import type { Composition } from "./composition-types.ts";
 // The Rust engine as WASM (crates/oil-wasm): ScenePlan validation and the guide compiler (L2). The module has no
 // imports and no bindgen glue: input goes into a buffer (`oil_input`), a call returns a byte length, and the result
 // is read at `oil_buf_ptr()`.
@@ -86,6 +87,8 @@ export interface PlanReport {
 }
 
 export interface Plan {
+  /** Exact planned marks, grouped by pass and region for local editing. */
+  document: Composition;
   report: PlanReport;
   /** The StrokeList v2 bytes (spec/STROKELIST_V2.md): paint them at any size with the same engine version. */
   strokes: Uint8Array;
@@ -196,7 +199,8 @@ export async function loadEngine(source?: string | URL | BufferSource): Promise<
       const mixer = mixerId(o.mixer);
       const report = json(e.oil_plan(o.width ?? 600, (o.seed ?? 1907) >>> 0, mixer, o.strictEngine ? 1 : 0));
       if (report.errors) throw new OilError(report.errors);
-      return { report, strokes: bytes(e.oil_plan_strokes()) };
+      const {document, ...summary}=report;
+      return { report: summary, strokes: bytes(e.oil_plan_strokes()), document };
     },
     guides(s, o = {}) {
       const { text: spec, fields } = specOf(s);

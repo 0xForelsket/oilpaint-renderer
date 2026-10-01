@@ -90,6 +90,7 @@ pub fn plan(text: &str, width: u32, seed: u32, mixer: u32, strict: bool, fields:
             let bytes = list.to_bytes();
             let mut v = serde_json::to_value(&report).unwrap_or_default();
             v["bytes"] = json!(bytes.len());
+            v["document"] = json!(oil_plan::composition(&list, &report));
             (v, Some(bytes))
         }
     }

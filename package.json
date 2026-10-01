@@ -23,7 +23,11 @@
     "review:iteration3": "node packages/oilpaint/preview/review-iteration-3.mjs",
     "review:package3": "node packages/oilpaint/preview/package-iteration-3.mjs",
     "review:scumble": "node packages/oilpaint/preview/review-scumble.mjs",
-    "review:scumble:package": "node packages/oilpaint/preview/package-scumble.mjs"
+    "review:scumble:package": "node packages/oilpaint/preview/package-scumble.mjs",
+    "gen:composition": "node packages/oilpaint/scripts/gen-composition.mjs",
+    "demo:still-life": "node tools/plan_still_life.mjs",
+    "verify:still-life": "node tools/verify_planned_still_life.mjs",
+    "test:composition-ui": "node packages/oilpaint/preview/verify-composition.mjs"
   },
   "devDependencies": {
     "@types/node": "24.19.0",

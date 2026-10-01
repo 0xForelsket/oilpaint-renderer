@@ -22,9 +22,13 @@ impl Session {
                 Ok(json!(c))
             }
             "compile" | "render" => {
-                let d: Document =
-                    serde_json::from_value(v["document"].clone()).map_err(|e| e.to_string())?;
-                let list = d.compile()?;
+                let list = if v["document"]["format"] == "oil-composition" {
+                    let d: crate::Composition = serde_json::from_value(v["document"].clone()).map_err(|e|e.to_string())?;
+                    d.compile()?
+                } else {
+                    let d: Document = serde_json::from_value(v["document"].clone()).map_err(|e| e.to_string())?;
+                    d.compile()?
+                };
                 if v["op"] == "compile" {
                     self.strokes = list.to_bytes();
                     return Ok(json!({"bytes":self.strokes.len()}));
