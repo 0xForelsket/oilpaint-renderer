@@ -159,7 +159,7 @@ dependencies = [
 [[package]]
 name = "ochrell"
 version = "0.2.0"
-source = "git+file:///C:/Users/sdhui/projects/ochrell?rev=1d63f90b8f0e6d16d335df27a4ec28035169f8e3#1d63f90b8f0e6d16d335df27a4ec28035169f8e3"
+source = "git+file:///C:/Users/sdhui/projects/ochrell?rev=312068fb39ab0417761320fd757a8b62f77ecd26#312068fb39ab0417761320fd757a8b62f77ecd26"
 
 [[package]]
 name = "oil-cli"

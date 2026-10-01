@@ -1,12 +1,13 @@
-//! Code-driven painting with persistent four-paint recipes. OPJ1 embeds the
+//! Code-driven painting with persistent palette recipes. OPJ1/OPJ2 embed the
 //! palette, prepared decoder, version-gated stroke geometry and explicit loads.
 //! Existing RGB StrokeLists and the default renderer remain unchanged.
 #![forbid(unsafe_code)]
+#![doc = include_str!("../README.md")]
 
 mod codec;
 use oil_kernel::brush::{length_in_widths, render_stroke_len};
 use oil_kernel::{Canvas, Load};
-pub use oil_mix::palette::{PaletteMixer, TargetMatch};
+pub use oil_mix::palette::{PaletteMixer, PaletteMixerN, TargetMatch, TargetMatchN};
 use oil_mix::Mixer;
 pub use oil_paint::PaintStats;
 use oil_strokes::StrokeList;
@@ -33,48 +34,52 @@ impl From<oil_mix::palette::PrepareError> for Error {
 /// Normalized main and secondary loads, plus a signed zero-sum streak direction.
 /// `dz` already includes the desired streak amount; no RGB matching occurs in paint.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct RecipeLoad {
-    pub main: [f32; 4],
-    pub secondary: [f32; 4],
-    pub dz: [f32; 4],
+pub struct RecipeLoadN<const N: usize> {
+    pub main: [f32; N],
+    pub secondary: [f32; N],
+    pub dz: [f32; N],
 }
-impl RecipeLoad {
-    pub fn solid(recipe: [f32; 4]) -> Self {
+impl<const N: usize> RecipeLoadN<N> {
+    pub fn solid(recipe: [f32; N]) -> Self {
         Self {
             main: recipe,
             secondary: recipe,
-            dz: [0.0; 4],
+            dz: [0.0; N],
         }
     }
 }
 
-pub struct MatchReport {
-    pub ground: TargetMatch,
+pub struct MatchReportN<const N: usize> {
+    pub ground: TargetMatchN<N>,
     /// Main and secondary load reports in stroke order. Streak variants are
     /// matched once too, but these errors describe the two principal loads.
-    pub strokes: Vec<[TargetMatch; 2]>,
+    pub strokes: Vec<[TargetMatchN<N>; 2]>,
 }
 
-pub struct PaletteJob {
-    mixer: PaletteMixer,
+pub struct PaletteJobN<const N: usize, const PREPARED: bool = false> {
+    mixer: PaletteMixerN<N, PREPARED>,
     geometry: StrokeList,
-    ground: [f32; 4],
-    loads: Vec<RecipeLoad>,
+    ground: [f32; N],
+    loads: Vec<RecipeLoadN<N>>,
 }
 
-fn normalized(z: &[f32; 4]) -> bool {
+fn normalized<const N: usize>(z: &[f32; N]) -> bool {
     z.iter().all(|v| v.is_finite() && *v >= 0.0)
         && (z.iter().map(|v| *v as f64).sum::<f64>() - 1.0).abs() <= 1e-5
 }
 
-impl PaletteJob {
+pub type PaletteJob = PaletteJobN<4, true>;
+pub type RecipeLoad = RecipeLoadN<4>;
+pub type MatchReport = MatchReportN<4>;
+
+impl<const N: usize, const PREPARED: bool> PaletteJobN<N, PREPARED> {
     /// Geometry's RGB fields remain authoring provenance; the supplied recipe
     /// loads and ground are the only material inputs consumed by painting.
     pub fn new(
-        mixer: PaletteMixer,
+        mixer: PaletteMixerN<N, PREPARED>,
         geometry: StrokeList,
-        ground: [f32; 4],
-        loads: Vec<RecipeLoad>,
+        ground: [f32; N],
+        loads: Vec<RecipeLoadN<N>>,
     ) -> Result<Self, Error> {
         let errors = geometry.validate();
         if !errors.is_empty() {
@@ -107,9 +112,9 @@ impl PaletteJob {
     /// Optional import path: match existing authored RGB once, then retain the
     /// resulting recipes. Call `new` to author recipes directly with no search.
     pub fn from_rgb(
-        mixer: PaletteMixer,
+        mixer: PaletteMixerN<N, PREPARED>,
         geometry: StrokeList,
-    ) -> Result<(Self, MatchReport), Error> {
+    ) -> Result<(Self, MatchReportN<N>), Error> {
         let errors = geometry.validate();
         if !errors.is_empty() {
             return Err(Error(format!("Invalid stroke geometry: {errors:?}")));
@@ -125,11 +130,11 @@ impl PaletteJob {
                 mixer.match_target(s.color2)?
             };
             let dz = if s.streak_amount == 0.0 {
-                [0.0; 4]
+                [0.0; N]
             } else {
                 oil_paint::streak_vector(&mixer, &main.recipe, s.streak_amount)
             };
-            loads.push(RecipeLoad {
+            loads.push(RecipeLoadN {
                 main: main.recipe,
                 secondary: secondary.recipe,
                 dz,
@@ -138,19 +143,19 @@ impl PaletteJob {
         }
         Ok((
             Self::new(mixer, geometry, ground.recipe, loads)?,
-            MatchReport { ground, strokes },
+            MatchReportN { ground, strokes },
         ))
     }
-    pub fn mixer(&self) -> &PaletteMixer {
+    pub fn mixer(&self) -> &PaletteMixerN<N, PREPARED> {
         &self.mixer
     }
     pub fn geometry(&self) -> &StrokeList {
         &self.geometry
     }
-    pub fn ground(&self) -> [f32; 4] {
+    pub fn ground(&self) -> [f32; N] {
         self.ground
     }
-    pub fn loads(&self) -> &[RecipeLoad] {
+    pub fn loads(&self) -> &[RecipeLoadN<N>] {
         &self.loads
     }
 
@@ -159,8 +164,8 @@ impl PaletteJob {
     pub fn paint(
         &self,
         width: u32,
-        mut after_layer: impl FnMut(usize, &Canvas<PaletteMixer>),
-    ) -> Result<(Canvas<PaletteMixer>, PaintStats), Error> {
+        mut after_layer: impl FnMut(usize, &Canvas<PaletteMixerN<N, PREPARED>>),
+    ) -> Result<(Canvas<PaletteMixerN<N, PREPARED>>, PaintStats), Error> {
         if width == 0 || width > 16384 {
             return Err(Error("Canvas width must be in 1..=16384".into()));
         }

@@ -1,15 +1,28 @@
 //! OPJ1: three u32-length-prefixed payloads (OPP1, OPL1, StrokeList), four f32
 //! ground weights, u32 load count and 12 f32 per stroke, then SHA256 of all above.
+//! OPJ2: u32 paint count and decoder=0 after magic, then the same framing with
+//! an empty table section, N ground weights and 3*N f32 per stroke. Direct mode.
 use super::*;
 use sha2::{Digest, Sha256};
 const MAX_BYTES: usize = 128 * 1024 * 1024;
 
-impl PaletteJob {
+impl<const N: usize, const PREPARED: bool> PaletteJobN<N, PREPARED> {
     pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
-        let mut out = b"OPJ1".to_vec();
+        let mut out = if PREPARED {
+            b"OPJ1".to_vec()
+        } else {
+            b"OPJ2".to_vec()
+        };
+        if !PREPARED {
+            out.extend_from_slice(&(N as u32).to_le_bytes());
+            out.extend_from_slice(&0_u32.to_le_bytes()); // Direct spectral decoder.
+        }
         for section in [
             self.mixer.palette().to_bytes(),
-            self.mixer.table().to_bytes(),
+            self.mixer
+                .prepared_table()
+                .map(|t| t.to_bytes())
+                .unwrap_or_default(),
             self.geometry.to_bytes(),
         ] {
             let len = u32::try_from(section.len())
@@ -36,8 +49,15 @@ impl PaletteJob {
         Ok(out)
     }
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
-        if bytes.len() < 68 || bytes.len() > MAX_BYTES || &bytes[..4] != b"OPJ1" {
-            return Err(Error("Invalid OPJ1 replay header or size".into()));
+        if !(1..=oil_mix::palette::MAX_PAINTS).contains(&N)
+            || bytes.len() < 68
+            || bytes.len() > MAX_BYTES
+            || (PREPARED && (N != 4 || &bytes[..4] != b"OPJ1"))
+            || (!PREPARED && &bytes[..4] != b"OPJ2")
+        {
+            return Err(Error(
+                "Invalid palette replay header, decoder or size".into(),
+            ));
         }
         let end = bytes.len() - 32;
         if Sha256::digest(&bytes[..end])[..] != bytes[end..] {
@@ -47,6 +67,9 @@ impl PaletteJob {
             bytes: &bytes[4..end],
             at: 0,
         };
+        if !PREPARED && (reader.u32()? as usize != N || reader.u32()? != 0) {
+            return Err(Error("Replay paint count or decoder mismatch".into()));
+        }
         let palette = reader.section()?;
         let table = reader.section()?;
         let geometry = StrokeList::from_bytes(reader.section()?)
@@ -54,13 +77,13 @@ impl PaletteJob {
         let ground = reader.weights()?;
         let count = reader.u32()? as usize;
         if count != geometry.strokes.len()
-            || count.checked_mul(48) != Some(reader.bytes.len() - reader.at)
+            || count.checked_mul(12 * N) != Some(reader.bytes.len() - reader.at)
         {
             return Err(Error("Recipe load count or length mismatch".into()));
         }
         let mut loads = Vec::with_capacity(count);
         for _ in 0..count {
-            loads.push(RecipeLoad {
+            loads.push(RecipeLoadN {
                 main: reader.weights()?,
                 secondary: reader.weights()?,
                 dz: reader.weights()?,
@@ -68,7 +91,7 @@ impl PaletteJob {
         }
         // Parse the LUT after all cheap framing/version checks.
         Self::new(
-            PaletteMixer::from_bytes(palette, table)?,
+            PaletteMixerN::<N, PREPARED>::from_bytes(palette, table)?,
             geometry,
             ground,
             loads,
@@ -99,8 +122,8 @@ impl<'a> Reader<'a> {
         let n = self.u32()? as usize;
         self.take(n)
     }
-    fn weights(&mut self) -> Result<[f32; 4], Error> {
-        let mut v = [0.0; 4];
+    fn weights<const N: usize>(&mut self) -> Result<[f32; N], Error> {
+        let mut v = [0.0; N];
         for x in &mut v {
             *x = f32::from_le_bytes(self.take(4)?.try_into().unwrap());
         }
