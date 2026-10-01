@@ -7,7 +7,9 @@
 mod codec;
 use oil_kernel::brush::{length_in_widths, render_stroke_len, render_stroke_len_materials};
 use oil_kernel::{Canvas, Load};
-pub use oil_mix::palette::{PaletteMixer, PaletteMixerN, TargetMatch, TargetMatchN};
+pub use oil_mix::palette::{
+    ForwardDecoder, PaletteMixer, PaletteMixerN, TargetMatch, TargetMatchN,
+};
 use oil_mix::Mixer;
 pub use oil_paint::PaintStats;
 use oil_strokes::StrokeList;
@@ -148,6 +150,12 @@ impl<const N: usize, const PREPARED: bool, const B: usize> PaletteJobN<N, PREPAR
     }
     pub fn mixer(&self) -> &PaletteMixerN<N, PREPARED, B> {
         &self.mixer
+    }
+    /// Change only the versioned display evaluator, preserving every authored
+    /// recipe and optical coefficient. The choice is saved in direct OPJ2 jobs.
+    pub fn with_forward_decoder(mut self, method: ForwardDecoder) -> Result<Self, Error> {
+        self.mixer = self.mixer.with_forward_decoder(method)?;
+        Ok(self)
     }
     pub fn geometry(&self) -> &StrokeList {
         &self.geometry

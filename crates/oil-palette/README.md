@@ -39,7 +39,8 @@ from the prepared four-paint path; no equal-throughput claim is made.
 
 OPJ1 retains its original layout. OPJ2 contains:
 
-1. Magic `OPJ2`, u32 paint count, u32 decoder kind (0 = direct optical package).
+1. Magic `OPJ2`, u32 paint count, u32 decoder kind (0 = reference,
+   1 = algebraic-v1, 2 = exp-lut-v1).
 2. Three u32-length-prefixed sections: optical palette, empty table section,
    and version-gated StrokeList geometry.
 3. N f32 ground proportions, u32 load count, then 3*N f32 per stroke (main,
@@ -99,8 +100,9 @@ The example writes six PNG/OPJ2 pairs, per-recipe and per-target CSVs, all-plane
 hashes and seven alternating warmed timing observations. At 384x480 on the study
 host, the balanced 94-stroke fixture took a median 224 ms; direct display decode
 was about 1.02 microseconds per recipe. Target matching is an authoring cost,
-separate from these paint timings. There is no eight-paint LUT in this package;
-all eight material proportions and the exact direct decoder are retained.
+separate from these paint timings. The package contains no recipe LUT;
+all eight material proportions and the reference direct decoder are retained.
+An optional compact exponential lookup is now available in the renderer below.
 
 ## Exact target-match cache
 
@@ -169,3 +171,50 @@ authored recipes; matching is outside every paint timing. Three measured rounds
 follow one warmup, with mode order rotated. The measured speedup depends on
 how often pixels are revisited; no equal-throughput claim is made for arbitrary
 scenes, other paint counts, browsers or other hosts.
+
+## Optional forward decoders
+
+Direct 1-16-paint mixers and jobs can select a versioned display evaluator:
+
+```text
+let job = job.with_forward_decoder(ForwardDecoder::ExpLutV1)?;
+let (canvas, stats) = job.paint_final(2048)?;
+```
+
+`ForwardDecoder` is exported from `oil_palette`. `Reference` remains the default.
+`AlgebraicV1` replaces the empirical correction's log/log1p/exp sequence with
+the equivalent ratio `r / (r + (1-r)*exp(-shift))` and prepares the spectral basis.
+`ExpLutV1` additionally interpolates a fixed 513-entry exponential table on
+[-1.6,1.6], with algebraic fallback outside that interval. This is a scalar
+function table, not a multidimensional table of recipes or a new optical model.
+Pure endpoints and all material proportions are preserved. Both alternate
+evaluators can change floating-point RGB; only the lookup adds interpolation error.
+
+Select on a mixer before authoring using the same `with_forward_decoder` method,
+or on an existing job without changing its recipes. Target solving and the colors
+used to derive streak recipes keep the reference evaluation. Achieved-color
+reports describe the selected decoder; changing the decoder clears the target
+cache. Prepared-four OPL1 mixers reject non-reference choices.
+
+OPJ2 saves the explicit tag and reconstructs preparation on load; its table
+section stays empty. Existing tag-0 jobs and OPJ1 preserve their bytes and meaning.
+Unknown tags are rejected, including by older readers that only support tag 0.
+Selected-decoder same-host replay is exact; accelerated output is not promised
+bit-identical to reference. No new cross-host bit-parity claim is made.
+
+The table uses 4104 bytes per mixer. For 31 bands, its prepared basis adds 992
+bytes, and the evaluator also owns a cloned optical model. There is no additional
+canvas plane. The reference mixer creates none of this preparation.
+
+The sibling Ochrell `experiments/palette_forward_math/REPORT.md` records the
+62,608-recipe screen, synthetic 1/4/8/10/16-paint and 31/81-band checks, and three
+saved scenes at widths 512/1024/2048. On that host the 2048x2560 layered fixture
+improves from 4.901 s reference to 3.050 s algebraic and 2.857 s lookup, using
+`paint_final` for all three. Timings vary by scene and run. The maximum lookup
+reflectance difference in the recipe screen is 1.221e-6; this measures numerical
+agreement with the frozen model, not accuracy against physical paint.
+
+```text
+cargo run --release --offline -p oil-mix --example forward_math -- <palette.opp> <output-directory> lookup
+cargo run --release --offline -p oil-palette --example forward_paint -- <saved-job-directory> <output-directory> 1024
+```

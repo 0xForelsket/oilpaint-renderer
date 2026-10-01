@@ -15,7 +15,7 @@ use oil_strokes::StrokeList;
 /// Streak direction for a colour: half the difference between a lighter/warmer and a darker/cooler variant, times
 /// `amount` (v1's `strokes.streak_vector`). Bristles add `t * dz`, t in [-1, 1].
 pub fn streak_vector<M: Mixer>(m: &M, z: &M::State, amount: f32) -> M::State {
-    let rgb = m.decode_srgb(z);
+    let rgb = m.authoring_srgb(z);
     let light = [clamp01(rgb[0] * 1.10 + 0.05), clamp01(rgb[1] * 1.10 + 0.035), clamp01(rgb[2] * 1.10)];
     let dark = [clamp01(rgb[0] * 0.88), clamp01(rgb[1] * 0.88 - 0.01), clamp01(rgb[2] * 0.88 + 0.02)];
     let (zl, zd) = (m.encode(light), m.encode(dark));

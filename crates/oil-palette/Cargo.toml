@@ -17,6 +17,7 @@ sha2 = "0.10"
 
 [dev-dependencies]
 png = "0.17"
+oil-math = { path = "../oil-math" }
 
 [lints]
 workspace = true

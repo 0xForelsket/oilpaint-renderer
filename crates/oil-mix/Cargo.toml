@@ -16,3 +16,6 @@ ochrell = { git = "file:///C:/Users/sdhui/projects/ochrell", rev = "17c13d018c1a
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+sha2 = "0.10"

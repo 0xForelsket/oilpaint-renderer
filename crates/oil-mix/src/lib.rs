@@ -12,6 +12,7 @@
 
 pub mod ochrell;
 pub mod palette;
+pub mod palette_forward;
 pub mod srgb;
 
 pub use ochrell::OchrellMixer;
@@ -50,6 +51,12 @@ pub trait Mixer: Send + Sync + 'static {
 
     /// Display colour of a state, sRGB in [0, 1].
     fn decode_srgb(&self, z: &Self::State) -> [f32; 3];
+
+    /// Display used to derive new target recipes during authoring. Alternate
+    /// display approximations can keep this tied to their reference model.
+    fn authoring_srgb(&self, z: &Self::State) -> [f32; 3] {
+        self.decode_srgb(z)
+    }
 
     /// Display colour of a state in linear light, [0, 1]. Mixers that decode to linear light natively override it
     /// to skip the sRGB round trip.

@@ -1,5 +1,7 @@
 //! Palette recipes with prepared four-paint or direct 1-16-paint decoding. Target
 //! matching is an authoring operation; mixing and display never solve an inverse.
+pub use crate::palette_forward::ForwardDecoder;
+use crate::palette_forward::PaletteForwardN;
 use crate::{srgb, Mixer};
 pub use ::ochrell::palette::{
     synthetic_four, AmountBasis, Palette, PaletteError, PaletteMetadata, PaletteMetadataN,
@@ -74,6 +76,7 @@ impl<const N: usize> TargetCache<N> {
 pub struct PaletteMixerN<const N: usize, const PREPARED: bool = false, const B: usize = 81> {
     table: Option<PaletteLut<'static>>,
     matcher: ColorMatcherN<'static, N, B>,
+    forward: Option<Box<PaletteForwardN<N, B>>>,
     // Owned by this immutable palette/decoder instance, never global or serialized.
     target_cache: Mutex<TargetCache<N>>,
 }
@@ -116,6 +119,7 @@ impl PaletteMixerN<4, true> {
         Ok(Self {
             table: Some(table),
             matcher,
+            forward: None,
             target_cache: Mutex::new(TargetCache::new(DEFAULT_TARGET_CACHE_CAPACITY)),
         })
     }
@@ -132,6 +136,7 @@ impl<const N: usize, const B: usize> PaletteMixerN<N, false, B> {
         Ok(Self {
             table: None,
             matcher,
+            forward: None,
             target_cache: Mutex::new(TargetCache::new(DEFAULT_TARGET_CACHE_CAPACITY)),
         })
     }
@@ -166,6 +171,7 @@ impl<const N: usize, const PREPARED: bool, const B: usize> PaletteMixerN<N, PREP
         Ok(Self {
             table: prepared,
             matcher,
+            forward: None,
             target_cache: Mutex::new(TargetCache::new(DEFAULT_TARGET_CACHE_CAPACITY)),
         })
     }
@@ -174,6 +180,47 @@ impl<const N: usize, const PREPARED: bool, const B: usize> PaletteMixerN<N, PREP
     }
     pub fn prepared_table(&self) -> Option<&PaletteLut<'static>> {
         self.table.as_ref()
+    }
+
+    /// Opt into a versioned alternate direct decoder. Prepared-four OPL1 tables
+    /// keep their own decoder; non-reference choices are rejected for that mode.
+    /// Rebuilds preparation and clears cached achieved-color reports.
+    pub fn with_forward_decoder(mut self, method: ForwardDecoder) -> Result<Self, PrepareError> {
+        if PREPARED && method != ForwardDecoder::Reference {
+            return Err(PrepareError::Palette(PaletteError::InvalidFormat));
+        }
+        self.forward = if method == ForwardDecoder::Reference {
+            None
+        } else {
+            Some(Box::new(PaletteForwardN::new(self.palette(), method)))
+        };
+        self.clear_target_cache();
+        Ok(self)
+    }
+    /// Direct evaluation choice. Prepared-four uses its separate OPL1 table.
+    pub fn forward_decoder(&self) -> ForwardDecoder {
+        self.forward
+            .as_ref()
+            .map_or(ForwardDecoder::Reference, |f| f.method())
+    }
+    pub fn forward_auxiliary_bytes(&self) -> usize {
+        self.forward.as_ref().map_or(0, |f| f.auxiliary_bytes())
+    }
+
+    fn reference_linear_rgb(&self, z: &[f32; N]) -> [f32; 3] {
+        let linear = if let Some(table) = &self.table {
+            let four = table
+                .palette()
+                .recipe(std::array::from_fn(|i| z[i] as f64))
+                .expect("valid four-paint state");
+            table.decode_linear(&four).expect("matching palette")
+        } else {
+            self.palette()
+                .recipe(z.map(|v| v as f64))
+                .expect("valid palette state")
+                .decode_linear()
+        };
+        conversion::gamut_map(linear).map(|v| v as f32)
     }
 
     /// Set the bounded FIFO authoring cache size, clearing entries and counters.
@@ -277,23 +324,20 @@ impl<const N: usize, const PREPARED: bool, const B: usize> Mixer for PaletteMixe
             .recipe
     }
     fn decode_linear_rgb(&self, z: &Self::State) -> [f32; 3] {
-        let linear = if let Some(table) = &self.table {
-            // The prepared constructor and decoder enforce N=4 and identity.
-            let four = table
-                .palette()
-                .recipe(std::array::from_fn(|i| z[i] as f64))
-                .expect("valid four-paint state");
-            table.decode_linear(&four).expect("matching palette")
+        if let Some(forward) = &self.forward {
+            let linear = forward
+                .decode_linear(z.map(|v| v as f64))
+                .expect("valid palette state");
+            conversion::gamut_map(linear).map(|v| v as f32)
         } else {
-            self.palette()
-                .recipe(z.map(|v| v as f64))
-                .expect("valid palette state")
-                .decode_linear()
-        };
-        conversion::gamut_map(linear).map(|v| v as f32)
+            self.reference_linear_rgb(z)
+        }
     }
     fn decode_srgb(&self, z: &Self::State) -> [f32; 3] {
         self.decode_linear_rgb(z).map(srgb::from_linear)
+    }
+    fn authoring_srgb(&self, z: &Self::State) -> [f32; 3] {
+        self.reference_linear_rgb(z).map(srgb::from_linear)
     }
     fn streak(&self, base: &mut Self::State, delta: &Self::State, amplitude: f32) {
         let previous = *base;

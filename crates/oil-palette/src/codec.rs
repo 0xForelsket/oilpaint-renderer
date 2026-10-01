@@ -1,7 +1,8 @@
 //! OPJ1: three u32-length-prefixed payloads (OPP1, OPL1, StrokeList), four f32
 //! ground weights, u32 load count and 12 f32 per stroke, then SHA256 of all above.
-//! OPJ2: u32 paint count and decoder=0 after magic, then the same framing with
-//! an empty table section, N ground weights and 3*N f32 per stroke. Direct mode.
+//! OPJ2: u32 paint count and decoder tag after magic, then the same framing with
+//! an empty table section, N ground weights and 3*N f32 per stroke. Direct decoder
+//! tags: 0=reference, 1=algebraic-v1, 2=exp-lut-v1. Unknown tags are rejected.
 use super::*;
 use sha2::{Digest, Sha256};
 const MAX_BYTES: usize = 128 * 1024 * 1024;
@@ -15,7 +16,7 @@ impl<const N: usize, const PREPARED: bool, const B: usize> PaletteJobN<N, PREPAR
         };
         if !PREPARED {
             out.extend_from_slice(&(N as u32).to_le_bytes());
-            out.extend_from_slice(&0_u32.to_le_bytes()); // Direct spectral decoder.
+            out.extend_from_slice(&self.mixer.forward_decoder().tag().to_le_bytes());
         }
         for section in [
             self.mixer.palette().to_bytes(),
@@ -67,9 +68,15 @@ impl<const N: usize, const PREPARED: bool, const B: usize> PaletteJobN<N, PREPAR
             bytes: &bytes[4..end],
             at: 0,
         };
-        if !PREPARED && (reader.u32()? as usize != N || reader.u32()? != 0) {
-            return Err(Error("Replay paint count or decoder mismatch".into()));
-        }
+        let method = if PREPARED {
+            ForwardDecoder::Reference
+        } else {
+            if reader.u32()? as usize != N {
+                return Err(Error("Replay paint count mismatch".into()));
+            }
+            ForwardDecoder::from_tag(reader.u32()?)
+                .ok_or_else(|| Error("Replay decoder mismatch".into()))?
+        };
         let palette = reader.section()?;
         let table = reader.section()?;
         let geometry = StrokeList::from_bytes(reader.section()?)
@@ -91,7 +98,8 @@ impl<const N: usize, const PREPARED: bool, const B: usize> PaletteJobN<N, PREPAR
         }
         // Parse the LUT after all cheap framing/version checks.
         Self::new(
-            PaletteMixerN::<N, PREPARED, B>::from_bytes(palette, table)?,
+            PaletteMixerN::<N, PREPARED, B>::from_bytes(palette, table)?
+                .with_forward_decoder(method)?,
             geometry,
             ground,
             loads,
