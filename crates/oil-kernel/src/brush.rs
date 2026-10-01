@@ -134,6 +134,8 @@ enum Draw {
     AlongPhase,
     Drop,
     DropLength,
+    LoadLife,
+    PickupAffinity,
 }
 
 #[inline(always)]
@@ -289,7 +291,9 @@ fn make_bristles(bp: &BrushParams, total_s: f32) -> Bristles {
         let lph = 6.283_185_3_f32 * r(l, Draw::AlongPhase);
         for (i, ai) in a.iter_mut().enumerate() {
             let s_w = i as f32 / ALONG_PER_WIDTH;
-            let v_ = bp.load - bp.deplete * s_w;
+            // Each bundle exhausts its load on its own clock; wet/full body still bridges lanes.
+            let life = 0.55 + 0.9 * r(l, Draw::LoadLife);
+            let v_ = bp.load - bp.deplete * s_w * life;
             let dryness = if v_ < bp.vdry { clamp01(1.0 - v_ / bp.vdry) } else { 0.0 };
             let pdrop = bp.dropout * (1.0 + 6.0 * dryness) * (if is_splay { 4.0 } else { 1.0 });
             if (i as f32) > (ns_i - 2) as f32 - endcut {
@@ -306,7 +310,11 @@ fn make_bristles(bp: &BrushParams, total_s: f32) -> Bristles {
                 *ai = 0.0;
                 continue;
             }
-            let mut v = base * (0.92 + 0.08 * sinf(lk * i as f32 + lph));
+            let continuity = smoothstep(0.28, 0.60, vnoise(s_w * 1.6, l as f32 * 1.73, seed.wrapping_add(91)));
+            let dry_share = (1.0 - bp.body) * (0.3 + 0.7 * dryness);
+            let mut v = base * (0.92 + 0.08 * sinf(lk * i as f32 + lph))
+                * (1.0 - dry_share + dry_share * continuity)
+                * (1.0 - dryness * 0.8);
             if (i as f32) < start {
                 v *= clamp01((i as f32 - start + 2.0) / 2.0);
             }
@@ -638,7 +646,7 @@ fn render_stroke_len_impl<M: Mixer, const DISPLAY: bool>(
         prep_lanes(&bb, (s_acc + 0.5 * len) / wref, 0.7f32 / (0.25 * (w0 + w1) + 0.25), &mut g);
         let loadf = if mode == MODE_GLAZE { 1.0 } else { clamp01(v_load / bp.vdry) };
         let thick = clamp01(v_load);
-        let bodyf = if mode == MODE_SCUMBLE { 0.0 } else { bp.body * loadf };
+        let bodyf = bp.body * loadf;
         let can_deposit = mode != MODE_SMUDGE || have_mean;
         for l in 0..bb.ntot {
             seg_a[l] = 0.0;
@@ -701,7 +709,15 @@ fn render_stroke_len_impl<M: Mixer, const DISPLAY: bool>(
                     let idx = row + px as usize;
                     if mode == MODE_SCUMBLE {
                         let hb = if cv.hblur.is_empty() { 0.0 } else { cv.hblur[idx] };
-                        alpha *= smoothstep(bp.dry_thresh - bp.dry_width, bp.dry_thresh + bp.dry_width, cv.hgt[idx] - hb);
+                        // Sparse substantial contacts, anchored on the canvas so turning the brush does
+                        // not bend every patch into a parallel arc. Scale in brush-widths, never pixels.
+                        let cx = (px as f32 + 0.5) / wref;
+                        let cy = (py as f32 + 0.5) / wref;
+                        let patch = 0.72 * vnoise(cx * 18.0, cy * 18.0, bp.seed.wrapping_add(313))
+                            + 0.28 * vnoise(cx * 39.0 + 7.3, cy * 39.0 - 4.1, bp.seed.wrapping_add(991));
+                        let relief = ((cv.hgt[idx] - hb - bp.dry_thresh) / bp.dry_width).clamp(-1.0, 1.0);
+                        let contact = smoothstep(0.56, 0.63, patch + relief * 0.18 + (pres - 0.7) * 0.12);
+                        alpha = acov * pres * bp.opacity * loadf * contact;
                     }
                     if alpha <= 0.002 {
                         continue;
@@ -838,7 +854,11 @@ fn render_stroke_len_impl<M: Mixer, const DISPLAY: bool>(
                 for k in 0..zt.len() {
                     zt[k] += rate * (sz[k] / sa - zt[k]);
                 }
-                let target = bp.pickup * wetavg;
+                // Some bundles stay clean while their neighbours carry substrate paint. The affinity
+                // persists along the stroke; it is not a new random choice at every path segment.
+                let affinity = crand(bp.seed, l as u32, 0, Draw::PickupAffinity);
+                let retention = 1.0 - bp.streak_mix + bp.streak_mix * (0.08 + 1.6 * affinity * affinity);
+                let target = clamp01(bp.pickup * wetavg * retention);
                 if target > dirt[l] {
                     dirt[l] += r_approach * (target - dirt[l]);
                 } else {

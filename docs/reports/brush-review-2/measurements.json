@@ -1,0 +1,359 @@
+{
+  "engine": "2.0.0-dev.4",
+  "width": 960,
+  "views": [
+    "studio",
+    "unlit",
+    "height",
+    "soft",
+    "raking"
+  ],
+  "evidence": [
+    {
+      "id": "loaded-flat-contact",
+      "strokeHash": "457d7efa13648a0f3a7f7dfd9c319c8b5f37958343ae4279f1768b6baee7de21",
+      "planes": {
+        "cover": "53990ff734a01871d73571a85a8dea8a1353f11c6c88c295fc310c5df9c99d39",
+        "h": "2c162efa2a030fc3fe8422a9322b078611f7c196e97a366b77712677bacd89a2",
+        "lat": "3f9c55e199ed52b3ff0400cfc52eec07fefcbc59d7f71521445507d5c5397b1f",
+        "rgb": "240b6a701b626db9867e02a723f734f7d775bc6d3369bc83adff74b5714c1e50",
+        "wet": "53990ff734a01871d73571a85a8dea8a1353f11c6c88c295fc310c5df9c99d39"
+      },
+      "times": {
+        "chromium": 248.90000000596046,
+        "firefox": 986
+      },
+      "browserViews": [
+        "studio"
+      ]
+    },
+    {
+      "id": "loaded-flat-forms",
+      "strokeHash": "5202fcf94aed806d10a4518c79f4f5aab2ec7fc59765ad35c2788a679f79329f",
+      "planes": {
+        "cover": "b5fa22169b2275afd7f5883b68b986bdfa176765fec8983b2f1fa2274b9a0220",
+        "h": "ebb2a0f6b9962524a4ce6e32d2024b7460025355ba38cb26136d81c5963543a5",
+        "lat": "97195fca85d9b70557759fa1e04e23d42d5459a907bad3819ba52550ea0508f0",
+        "rgb": "720ae2b695cdb7fde2cd2a4104b154f60825e17cc499bc13a4589b80d67fef7f",
+        "wet": "aaee13646e711a8332ca00999bae085eb37b071c46b4381d593d232f018fdeea"
+      },
+      "times": {
+        "chromium": 160,
+        "firefox": 1898
+      },
+      "browserViews": [
+        "studio"
+      ]
+    },
+    {
+      "id": "rounded-dab-contact",
+      "strokeHash": "20c6df5ab289112e829c8f63b81273c56a83915ffad3f918a8ebcbf6446dc976",
+      "planes": {
+        "cover": "008cdc1de5a46ac806422f92959191a2d6eb942d82efc20e7448e78bc90b766a",
+        "h": "1eeb42ea8dd6774e883b34773266656f5497061e1468ac92dc4a94028a92a271",
+        "lat": "4c9e7c981de6927e6100bc8e02c8543c85cc407af1abec09b76e695253905aec",
+        "rgb": "b0ac809bafdcf0bae84aede9711382f82a18a075547e111588a490f7d4601013",
+        "wet": "008cdc1de5a46ac806422f92959191a2d6eb942d82efc20e7448e78bc90b766a"
+      },
+      "times": {
+        "chromium": 105.90000000596046,
+        "firefox": 1028
+      },
+      "browserViews": [
+        "studio"
+      ]
+    },
+    {
+      "id": "rounded-dab-forms",
+      "strokeHash": "b5ff9b101aa04d57bdbdfdb34be385c20b4087717179053b976486047188baf8",
+      "planes": {
+        "cover": "60f6da472ca65530b387e34f189d96993e52bc99afeca8f50393c467edbbbe31",
+        "h": "e7dfa96e50e160f9a7f09a2ad6284606441e77cc4157d96d83dae1854f1e3847",
+        "lat": "4f1398c2311ac92aa8b2dcd9e87612e6ff24dcf54e9c223074b35a20a12edd3a",
+        "rgb": "4b4276162fa9281552ad5d8254580c19633d393c467a658ce129b2770e5fd796",
+        "wet": "ea71e6abfaa73c4647fabbc53dd89257eb0386e70705f904931d3c1580ec6a7d"
+      },
+      "times": {
+        "chromium": 182.5,
+        "firefox": 2844
+      },
+      "browserViews": [
+        "studio"
+      ]
+    },
+    {
+      "id": "dry-drag-contact",
+      "strokeHash": "2fd48d54337aa9bdf89b10621117a02bbe11d56a1af4c87c73ccdeecf0ad7df4",
+      "planes": {
+        "cover": "bcc9d4472f487221cf0c619481749987e0f347908d489b7c585e31ce10e39ea9",
+        "h": "058d2e770a234e1f260f80188aa3c9a31dcda3e4d89c007e60b898b68315b0ad",
+        "lat": "663b3908a6d70802f43a2eac864630621e39cb1e132960d141051dd88ba796e7",
+        "rgb": "485ee3fed17d4dff73740cfe8b3e08c3c6192faaf07cb7b8c9ca8b09533ddeae",
+        "wet": "bcc9d4472f487221cf0c619481749987e0f347908d489b7c585e31ce10e39ea9"
+      },
+      "times": {
+        "chromium": 71.5,
+        "firefox": 551
+      },
+      "browserViews": [
+        "studio"
+      ]
+    },
+    {
+      "id": "dry-drag-forms",
+      "strokeHash": "bf74f86bb7a8c9506c9df39a33e30f56572728f5c119a54053c43e67839a31be",
+      "planes": {
+        "cover": "6c815e5ce75d6d1dd3b2c86d35f366628157e391aad37bd46513a4bb73fe04ef",
+        "h": "69b2d82a939e0802caf76eb0f2080d5fb8a9f72a5fa33bf47836c1670a4c1917",
+        "lat": "2f56b78411fbdfb9769851404f88a38afbd16ed6076d9601ec8215386eb13794",
+        "rgb": "55ac526d33b78360f85cf6fa3926ef5b1db17efc6947af6c5b9fe8df730070d5",
+        "wet": "006efeff43ab43c45e6572ac04678d57e93313390069203c7e33d13e0c033b95"
+      },
+      "times": {
+        "chromium": 103.90000000596046,
+        "firefox": 759
+      },
+      "browserViews": [
+        "studio"
+      ]
+    },
+    {
+      "id": "scumble-contact",
+      "strokeHash": "5c51ea4f267cbe1cc5ef7f65329936e5da42c2c367ecdc19db62def33946169c",
+      "planes": {
+        "cover": "88b9c97eba1a160d0cce5f391c216178d3223280b32a312226beb67a45a87b14",
+        "h": "d06911b2d0c1ccae18d29e602a68b6e160445093d22446527a4eeed25ad850b5",
+        "lat": "8a8261fbfbc9a78d2e50451a417ad7325ea8f2a5b57a2de178409c351fadd3f6",
+        "rgb": "fa036a073c01db56f1a3aab79a67b0fcdbb75bc624869aac132e0c6471e2b56d",
+        "wet": "f7690faa13d48d20d83a064ac4a9fef10bef13781f6bac9b9fa074b5d8f2f03f"
+      },
+      "times": {
+        "chromium": 59.69999998807907,
+        "firefox": 436
+      },
+      "browserViews": [
+        "studio"
+      ]
+    },
+    {
+      "id": "scumble-forms",
+      "strokeHash": "37396dbfbb38638f00aec851b5e77ed45eeb98be988053743794beced334539f",
+      "planes": {
+        "cover": "7828d4fbdad9c11bee2f1f27d2ad92b4a15a9772a367d9d4bbee9eb019451553",
+        "h": "c91ed25645c4c1a3dc7dad9bc060459afa9c64f0a5fe3cfdf48b800b89a3dcfc",
+        "lat": "7407897e31f7fecd86f1ffa59252ffa335281de99d43776cdce05dafa98b858f",
+        "rgb": "a49f010fde6e8b76f12f7b3a2701abac1b17c99c7ca3a5c143d318a3a36ad77e",
+        "wet": "cc35aed8a2f2249b388aadd503906bc7cda6fb49735db0a632b59b2bd0ba3805"
+      },
+      "times": {
+        "chromium": 99.7999999821186,
+        "firefox": 840
+      },
+      "browserViews": [
+        "studio"
+      ]
+    },
+    {
+      "id": "impasto-accent-contact",
+      "strokeHash": "be47ac07ed2b6771bc6878e6860335c0aa0965b2b55711db3e9f524be52d9e69",
+      "planes": {
+        "cover": "f7c2561151ea06651156d35cf9e1f8928317c040a3fcd005cd374e59e73241d4",
+        "h": "07e6cbdadee2076621b88f44921e2caf8088b10443c872e1774bda4021b333a6",
+        "lat": "40c2774f4d7eac139e103beb7893c8ac5a43b1c8f9e642e40734f0223a837a6a",
+        "rgb": "4c68968acad651056ba6897c86a892cd69c209f8528bc2749b96218fd808d27a",
+        "wet": "f7c2561151ea06651156d35cf9e1f8928317c040a3fcd005cd374e59e73241d4"
+      },
+      "times": {
+        "chromium": 102.7000000178814,
+        "firefox": 790
+      },
+      "browserViews": [
+        "studio",
+        "unlit",
+        "height",
+        "soft",
+        "raking"
+      ]
+    },
+    {
+      "id": "impasto-accent-forms",
+      "strokeHash": "f4f01dbc6a52c759e2e78918d7ace3cc93689ca3ab460218c4dbbbe8f185ccea",
+      "planes": {
+        "cover": "b5fa22169b2275afd7f5883b68b986bdfa176765fec8983b2f1fa2274b9a0220",
+        "h": "ddca7a3f8ba5978b5b77bbfc31e79c69fee6ed414e8bd9f0a0edfbe4f6fef815",
+        "lat": "97195fca85d9b70557759fa1e04e23d42d5459a907bad3819ba52550ea0508f0",
+        "rgb": "720ae2b695cdb7fde2cd2a4104b154f60825e17cc499bc13a4589b80d67fef7f",
+        "wet": "aaee13646e711a8332ca00999bae085eb37b071c46b4381d593d232f018fdeea"
+      },
+      "times": {
+        "chromium": 169.40000000596046,
+        "firefox": 2784
+      },
+      "browserViews": [
+        "studio"
+      ]
+    },
+    {
+      "id": "fine-detail-contact",
+      "strokeHash": "6eb3ceeda0f97a52636572df650c61375a515f7cf99f18d38d54356eed62b875",
+      "planes": {
+        "cover": "a438eda69657252484fe32a3a009075cb7707719d9096e281992395cb4b67425",
+        "h": "fefaf2af1186e7bb12f31dde865372c4b3fba931217c2e432ce0152dc7d47a8e",
+        "lat": "7ef5f84e1567b92aab59ab8b09286ad3da1ac6ae7a68b9963bc4d5f94fc9441b",
+        "rgb": "6919f5530ac45eaae0a4bbbc60f8c4da3dd16a724d3afa01b5233270a33b93fd",
+        "wet": "a438eda69657252484fe32a3a009075cb7707719d9096e281992395cb4b67425"
+      },
+      "times": {
+        "chromium": 46.900000005960464,
+        "firefox": 605
+      },
+      "browserViews": [
+        "studio"
+      ]
+    },
+    {
+      "id": "fine-detail-forms",
+      "strokeHash": "22a3f48e0d9d5e86b73664512d7ebdda52d9e975aca02b5549ed16fafb7cc292",
+      "planes": {
+        "cover": "4673c3d9bce7961428cf28be0ca0800072cdfadeea3baf9fdf9dce1532cfea7e",
+        "h": "fbdd1143e31736a829602874c1bcad3f264a8cfa43d7278bd2f3045640b2ca98",
+        "lat": "16a12a2bb894686b0e27861a4d40727dc061f814b8323cd1a4169ab094282664",
+        "rgb": "b90f082c0878375568fa471b361b2f50b7931b7d46dea4b7cbf5aa129085ed75",
+        "wet": "8d489a92d00612b5406dadf8ac665d8cbd9d3b258e850d984f64ddcb69af78d1"
+      },
+      "times": {
+        "chromium": 112.5,
+        "firefox": 2780
+      },
+      "browserViews": [
+        "studio"
+      ]
+    },
+    {
+      "id": "wet-mixing-contact",
+      "strokeHash": "8ee2c3caa3fc4f95da5a1cb30864c5010354340d0ca1d3c70db2d4c4703f2c21",
+      "planes": {
+        "cover": "198a613af9201506e7483eb7e1d53ce6f535f561569810c48ca5c06a160ea072",
+        "h": "d9a03e9d4a7939d2cb0cd04ce5fe2bb2ccf401560174ddcaebf90fa0acf2a505",
+        "lat": "148283e211337fe217d733de860a6a0bfe3129fb2b169e546acb2aa9133643b0",
+        "rgb": "8caba0808369efa05ffc3a58cdb7ce27716e93cfc0ff79772c796e273ae57c74",
+        "wet": "198a613af9201506e7483eb7e1d53ce6f535f561569810c48ca5c06a160ea072"
+      },
+      "times": {
+        "chromium": 124.90000000596046,
+        "firefox": 1504
+      },
+      "browserViews": [
+        "studio"
+      ]
+    },
+    {
+      "id": "wet-mixing-forms",
+      "strokeHash": "d5e6878e2677952e8a13e7de3daeaab22a34df36341cc45b8de0c8e5a158c3cc",
+      "planes": {
+        "cover": "2281f722db8ea16a15c2928598045d389da50b843b992bc5a99642fb8ca04558",
+        "h": "7a0dcb6c1ff78a5dab35d36764ebd6c68472786bb8c79c03ac601bcfacd2ed13",
+        "lat": "fe7e1770de1ff68cd21977cc98987147bb60545875042ab5d42abd881c4ed45a",
+        "rgb": "8a9ca695dd4902cd4d6b5d49ff6d08e9605cbceb5c2d601ac0f8201a164a93ee",
+        "wet": "1b883f6af4ab218313df33208b100abf9a77b3cb41623dac76a02ebf5a135bb1"
+      },
+      "times": {
+        "chromium": 170.40000000596046,
+        "firefox": 1748
+      },
+      "browserViews": [
+        "studio"
+      ]
+    },
+    {
+      "id": "pickup-forward",
+      "strokeHash": "58757219f102d4cb22fd4f7fac28f0025e3b98ed4a13844dacb08c4639fc8797",
+      "planes": {
+        "cover": "08a8b35dfcc370a4fdcb8416e014a0d54380d56cee15caf7022559dce4c81dea",
+        "h": "2fbe8607e115a93550b7aa810f344c0f3dda0fe2f466f3b3d8e14e4f5ca26a53",
+        "lat": "7f1efadb5edad1f5d0878c3e5d29454dd063e58a0e926ea7cef563a810eb7ac5",
+        "rgb": "03785e59bff57a4be86123fed887099c1a282a38b4387273c890211b4d059289",
+        "wet": "580274d7f84e0c446c24c7fb8b1c390fa5ebc89cefa7987411f7d53e25b82fb3"
+      },
+      "times": {
+        "chromium": 103.30000001192093,
+        "firefox": 1038
+      },
+      "browserViews": [
+        "studio"
+      ]
+    },
+    {
+      "id": "pickup-reverse",
+      "strokeHash": "69c3c39f2b6cd7f82e8912d34378e4213ea04c9343bc364ddec191257fbe96f6",
+      "planes": {
+        "cover": "9235b479f0f8950b4e12088645b79f9296a6adecd3d899440062a4338500f259",
+        "h": "5cada31a0258f895a1c53c0b25792b4c40be63cf396d008921d37200b43ff1d3",
+        "lat": "26eaf06ddb046d785dd46a13f3b36ce3e976c9d52c0a18ee7fc5f09a4ea0890d",
+        "rgb": "04a53f5c81d6580bb896180b87676b3125ce6225ee36d95483f82b2ae7eebcb7",
+        "wet": "d4334433c197a5cd4eb12f0e8d17f691f8726693cb133bbeb687f7bdedb1b20b"
+      },
+      "times": {
+        "chromium": 104.80000001192093,
+        "firefox": 1155
+      },
+      "browserViews": [
+        "studio"
+      ]
+    },
+    {
+      "id": "pickup-dry",
+      "strokeHash": "62510222af0243194fcecda3029c205906aea94c506a72863c1011f69475141d",
+      "planes": {
+        "cover": "08a8b35dfcc370a4fdcb8416e014a0d54380d56cee15caf7022559dce4c81dea",
+        "h": "2fbe8607e115a93550b7aa810f344c0f3dda0fe2f466f3b3d8e14e4f5ca26a53",
+        "lat": "a73d37f34c8e2e5834a22fde66e9c729b7dec59099e681d8968c175db362b4be",
+        "rgb": "0034b062547524c6ff7dc4083df1ce4da760545a1912a49acba093de602de128",
+        "wet": "f346b353a7737ce52276df121b78a6e14dfff4a09afba7d68c75e85a6f643fd3"
+      },
+      "times": {
+        "chromium": 103.7999999821186,
+        "firefox": 998
+      },
+      "browserViews": [
+        "studio"
+      ]
+    },
+    {
+      "id": "dry-drag-runout",
+      "strokeHash": "0408466a3cb95f9039fc820432c3622d0d86180a82771d3743d6187f8963fbbd",
+      "planes": {
+        "cover": "bacc375f60f1c0e172da291ff7f127dd0c4f99abe32bbab992601e14b10edcc7",
+        "h": "d3f62d2a0dddc3ce9891b6a43ad44f6f2ea5e82f4f5545045f4c6a54d4ee49b0",
+        "lat": "3798f5d452ec09524b0b200ee5dcd0b3ecadcfb8edcfb2904efc4cc249d53f81",
+        "rgb": "3c408d042034dabe358ad500ebddcda88f1feca991a5126499a72867f9fc0ed2",
+        "wet": "bacc375f60f1c0e172da291ff7f127dd0c4f99abe32bbab992601e14b10edcc7"
+      },
+      "times": {
+        "chromium": 35.30000001192093,
+        "firefox": 191
+      },
+      "browserViews": [
+        "studio"
+      ]
+    },
+    {
+      "id": "loaded-flat-runout",
+      "strokeHash": "cc7d48f2f2e1d3fe1383dd5b9d122b84a04885ec613619389ebdfff8ca71b2e5",
+      "planes": {
+        "cover": "3ce4849614c9584b655c3d404241fce6081719b1f13a4b16c446aa0966538cd2",
+        "h": "f6722756f46fd1f08a4f26975b28e38049f066cff206b6305a5b2e4a4f43b618",
+        "lat": "1a6d30cf0d725ddd8065dedec7d8579067cbda282c8b991d3d17bb55a190e19c",
+        "rgb": "3f84077f88acc0d182999acaaac380711e094a0d9af9a70df588db3d12f35d5f",
+        "wet": "3ce4849614c9584b655c3d404241fce6081719b1f13a4b16c446aa0966538cd2"
+      },
+      "times": {
+        "chromium": 42.099999994039536,
+        "firefox": 355
+      },
+      "browserViews": [
+        "studio"
+      ]
+    }
+  ]
+}

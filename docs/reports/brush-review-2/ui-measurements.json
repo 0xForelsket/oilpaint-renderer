@@ -1,0 +1,376 @@
+{
+  "metrics": [
+    {
+      "label": "preset loaded-flat",
+      "paintMs": 0.7999999821186066,
+      "viewMs": 78.30000001192093,
+      "latency": 162.69999998807907,
+      "id": 3
+    },
+    {
+      "label": "preset rounded-dab",
+      "paintMs": 25.200000017881393,
+      "viewMs": 42,
+      "latency": 144.69999998807907,
+      "id": 4
+    },
+    {
+      "label": "preset dry-drag",
+      "paintMs": 10.700000017881393,
+      "viewMs": 32.89999997615814,
+      "latency": 130.19999998807907,
+      "id": 5
+    },
+    {
+      "label": "preset scumble",
+      "paintMs": 11.5,
+      "viewMs": 35.5,
+      "latency": 130.30000001192093,
+      "id": 6
+    },
+    {
+      "label": "preset impasto-accent",
+      "paintMs": 12,
+      "viewMs": 37.30000001192093,
+      "latency": 129.80000001192093,
+      "id": 7
+    },
+    {
+      "label": "preset fine-detail",
+      "paintMs": 12.5,
+      "viewMs": 37.400000005960464,
+      "latency": 131.80000001192093,
+      "id": 8
+    },
+    {
+      "label": "preset wet-mixing",
+      "paintMs": 12.099999994039536,
+      "viewMs": 37.5,
+      "latency": 133.40000000596046,
+      "id": 9
+    },
+    {
+      "label": "sample straight",
+      "paintMs": 0.3999999761581421,
+      "viewMs": 32.70000001788139,
+      "latency": 110.7000000178814,
+      "id": 10
+    },
+    {
+      "label": "sample curve",
+      "paintMs": 12.099999994039536,
+      "viewMs": 29.900000005960464,
+      "latency": 118.40000000596046,
+      "id": 11
+    },
+    {
+      "label": "sample dab",
+      "paintMs": 8.599999994039536,
+      "viewMs": 31.200000017881393,
+      "latency": 116.30000001192093,
+      "id": 12
+    },
+    {
+      "label": "sample pressure",
+      "paintMs": 10.200000017881393,
+      "viewMs": 31.5,
+      "latency": 118.09999999403954,
+      "id": 13
+    },
+    {
+      "label": "sample taper",
+      "paintMs": 12.800000011920929,
+      "viewMs": 34.19999998807907,
+      "latency": 131.40000000596046,
+      "id": 14
+    },
+    {
+      "label": "sample runout",
+      "paintMs": 8.900000005960464,
+      "viewMs": 31.80000001192093,
+      "latency": 131.19999998807907,
+      "id": 15
+    },
+    {
+      "label": "sample reverse",
+      "paintMs": 11.599999994039536,
+      "viewMs": 35.69999998807907,
+      "latency": 127.59999999403954,
+      "id": 16
+    },
+    {
+      "label": "lighting preset soft",
+      "paintMs": 0,
+      "viewMs": 39.69999998807907,
+      "latency": 62.900000005960464,
+      "id": 17
+    },
+    {
+      "label": "lighting preset studio",
+      "paintMs": 0,
+      "viewMs": 51.69999998807907,
+      "latency": 76.40000000596046,
+      "id": 18
+    },
+    {
+      "label": "lighting preset raking",
+      "paintMs": 0,
+      "viewMs": 41.900000005960464,
+      "latency": 59.599999994039536,
+      "id": 19
+    },
+    {
+      "label": "wet crossing",
+      "paintMs": 65.5,
+      "viewMs": 44.60000002384186,
+      "latency": 198.59999999403954,
+      "id": 20
+    },
+    {
+      "label": "pressure",
+      "paintMs": 19.900000005960464,
+      "viewMs": 39.19999998807907,
+      "latency": 138.89999997615814,
+      "id": 21
+    },
+    {
+      "label": "load",
+      "paintMs": 23,
+      "viewMs": 54.400000005960464,
+      "latency": 164.90000000596046,
+      "id": 22
+    },
+    {
+      "label": "pickup",
+      "paintMs": 42.19999998807907,
+      "viewMs": 50.19999998807907,
+      "latency": 181.59999999403954,
+      "id": 23
+    },
+    {
+      "label": "hgain",
+      "paintMs": 22.799999982118607,
+      "viewMs": 39.599999994039536,
+      "latency": 146.59999999403954,
+      "id": 24
+    },
+    {
+      "label": "dry",
+      "paintMs": 20.400000005960464,
+      "viewMs": 33.39999997615814,
+      "latency": 135.5,
+      "id": 25
+    },
+    {
+      "label": "body",
+      "paintMs": 0.7000000178813934,
+      "viewMs": 33.29999998211861,
+      "latency": 116.90000000596046,
+      "id": 26
+    },
+    {
+      "label": "opacity",
+      "paintMs": 21.099999994039536,
+      "viewMs": 33.69999998807907,
+      "latency": 138.09999999403954,
+      "id": 27
+    },
+    {
+      "label": "vdry",
+      "paintMs": 19.900000005960464,
+      "viewMs": 31.899999976158142,
+      "latency": 132.30000001192093,
+      "id": 28
+    },
+    {
+      "label": "width",
+      "paintMs": 24.30000001192093,
+      "viewMs": 40.400000005960464,
+      "latency": 142.59999999403954,
+      "id": 29
+    },
+    {
+      "label": "view unlit",
+      "paintMs": 0,
+      "viewMs": 1.199999988079071,
+      "latency": 18.900000005960464,
+      "id": 30
+    },
+    {
+      "label": "view height",
+      "paintMs": 0,
+      "viewMs": 2,
+      "latency": 24,
+      "id": 31
+    },
+    {
+      "label": "view lit",
+      "paintMs": 0,
+      "viewMs": 45.69999998807907,
+      "latency": 74.40000000596046,
+      "id": 32
+    },
+    {
+      "label": "light lx",
+      "paintMs": 0,
+      "viewMs": 46,
+      "latency": 63.099999994039536,
+      "id": 33
+    },
+    {
+      "label": "light ly",
+      "paintMs": 0,
+      "viewMs": 50.30000001192093,
+      "latency": 68.69999998807907,
+      "id": 34
+    },
+    {
+      "label": "light lz",
+      "paintMs": 0,
+      "viewMs": 39.400000005960464,
+      "latency": 63,
+      "id": 35
+    },
+    {
+      "label": "light bump",
+      "paintMs": 0,
+      "viewMs": 38.29999998211861,
+      "latency": 56.29999998211861,
+      "id": 36
+    },
+    {
+      "label": "light contrast",
+      "paintMs": 0,
+      "viewMs": 39.099999994039536,
+      "latency": 58,
+      "id": 37
+    },
+    {
+      "label": "light specular",
+      "paintMs": 0,
+      "viewMs": 40.5,
+      "latency": 68,
+      "id": 38
+    },
+    {
+      "label": "RGB",
+      "paintMs": 14.299999982118607,
+      "viewMs": 41.70000001788139,
+      "latency": 133.2999999821186,
+      "id": 39
+    },
+    {
+      "label": "Ochrell",
+      "paintMs": 21,
+      "viewMs": 47.79999998211861,
+      "latency": 151.5,
+      "id": 40
+    },
+    {
+      "label": "ground",
+      "paintMs": 31.5,
+      "viewMs": 77.40000000596046,
+      "latency": 190.90000000596046,
+      "id": 41
+    },
+    {
+      "label": "paint",
+      "paintMs": 25.5,
+      "viewMs": 41,
+      "latency": 155.5,
+      "id": 42
+    },
+    {
+      "label": "new lilies",
+      "paintMs": 23.099999994039536,
+      "viewMs": 79.09999999403954,
+      "latency": 187.59999999403954,
+      "id": 43
+    },
+    {
+      "label": "hide",
+      "paintMs": 29.599999994039536,
+      "viewMs": 35.30000001192093,
+      "latency": 149.2999999821186,
+      "id": 44
+    },
+    {
+      "label": "show",
+      "paintMs": 36.79999998211861,
+      "viewMs": 72.2000000178814,
+      "latency": 191.80000001192093,
+      "id": 45
+    },
+    {
+      "label": "order earlier",
+      "paintMs": 26.799999982118607,
+      "viewMs": 37.20000001788139,
+      "latency": 148.5,
+      "id": 46
+    },
+    {
+      "label": "order later",
+      "paintMs": 28.299999982118607,
+      "viewMs": 51.20000001788139,
+      "latency": 163.5,
+      "id": 47
+    },
+    {
+      "label": "translate",
+      "paintMs": 33,
+      "viewMs": 43.099999994039536,
+      "latency": 153.7000000178814,
+      "id": 48
+    },
+    {
+      "label": "precise path",
+      "paintMs": 37.599999994039536,
+      "viewMs": 41.099999994039536,
+      "latency": 156.5,
+      "id": 49
+    },
+    {
+      "label": "reset",
+      "paintMs": 27.599999994039536,
+      "viewMs": 34.099999994039536,
+      "latency": 138.7999999821186,
+      "id": 50
+    },
+    {
+      "label": "rapid paint + light",
+      "paintMs": 49.900000005960464,
+      "viewMs": 46.19999998807907,
+      "latency": 116.09999999403954,
+      "id": 68
+    },
+    {
+      "label": "clear",
+      "paintMs": 31.299999982118607,
+      "viewMs": 35,
+      "latency": 151.80000001192093,
+      "id": 69
+    },
+    {
+      "label": "document roundtrip",
+      "paintMs": 36.5,
+      "viewMs": 42.20000001788139,
+      "latency": 155.89999997615814,
+      "id": 70
+    },
+    {
+      "label": "catalog roundtrip",
+      "paintMs": 0.5,
+      "viewMs": 49.69999998807907,
+      "latency": 132.90000000596046,
+      "id": 71
+    },
+    {
+      "label": "256 px",
+      "paintMs": 14.299999982118607,
+      "viewMs": 12.900000005960464,
+      "latency": 103.69999998807907,
+      "id": 72
+    }
+  ],
+  "errors": []
+}

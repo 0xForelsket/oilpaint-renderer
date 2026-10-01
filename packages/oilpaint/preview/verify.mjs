@@ -35,8 +35,12 @@ try {
   await wait(0);
   for (const p of ["loaded-flat", "rounded-dab", "dry-drag", "scumble", "impasto-accent", "fine-detail", "wet-mixing"])
     await change(() => page.selectOption("#preset", p), "preset " + p);
-  for (const kind of ["straight", "curve", "dab"])
+  for (const kind of ["straight", "curve", "dab", "pressure", "taper", "runout", "reverse"])
     await change(() => page.locator(`[data-sample="${kind}"]`).click(), "sample " + kind);
+  for (const light of ["soft", "studio", "raking"]) {
+    const m = await change(() => page.locator(`[data-light="${light}"]`).click(), "lighting preset " + light);
+    assert.equal(m.paintMs, 0);
+  }
   await change(() => page.locator("#underpaint").click(), "wet crossing");
   for (const [id, v] of [
     ["pressure", 0.7],
@@ -74,7 +78,7 @@ try {
   await page.locator("summary").filter({ hasText: "Save & exchange" }).click();
   const baseline = JSON.parse((await download("docExport")).toString());
   const catalog = JSON.parse((await download("presetExport")).toString());
-  assert.equal(catalog.version, 1);
+  assert.equal(catalog.version, 2);
   await page.locator("#add").click();
   await page.locator("#name").fill("Lilies");
   await page.locator("#name").press("Tab");
@@ -140,25 +144,21 @@ try {
   );
   assert.deepEqual(JSON.parse((await download("docExport")).toString()), JSON.parse(saved.toString()));
   await page.locator("#presetImport").click();
-  await page
-    .locator("#file")
-    .setInputFiles({
-      name: "bad.json",
-      mimeType: "application/json",
-      buffer: Buffer.from('{"version":99,"presets":[]}'),
-    });
+  await page.locator("#file").setInputFiles({
+    name: "bad.json",
+    mimeType: "application/json",
+    buffer: Buffer.from('{"version":99,"presets":[]}'),
+  });
   await page.waitForFunction(() => document.querySelector("#error").textContent.includes("VERSION"));
   assert.match(await page.locator("#error").textContent(), /CATALOG_VERSION/);
   await page.locator("#presetImport").click();
   await change(
     () =>
-      page
-        .locator("#file")
-        .setInputFiles({
-          name: "presets.json",
-          mimeType: "application/json",
-          buffer: Buffer.from(JSON.stringify(catalog)),
-        }),
+      page.locator("#file").setInputFiles({
+        name: "presets.json",
+        mimeType: "application/json",
+        buffer: Buffer.from(JSON.stringify(catalog)),
+      }),
     "catalog roundtrip",
   );
   assert.ok((await download("strokesExport")).length > 100);

@@ -1,0 +1,325 @@
+{
+  "conditions": "Chromium; process affinity inherited from PowerShell mask 0xF; 10 warmed repeats per operation and size; one loaded-flat curve; includes 75ms paint or 16ms lighting debounce. Other verification processes were active; not an isolated benchmark.",
+  "rows": [
+    {
+      "width": 256,
+      "kind": "paint",
+      "paintMs": 5.800000011920929,
+      "viewMs": 11,
+      "latency": 93.2000000178814,
+      "id": 5
+    },
+    {
+      "width": 256,
+      "kind": "paint",
+      "paintMs": 6.200000017881393,
+      "viewMs": 11.599999994039536,
+      "latency": 101.30000001192093,
+      "id": 6
+    },
+    {
+      "width": 256,
+      "kind": "paint",
+      "paintMs": 6.5999999940395355,
+      "viewMs": 10.699999988079071,
+      "latency": 95.40000000596046,
+      "id": 7
+    },
+    {
+      "width": 256,
+      "kind": "paint",
+      "paintMs": 5.9000000059604645,
+      "viewMs": 11.599999994039536,
+      "latency": 102.5,
+      "id": 8
+    },
+    {
+      "width": 256,
+      "kind": "paint",
+      "paintMs": 5,
+      "viewMs": 10.699999988079071,
+      "latency": 95.5,
+      "id": 9
+    },
+    {
+      "width": 256,
+      "kind": "paint",
+      "paintMs": 5.5,
+      "viewMs": 10.800000011920929,
+      "latency": 109.7000000178814,
+      "id": 10
+    },
+    {
+      "width": 256,
+      "kind": "paint",
+      "paintMs": 5.4000000059604645,
+      "viewMs": 10.5,
+      "latency": 95,
+      "id": 11
+    },
+    {
+      "width": 256,
+      "kind": "paint",
+      "paintMs": 5.300000011920929,
+      "viewMs": 12.399999976158142,
+      "latency": 107.40000000596046,
+      "id": 12
+    },
+    {
+      "width": 256,
+      "kind": "paint",
+      "paintMs": 5.799999982118607,
+      "viewMs": 12.099999994039536,
+      "latency": 96,
+      "id": 13
+    },
+    {
+      "width": 256,
+      "kind": "paint",
+      "paintMs": 6.200000017881393,
+      "viewMs": 10.900000005960464,
+      "latency": 103.80000001192093,
+      "id": 14
+    },
+    {
+      "width": 256,
+      "kind": "relight",
+      "paintMs": 0,
+      "viewMs": 11.099999994039536,
+      "latency": 28.400000005960464,
+      "id": 15
+    },
+    {
+      "width": 256,
+      "kind": "relight",
+      "paintMs": 0,
+      "viewMs": 12.300000011920929,
+      "latency": 30.5,
+      "id": 16
+    },
+    {
+      "width": 256,
+      "kind": "relight",
+      "paintMs": 0,
+      "viewMs": 10.800000011920929,
+      "latency": 29.099999994039536,
+      "id": 17
+    },
+    {
+      "width": 256,
+      "kind": "relight",
+      "paintMs": 0,
+      "viewMs": 11.099999994039536,
+      "latency": 28.80000001192093,
+      "id": 18
+    },
+    {
+      "width": 256,
+      "kind": "relight",
+      "paintMs": 0,
+      "viewMs": 11.099999994039536,
+      "latency": 28,
+      "id": 19
+    },
+    {
+      "width": 256,
+      "kind": "relight",
+      "paintMs": 0,
+      "viewMs": 11.200000017881393,
+      "latency": 28.099999994039536,
+      "id": 20
+    },
+    {
+      "width": 256,
+      "kind": "relight",
+      "paintMs": 0,
+      "viewMs": 10.700000017881393,
+      "latency": 28.600000023841858,
+      "id": 21
+    },
+    {
+      "width": 256,
+      "kind": "relight",
+      "paintMs": 0,
+      "viewMs": 10.699999988079071,
+      "latency": 27.900000005960464,
+      "id": 22
+    },
+    {
+      "width": 256,
+      "kind": "relight",
+      "paintMs": 0,
+      "viewMs": 10.699999988079071,
+      "latency": 28,
+      "id": 23
+    },
+    {
+      "width": 256,
+      "kind": "relight",
+      "paintMs": 0,
+      "viewMs": 11.099999994039536,
+      "latency": 27.700000017881393,
+      "id": 24
+    },
+    {
+      "width": 384,
+      "kind": "paint",
+      "paintMs": 24.900000005960464,
+      "viewMs": 37.099999994039536,
+      "latency": 139,
+      "id": 27
+    },
+    {
+      "width": 384,
+      "kind": "paint",
+      "paintMs": 13.5,
+      "viewMs": 31.399999976158142,
+      "latency": 123.60000002384186,
+      "id": 28
+    },
+    {
+      "width": 384,
+      "kind": "paint",
+      "paintMs": 10.699999988079071,
+      "viewMs": 29.700000017881393,
+      "latency": 124,
+      "id": 29
+    },
+    {
+      "width": 384,
+      "kind": "paint",
+      "paintMs": 12.400000005960464,
+      "viewMs": 30.599999994039536,
+      "latency": 133.39999997615814,
+      "id": 30
+    },
+    {
+      "width": 384,
+      "kind": "paint",
+      "paintMs": 10.900000005960464,
+      "viewMs": 26.799999982118607,
+      "latency": 116.40000000596046,
+      "id": 31
+    },
+    {
+      "width": 384,
+      "kind": "paint",
+      "paintMs": 10,
+      "viewMs": 27.299999982118607,
+      "latency": 122.30000001192093,
+      "id": 32
+    },
+    {
+      "width": 384,
+      "kind": "paint",
+      "paintMs": 11,
+      "viewMs": 26.900000005960464,
+      "latency": 128.40000000596046,
+      "id": 33
+    },
+    {
+      "width": 384,
+      "kind": "paint",
+      "paintMs": 10.699999988079071,
+      "viewMs": 27.69999998807907,
+      "latency": 119.5,
+      "id": 34
+    },
+    {
+      "width": 384,
+      "kind": "paint",
+      "paintMs": 12.199999988079071,
+      "viewMs": 36.900000005960464,
+      "latency": 135.59999999403954,
+      "id": 35
+    },
+    {
+      "width": 384,
+      "kind": "paint",
+      "paintMs": 13.599999994039536,
+      "viewMs": 28.599999994039536,
+      "latency": 121,
+      "id": 36
+    },
+    {
+      "width": 384,
+      "kind": "relight",
+      "paintMs": 0,
+      "viewMs": 28.80000001192093,
+      "latency": 50.5,
+      "id": 37
+    },
+    {
+      "width": 384,
+      "kind": "relight",
+      "paintMs": 0,
+      "viewMs": 32.099999994039536,
+      "latency": 50,
+      "id": 38
+    },
+    {
+      "width": 384,
+      "kind": "relight",
+      "paintMs": 0,
+      "viewMs": 35.29999998211861,
+      "latency": 59.29999998211861,
+      "id": 39
+    },
+    {
+      "width": 384,
+      "kind": "relight",
+      "paintMs": 0,
+      "viewMs": 32.099999994039536,
+      "latency": 52.69999998807907,
+      "id": 40
+    },
+    {
+      "width": 384,
+      "kind": "relight",
+      "paintMs": 0,
+      "viewMs": 30.400000005960464,
+      "latency": 51.599999994039536,
+      "id": 41
+    },
+    {
+      "width": 384,
+      "kind": "relight",
+      "paintMs": 0,
+      "viewMs": 28.80000001192093,
+      "latency": 52.80000001192093,
+      "id": 42
+    },
+    {
+      "width": 384,
+      "kind": "relight",
+      "paintMs": 0,
+      "viewMs": 30.5,
+      "latency": 51.79999998211861,
+      "id": 43
+    },
+    {
+      "width": 384,
+      "kind": "relight",
+      "paintMs": 0,
+      "viewMs": 66.09999999403954,
+      "latency": 88.09999999403954,
+      "id": 44
+    },
+    {
+      "width": 384,
+      "kind": "relight",
+      "paintMs": 0,
+      "viewMs": 29.30000001192093,
+      "latency": 51.30000001192093,
+      "id": 45
+    },
+    {
+      "width": 384,
+      "kind": "relight",
+      "paintMs": 0,
+      "viewMs": 29,
+      "latency": 48.39999997615814,
+      "id": 46
+    }
+  ]
+}

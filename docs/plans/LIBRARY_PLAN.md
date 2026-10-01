@@ -627,3 +627,5 @@ the physics after its alpha, at 26 days.
    1200-px layer images by default.
 3. **Patent review before the public alpha (L6):** US 8,462,173 and US 8,599,213 (section 11, Risks).
 4. **Preset names** (working names in section 11).
+
+**2026-10-01 brush review iteration 2:** Engine dev.4 and author/catalog 2 implement the requested contact, scumble, directional-pickup and lighting refinements. Earlier gallery evidence is retained. See [iteration report](../reports/BRUSH_ITERATION_2.md); no extra presets or broader roadmap milestones are claimed.

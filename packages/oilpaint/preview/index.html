@@ -146,7 +146,7 @@
     }
   </style>
   <header>
-    <span class="tag">REAL RUST / WASM PAINT · CANDIDATE CATALOG 1</span>
+    <span class="tag">REAL RUST / WASM PAINT · CANDIDATE CATALOG 2</span>
     <h1>Brush laboratory</h1>
     <p>Loaded landings, broken edges, dry tails. Draw on the live canvas or repeat a sample.</p>
   </header>
@@ -198,7 +198,9 @@
     <div>
       <section>
         <button data-sample="straight">Straight</button><button data-sample="curve">Curved</button
-        ><button data-sample="dab">Dab</button><button id="underpaint">Add wet underpaint</button
+        ><button data-sample="dab">Press &amp; lift</button><button data-sample="pressure">Pressure ramp</button
+        ><button data-sample="taper">Long taper</button><button data-sample="runout">Run out of paint</button
+        ><button data-sample="reverse">Reverse crossing</button><button id="underpaint">Add wet underpaint</button
         ><button id="clear">Clear selected group</button
         ><label
           >Render width
@@ -206,6 +208,7 @@
             <option>256</option>
             <option selected>384</option>
             <option>640</option>
+            <option>768</option>
           </select></label
         >
       </section>
@@ -225,6 +228,8 @@
         <p id="error" role="alert"></p>
       </section>
       <section>
+        <button data-light="soft">Soft light</button><button data-light="studio">Studio light</button
+        ><button data-light="raking">Raking light</button>
         <div class="row">
           <label
             >View

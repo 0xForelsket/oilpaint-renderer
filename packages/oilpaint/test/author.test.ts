@@ -35,7 +35,7 @@ test("catalog, local edits, serialization, independent scopes and replay", async
   a.render(moved, 96);
   full.render(moved, 96);
   assert.deepEqual(a.hashes(), full.hashes());
-  assert.throws(() => a.parse(JSON.stringify({ ...d, version: 2 })), /VERSION/);
+  assert.throws(() => a.parse(JSON.stringify({ ...d, version: 1 })), /VERSION/);
   assert.throws(() => a.parse(JSON.stringify({ ...d, engine: "old" })), /ENGINE_VERSION/);
   const bad = a.catalog();
   bad.presets[0].paint.pickup = 2;

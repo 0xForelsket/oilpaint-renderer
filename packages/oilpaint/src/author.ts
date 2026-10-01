@@ -8,12 +8,26 @@ export interface View {
   contrast: number;
   specular: number;
 }
-export const defaultView: View = {
+export const softView: View = {
   mode: "lit",
   direction: [-0.5, -0.6, 0.62],
   bump: 0.65,
   contrast: 0.19,
   specular: 0.025,
+};
+export const defaultView: View = {
+  mode: "lit",
+  direction: [-0.55, -0.6, 0.35],
+  bump: 1.05,
+  contrast: 0.45,
+  specular: 0.12,
+};
+export const rakingView: View = {
+  mode: "lit",
+  direction: [-0.8, -0.35, 0.18],
+  bump: 1.05,
+  contrast: 0.6,
+  specular: 0.25,
 };
 export function createAuthor(engine: Engine) {
   return {
@@ -22,7 +36,7 @@ export function createAuthor(engine: Engine) {
     document(seed = 1907): Document {
       return {
         format: "oil-author",
-        version: 1,
+        version: 2,
         engine: engine.version,
         seed,
         aspect: [3, 2],
@@ -87,10 +101,23 @@ export function sampleMark(id: string, preset: string, width: number, kind = "st
   for (let i = 0; i <= 32; i++) {
     const t = i / 32;
     path.push([
-      kind === "dab" ? 0.49 + t * 0.025 : 0.12 + 0.76 * t,
+      kind === "dab" ? 0.5 + (t - 0.5) * width * 1.2 : kind === "reverse" ? 0.88 - 0.76 * t : 0.12 + 0.76 * t,
       y + (kind === "curve" ? 0.16 * 4 * t * (1 - t) : 0),
-      1,
+      kind === "dab"
+        ? 0.1 + 0.9 * 4 * t * (1 - t)
+        : kind === "pressure"
+          ? 0.08 + 0.92 * t
+          : kind === "taper"
+            ? 1 - 0.98 * t
+            : 1,
     ]);
   }
-  return { id, preset, width, path, color: [0.87, 0.42, 0.2], controls: {} };
+  return {
+    id,
+    preset,
+    width,
+    path,
+    color: [0.87, 0.42, 0.2],
+    controls: kind === "runout" ? { load: 0.65, deplete: 0.12 } : {},
+  };
 }

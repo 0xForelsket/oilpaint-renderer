@@ -7,7 +7,7 @@ import { chromium, firefox } from "playwright";
 import { loadEngine } from "../src/engine.ts";
 import { createAuthor, sampleMark, defaultView } from "../src/author.ts";
 import { encodePng } from "../src/png.ts";
-const out = "docs/reports/brush-review";
+const out = "out/brush-review-current";
 fs.mkdirSync(out, { recursive: true });
 const a = createAuthor(await loadEngine());
 const rows = [];
@@ -155,7 +155,7 @@ try {
     .join("");
   fs.writeFileSync(
     `${out}/index.html`,
-    `<!doctype html><html lang="en"><meta charset="utf-8"><title>Candidate brush review</title><style>body{font:16px system-ui;background:#202522;color:#e5e3d8;max-width:1200px;margin:auto;padding:30px}h1{font-size:32px}small{color:#c4ad7a;font-size:14px}.pair{display:grid;grid-template-columns:1fr 1fr;gap:20px}figure{margin:0}img{width:100%}a{color:#bcd4aa}article{padding:25px 0;border-top:1px solid #566353}p{line-height:1.7}@media(max-width:650px){.pair{grid-template-columns:1fr}}</style><h1>Seven candidate brushes</h1><p>Engine 2.0.0-dev.3 · author format 1 · catalog 1. Real renderer output, consistent relief lighting. Automated calibration and cross-runtime evidence; awaiting artist review.</p><p>Inspect loaded landings, edge breakup, tails, wet-blue pickup and relief. Height maps use a fixed 0–3 scale. Fine-detail marks and dry bristles can disappear below one pixel; compare both resolutions. No physical filbert, fan or knife model is claimed.</p><a href="measurements.json">Plane hashes and measured timings</a>${cards}</html>`,
+    `<!doctype html><html lang="en"><meta charset="utf-8"><title>Candidate brush review</title><style>body{font:16px system-ui;background:#202522;color:#e5e3d8;max-width:1200px;margin:auto;padding:30px}h1{font-size:32px}small{color:#c4ad7a;font-size:14px}.pair{display:grid;grid-template-columns:1fr 1fr;gap:20px}figure{margin:0}img{width:100%}a{color:#bcd4aa}article{padding:25px 0;border-top:1px solid #566353}p{line-height:1.7}@media(max-width:650px){.pair{grid-template-columns:1fr}}</style><h1>Seven candidate brushes</h1><p>Engine 2.0.0-dev.4 · author format 2 · catalog 2. Real renderer output, consistent relief lighting. Automated calibration and cross-runtime evidence; awaiting artist review.</p><p>Inspect loaded landings, edge breakup, tails, wet-blue pickup and relief. Height maps use a fixed 0–3 scale. Fine-detail marks and dry bristles can disappear below one pixel; compare both resolutions. No physical filbert, fan or knife model is claimed.</p><a href="measurements.json">Plane hashes and measured timings</a>${cards}</html>`,
   );
 } finally {
   for (const b of browsers) await b.browser.close();

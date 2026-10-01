@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
 pub const CATALOG: &str = include_str!("../catalog.json");
-pub const AUTHOR_VERSION: u32 = 1;
+pub const AUTHOR_VERSION: u32 = 2;
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Preset {
@@ -19,6 +19,10 @@ pub struct Preset {
     pub width: [f32; 3],         // min, default, max (cw)
     pub width_profile: [f32; 3], // landing, body, tail
     pub pressure_profile: [f32; 3],
+    /// Geometric contact profile, not a physical brush-shape claim.
+    pub contact: String,
+    /// Coherent, seed-stable contact variation. Zero removes authored variation.
+    pub variation: f32,
     pub depletion: f32, // total depletion per path length in half-widths
     pub paint: BTreeMap<String, f32>,
 }
@@ -32,7 +36,7 @@ pub struct Catalog {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Mark {
     pub id: String,
-    /// x,y,pressure in cw. Pressure is multiplied by the preset envelope.
+    /// x/y in cw; unitless pressure is multiplied by the preset envelope.
     pub path: Vec<[f32; 3]>,
     pub width: f32,
     pub color: [f32; 3],
@@ -122,7 +126,7 @@ fn apply(b: &mut BrushParams, values: &BTreeMap<String, f32>) -> Result<(), Stri
 }
 impl Catalog {
     pub fn validate(&self) -> Result<(), String> {
-        if self.version != 1 {
+        if self.version != 2 {
             return Err("CATALOG_VERSION_MISMATCH".into());
         }
         let mut ids = BTreeSet::new();
@@ -140,6 +144,8 @@ impl Catalog {
                 || !range(p.width[2], 0.0001, 0.2)
                 || !p.width_profile.iter().all(|&v| range(v, 0.01, 2.))
                 || !p.pressure_profile.iter().all(|&v| unit(v))
+                || !["flat", "round", "point"].contains(&p.contact.as_str())
+                || !range(p.variation, 0., 0.25)
                 || !range(p.depletion, 0., 3.)
             {
                 return Err(format!("INVALID_PRESET: {}", p.id));
@@ -160,13 +166,39 @@ pub fn scoped_seed(seed: u32, scopes: &[&str]) -> u32 {
     h
 }
 fn envelope(p: [f32; 3], t: f32) -> f32 {
+    let smooth = |x: f32| x * x * (3. - 2. * x);
     if t < 0.2 {
-        p[0] + (p[1] - p[0]) * t / 0.2
-    } else if t > 0.7 {
-        p[1] + (p[2] - p[1]) * (t - 0.7) / 0.3
+        p[0] + (p[1] - p[0]) * smooth(t / 0.2)
+    } else if t > 0.58 {
+        p[1] + (p[2] - p[1]) * smooth((t - 0.58) / 0.42)
     } else {
         p[1]
     }
+}
+
+fn contact_width(p: &Preset, t: f32, seed: u32) -> f32 {
+    // A handful of smooth lengthwise changes, not per-point or per-pixel jitter.
+    let knot = t * 5.;
+    let i = knot.floor() as u32;
+    let f = knot - i as f32;
+    let f = f * f * (3. - 2. * f);
+    let random = |n: u32| (scoped_seed(seed, &["contact", &n.to_string()]) >> 8) as f32 / 16777216.;
+    let wobble = 1. + p.variation * (2. * (random(i) + (random(i + 1) - random(i)) * f) - 1.);
+    let width = if p.contact == "round" {
+        // Rounded footprint with an off-centre loaded belly, not a linear lozenge.
+        let peak = 0.43 + 0.1 * random(9);
+        let u = if t < peak {
+            t / peak
+        } else {
+            (1. - t) / (1. - peak)
+        };
+        let belly = (u * (2. - u)).max(0.).sqrt();
+        let edge = p.width_profile[0] * (1. - t) + p.width_profile[2] * t;
+        edge + (p.width_profile[1] - edge) * belly
+    } else {
+        envelope(p.width_profile, t)
+    };
+    (width * wobble).max(0.005)
 }
 impl Document {
     pub fn compile(&self) -> Result<StrokeList, String> {
@@ -186,7 +218,7 @@ impl Document {
         }
         let mut list = StrokeList {
             meta: Meta {
-                generator: "oil-author/1".into(),
+                generator: "oil-author/2".into(),
                 ..Meta::default()
             },
             aspect: self.aspect,
@@ -265,7 +297,7 @@ impl Document {
                     list.points.push([
                         a[0] + (z[0] - a[0]) * f,
                         a[1] + (z[1] - a[1]) * f,
-                        s.width * envelope(p.width_profile, t),
+                        s.width * contact_width(p, t, b.seed),
                         (a[2] + (z[2] - a[2]) * f) * envelope(p.pressure_profile, t),
                     ]);
                 }
@@ -439,7 +471,7 @@ mod tests {
         };
         Document {
             format: "oil-author".into(),
-            version: 1,
+            version: AUTHOR_VERSION,
             engine: oil_kernel::ENGINE_VERSION.into(),
             seed: 7,
             aspect: [3, 2],
@@ -461,9 +493,132 @@ mod tests {
         }
     }
     #[test]
+    fn scumble_has_open_gaps_and_substantial_contacts() {
+        let mut d = doc();
+        d.groups.truncate(1);
+        let mark = &mut d.groups[0].strokes[0];
+        mark.preset = "scumble".into();
+        mark.width = 0.12;
+        mark.path = vec![[0.1, 0.3, 1.], [0.9, 0.3, 1.]];
+        let c = oil_paint::paint(&RgbMixer, &d.compile().unwrap(), 384, |_, _| {}).0;
+        let (mut gaps, mut solid, mut total) = (0, 0, 0);
+        for y in 105..125 {
+            for x in 100..210 {
+                let a = c.cover[y * c.w + x];
+                gaps += usize::from(a < 0.01);
+                solid += usize::from(a > 0.65);
+                total += 1;
+            }
+        }
+        assert!(
+            gaps > total / 4,
+            "scumble must leave open gaps: {gaps}/{total}"
+        );
+        assert!(
+            solid > total / 12,
+            "scumble needs opaque local deposits: {solid}/{total}"
+        );
+    }
+    #[test]
+    fn raking_reveals_unchanged_impasto_and_round_contact_is_curved() {
+        let mut d = doc();
+        d.groups.truncate(1);
+        d.groups[0].strokes[0].preset = "impasto-accent".into();
+        d.groups[0].strokes[0].width = 0.07;
+        let c = oil_paint::paint(&RgbMixer, &d.compile().unwrap(), 256, |_, _| {}).0;
+        let h = c.hgt.clone();
+        let albedo = c.rgb.clone();
+        let soft = View {
+            mode: "lit".into(),
+            direction: [-0.5, -0.6, 0.62],
+            bump: 0.65,
+            contrast: 0.19,
+            specular: 0.025,
+        };
+        let rake = View {
+            direction: [-0.8, -0.35, 0.18],
+            bump: 1.05,
+            contrast: 0.6,
+            specular: 0.25,
+            ..soft.clone()
+        };
+        let unlit = image(
+            &c,
+            &View {
+                mode: "unlit".into(),
+                ..soft.clone()
+            },
+        )
+        .unwrap();
+        let difference = |v: &View| -> u64 {
+            image(&c, v)
+                .unwrap()
+                .iter()
+                .zip(&unlit)
+                .map(|(a, b)| a.abs_diff(*b) as u64)
+                .sum()
+        };
+        assert!(difference(&rake) > difference(&soft) * 2);
+        assert_eq!(h, c.hgt);
+        assert_eq!(albedo, c.rgb);
+        let p = catalog()
+            .presets
+            .into_iter()
+            .find(|p| p.id == "rounded-dab")
+            .unwrap();
+        assert!(
+            contact_width(&p, 0.10, 7) > 0.45,
+            "rounded flank must not be a linear lozenge"
+        );
+        assert_ne!(contact_width(&p, 0.3, 7), contact_width(&p, 0.7, 7));
+    }
+    #[test]
+    fn reversing_wet_stroke_reverses_contamination_travel() {
+        let paint = |reverse: bool| {
+            let mut d = doc();
+            d.groups.truncate(2);
+            d.groups[0].dry_after = 1.;
+            let a = &mut d.groups[0].strokes[0];
+            a.path = vec![[0.48, 0.1, 1.], [0.48, 0.5, 1.]];
+            a.width = 0.09;
+            a.color = [0.05, 0.15, 0.9];
+            let b = &mut d.groups[1].strokes[0];
+            b.path = if reverse {
+                vec![[0.88, 0.3, 1.], [0.12, 0.3, 1.]]
+            } else {
+                vec![[0.12, 0.3, 1.], [0.88, 0.3, 1.]]
+            };
+            b.preset = "wet-mixing".into();
+            b.width = 0.08;
+            let mut list = d.compile().unwrap();
+            for p in &mut list.points {
+                p[3] = 1.;
+            }
+            for p in &mut list.points[list.offsets[1] as usize..] {
+                p[2] = 0.08;
+            }
+            oil_paint::paint(&RgbMixer, &list, 384, |_, _| {}).0
+        };
+        let f = paint(false);
+        let r = paint(true);
+        let blue = |c: &Canvas<RgbMixer>, x0: usize, x1: usize| -> f32 {
+            (x0..x1)
+                .flat_map(|x| (110..120).map(move |y| c.rgb[y * c.w + x][2]))
+                .sum()
+        };
+        assert!(
+            blue(&f, 215, 245) > blue(&r, 215, 245) + 1.,
+            "forward must carry blue to the right"
+        );
+        assert!(
+            blue(&r, 125, 155) > blue(&f, 125, 155) + 1.,
+            "reverse must carry blue to the left"
+        );
+    }
+    #[test]
     fn schema_matches_source() {
         let expected: serde_json::Value =
-            serde_json::from_str(include_str!("../../../spec/author-1.schema.json")).unwrap();
+            serde_json::from_str(include_str!("../../../spec/author-2.schema.json")).unwrap();
         assert_eq!(
             serde_json::to_value(schemars::schema_for!(Document)).unwrap(),
             expected
@@ -517,7 +672,7 @@ mod tests {
             assert!(d.compile().is_ok());
         }
         let mut bad = d.clone();
-        bad.version = 2;
+        bad.version = 1;
         assert!(bad.compile().unwrap_err().contains("VERSION"));
         bad = d.clone();
         bad.engine = "2.0.0-dev.2".into();

@@ -1,4 +1,4 @@
-// Generated from Rust oil-author via spec/author-1.schema.json. Do not edit.
+// Generated from Rust oil-author via spec/author-2.schema.json. Do not edit.
 
 export interface Document {
   /**
@@ -30,6 +30,10 @@ export interface Catalog {
  * via the `definition` "Preset".
  */
 export interface Preset {
+  /**
+   * Geometric contact profile, not a physical brush-shape claim.
+   */
+  contact: string;
   depletion: number;
   id: string;
   mode: number;
@@ -43,6 +47,10 @@ export interface Preset {
    */
   pressureProfile: [number, number, number];
   status: string;
+  /**
+   * Coherent, seed-stable contact variation. Zero removes authored variation.
+   */
+  variation: number;
   /**
    * @minItems 3
    * @maxItems 3
@@ -83,7 +91,7 @@ export interface Mark {
   };
   id: string;
   /**
-   * x,y,pressure in cw. Pressure is multiplied by the preset envelope.
+   * x/y in cw; unitless pressure is multiplied by the preset envelope.
    */
   path: [number, number, number][];
   preset: string;

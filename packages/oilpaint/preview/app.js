@@ -1,5 +1,5 @@
 import { loadEngine } from "../src/engine.ts";
-import { createAuthor, editGroup, moveGroup, sampleMark, defaultView } from "../src/author.ts";
+import { createAuthor, editGroup, moveGroup, sampleMark, defaultView, softView, rakingView } from "../src/author.ts";
 const $ = (id) => document.getElementById(id);
 const worker = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
 let author,
@@ -133,6 +133,22 @@ function view() {
     specular: +$("specular").value,
   };
 }
+function setLight(p) {
+  for (const [id, value] of Object.entries({
+    lx: p.direction[0],
+    ly: p.direction[1],
+    lz: p.direction[2],
+    bump: p.bump,
+    contrast: p.contrast,
+    specular: p.specular,
+  }))
+    $(id).value = value;
+}
+for (const button of document.querySelectorAll("[data-light]"))
+  button.onclick = () => {
+    setLight({ soft: softView, studio: defaultView, raking: rakingView }[button.dataset.light]);
+    schedule(false);
+  };
 function schedule(paint, urgent = false) {
   needsPaint ||= paint;
   latest = ++seq;
@@ -212,8 +228,8 @@ worker.onerror = (e) => {
 function addSample(kind) {
   const s = sampleMark(selected + "/sample", preset().id, +$("width").value, kind);
   s.color = color($("paint").value);
-  s.controls = settings();
-  s.path.forEach((p) => (p[2] = +$("pressure").value));
+  s.controls = { ...settings(), ...s.controls };
+  s.path.forEach((p) => (p[2] *= +$("pressure").value));
   doc = editGroup(doc, selected, (g) => {
     g.strokes = [s];
   });
@@ -459,6 +475,7 @@ try {
   refreshCatalog();
   refreshGroups();
   brushUi();
+  setLight(defaultView);
   addSample("straight");
 } catch (e) {
   $("error").textContent = String(e);
