@@ -1,0 +1,13 @@
+import { chromium } from "playwright";
+import fs from "node:fs";
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1500, height: 1000 } });
+const errors = [];
+page.on("pageerror", (e) => errors.push(String(e)));
+await page.goto("http://127.0.0.1:4173");
+await page.waitForFunction(() => window.previewMeasurement, { timeout: 30000 });
+console.log(await page.locator("#status").textContent());
+console.log(errors);
+fs.mkdirSync("out/brush-review", { recursive: true });
+await page.screenshot({ path: "out/brush-review/preview.png", fullPage: true });
+await browser.close();

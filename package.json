@@ -14,7 +14,11 @@
     "build:wasm": "node packages/oilpaint/scripts/build-wasm.mjs",
     "gen:types": "node packages/oilpaint/scripts/gen-types.mjs",
     "typecheck": "tsc -p packages/oilpaint --noEmit",
-    "test:ts": "node --test \"packages/oilpaint/test/*.test.ts\""
+    "test:ts": "node --test \"packages/oilpaint/test/*.test.ts\"",
+    "preview": "node packages/oilpaint/preview/serve.mjs",
+    "gen:author": "node packages/oilpaint/scripts/gen-author.mjs",
+    "test:preview": "node packages/oilpaint/preview/verify.mjs",
+    "review:brushes": "node packages/oilpaint/preview/gallery.mjs"
   },
   "devDependencies": {
     "@types/node": "24.19.0",

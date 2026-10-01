@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>
+    Oilpaint · Brush laboratory
+  </title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: #171c1c;
+      color: #eee9dd;
+      font: 14px system-ui;
+    }
+    header {
+      padding: 24px 32px;
+      border-bottom: 1px solid #46504b;
+    }
+    h1 {
+      font-size: 25px;
+      margin: 0 0 8px;
+    }
+    p {
+      color: #b7c1b8;
+      margin: 6px 0;
+    }
+    main {
+      display: grid;
+      grid-template-columns: 285px 1fr;
+      gap: 24px;
+      padding: 24px;
+    }
+    aside {
+      background: #242c29;
+      padding: 20px;
+      border-radius: 10px;
+    }
+    label {
+      display: block;
+      margin: 12px 0 5px;
+      color: #d8dfd6;
+    }
+    input,
+    select,
+    button {
+      font: inherit;
+      color: inherit;
+      background: #35413a;
+      border: 1px solid #566759;
+      border-radius: 5px;
+      padding: 7px;
+    }
+    select,
+    input[type="range"] {
+      width: 100%;
+    }
+    input[type="color"] {
+      width: 48px;
+      height: 32px;
+      padding: 2px;
+    }
+    button {
+      cursor: pointer;
+      margin: 4px 3px 4px 0;
+    }
+    button:hover {
+      background: #536452;
+    }
+    input[type="number"] {
+      width: 78px;
+    }
+    input[type="text"] {
+      width: 100%;
+    }
+    .row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .views {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: #393e38;
+      touch-action: none;
+    }
+    figure {
+      margin: 0;
+    }
+    figcaption {
+      padding: 10px 0;
+      color: #c4ccbe;
+    }
+    section {
+      margin-bottom: 20px;
+    }
+    details {
+      border-top: 1px solid #4d594e;
+      padding-top: 10px;
+      margin-top: 14px;
+    }
+    summary {
+      cursor: pointer;
+      color: #c5d7ae;
+    }
+    #status {
+      font-variant-numeric: tabular-nums;
+      min-height: 44px;
+    }
+    #error {
+      color: #ffaf97;
+      white-space: pre-wrap;
+    }
+    .tag {
+      font-size: 12px;
+      color: #dfc18a;
+    }
+    output {
+      float: right;
+      color: #c9dbb0;
+    }
+    a {
+      color: #d0e3bc;
+    }
+    @media (max-width: 950px) {
+      main {
+        grid-template-columns: 240px 1fr;
+      }
+      .views {
+        grid-template-columns: 1fr;
+      }
+    }
+    @media (max-width: 650px) {
+      main {
+        display: block;
+      }
+      aside {
+        margin-bottom: 18px;
+      }
+    }
+  </style>
+  <header>
+    <span class="tag">REAL RUST / WASM PAINT · CANDIDATE CATALOG 1</span>
+    <h1>Brush laboratory</h1>
+    <p>Loaded landings, broken edges, dry tails. Draw on the live canvas or repeat a sample.</p>
+  </header>
+  <main>
+    <aside>
+      <label for="group">Selected group</label
+      ><select id="group"></select
+      ><input id="name" type="text" aria-label="Group name" />
+      <div><button id="add">New group</button><button id="up">Earlier</button><button id="down">Later</button></div>
+      <label><input type="checkbox" id="visible" checked /> Visible</label>
+      <label for="preset">Candidate brush preset</label
+      ><select id="preset"></select>
+      <div class="row">
+        <label>Paint <input type="color" id="paint" value="#de6b33" /></label
+        ><label>Ground <input type="color" id="ground" value="#ada697" /></label>
+      </div>
+      <label
+        >Mixer
+        <select id="mixer">
+          <option value="ochrell">Ochrell</option>
+          <option value="rgb">RGB baseline</option>
+        </select></label
+      >
+      <label>Width (cw) <output id="widthValue"></output><input type="range" id="width" step="0.0005" /></label>
+      <div id="controls"></div>
+      <details>
+        <summary>Precise group geometry</summary>
+        <p>Transforms affect the selected group's stored paths.</p>
+        <label>Translate x / y (cw)</label><input id="dx" type="number" value="0" step=".01" /><input
+          id="dy"
+          type="number"
+          value="0"
+          step=".01"
+        /><label>Scale about canvas origin</label
+        ><input id="scale" type="number" value="1" step=".05" min=".1" /><button id="transform">Apply</button
+        ><label>Stroke ID</label
+        ><select id="stroke"></select
+        ><label>Path [x, y, pressure] (cw)</label><textarea id="path" rows="5" style="width: 100%"></textarea
+        ><button id="pathApply">Apply path</button>
+      </details>
+      <details>
+        <summary>Save & exchange</summary>
+        <button id="presetExport">Export catalog</button><button id="presetImport">Import catalog</button
+        ><button id="reset">Reset brush</button><button id="docExport">Save document</button
+        ><button id="docImport">Open document</button><button id="strokesExport">Export StrokeList</button
+        ><input id="file" type="file" accept=".json" hidden />
+      </details>
+    </aside>
+    <div>
+      <section>
+        <button data-sample="straight">Straight</button><button data-sample="curve">Curved</button
+        ><button data-sample="dab">Dab</button><button id="underpaint">Add wet underpaint</button
+        ><button id="clear">Clear selected group</button
+        ><label
+          >Render width
+          <select id="resolution" style="width: auto">
+            <option>256</option>
+            <option selected>384</option>
+            <option>640</option>
+          </select></label
+        >
+      </section>
+      <div class="views">
+        <figure>
+          <canvas id="live" width="384" height="256"></canvas>
+          <figcaption>Live paint · selected group receives new strokes</figcaption>
+        </figure>
+        <figure>
+          <canvas id="reference" width="384" height="256"></canvas>
+          <figcaption id="referenceLabel">Saved reference · capture a comparison below</figcaption>
+        </figure>
+      </div>
+      <section>
+        <button id="capture">Save reference</button><button id="dropReference">Clear reference</button>
+        <p id="status" aria-live="polite">Loading renderer…</p>
+        <p id="error" role="alert"></p>
+      </section>
+      <section>
+        <div class="row">
+          <label
+            >View
+            <select id="view">
+              <option value="lit">Lit</option>
+              <option value="unlit">Unlit</option>
+              <option value="height">Paint height (0–3)</option>
+            </select></label
+          ><label>Light X <input id="lx" type="range" min="-1" max="1" step=".05" value="-.5" /></label
+          ><label>Light Y <input id="ly" type="range" min="-1" max="1" step=".05" value="-.6" /></label
+          ><label>Light Z <input id="lz" type="range" min=".1" max="1" step=".05" value=".62" /></label>
+        </div>
+        <div class="row">
+          <label>Relief <input id="bump" type="range" min="0" max="3" step=".05" value=".65" /></label
+          ><label>Contrast <input id="contrast" type="range" min="0" max="1" step=".01" value=".19" /></label
+          ><label>Specular <input id="specular" type="range" min="0" max="1" step=".005" value=".025" /></label>
+        </div>
+        <p>
+          Lighting controls reuse the painted canvas. Paint controls replay the affected group and every later group.
+          Reference is an unchanged captured image.
+        </p>
+      </section>
+    </div>
+  </main>
+  <script type="module" src="/packages/oilpaint/preview/app.js"></script>
+</html>

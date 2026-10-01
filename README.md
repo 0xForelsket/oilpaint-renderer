@@ -1,5 +1,17 @@
 # oilpaint
 
+## Brush authoring preview
+
+The Rust/WASM authoring tools now include seven **candidate** brush presets, named stroke groups with stable IDs
+and local editing, and an interactive paint preview. From this directory run `npm run build:wasm`, then
+`npm run preview`, and open <http://127.0.0.1:4173>.
+
+See [authoring API, format and controls](docs/BRUSH_AUTHORING.md), the
+[native/browser review gallery](docs/reports/brush-review/index.html), and
+[verification and measured latency](docs/reports/BRUSH_PRIORITIES.md).
+The separate `oil-author` source format preserves existing paintings and StrokeList semantics. These presets
+await artist review; this work does not complete the remaining renderer roadmap.
+
 **Ochrell integration:** `--mixer ochrell` now runs the existing planner, bristle
 renderer and relighting with persistent synthetic K/S material states. It needs
 Rust and the sibling `../ochrell` source directory, but no C compiler or Mixbox

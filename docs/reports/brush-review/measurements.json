@@ -1,0 +1,440 @@
+{
+  "engine": "2.0.0-dev.3",
+  "note": "Single passes, unpinned; includes WASM warmup. Timing is observational, not a benchmark guarantee.",
+  "cases": [
+    {
+      "preset": "loaded-flat",
+      "width": 256,
+      "strokes": "04fc73d5565058fefe460afd5f993e4c467ebb215ba0b0d3dd1d886e4beb8bb6",
+      "planes": {
+        "cover": "a5f64eeb3df52b122bcb5082404ed181e40699ec953561cceb317616564305cc",
+        "h": "ae4215df1e08d30b083bea69d12ba17de2c45b24a8df6a4938747d70d917300b",
+        "lat": "6e2d83be48abd5250efd7986e63ba101a2bd119f9c7aea4af5f24adddb46c18b",
+        "rgb": "3c9699b1d4da1522e7d70145619e64f9d6e0cb9e53d5c8fe826db2538f7a2014",
+        "wet": "7187a241a02427ea99f90558bc8d68fc68b723f4307f88afd1de7d5e8eb6c6ff"
+      },
+      "nodePaintMs": 43.54020000000037,
+      "hosts": {
+        "chromium": {
+          "paintMs": 44.900000005960464,
+          "viewMs": {
+            "lit": 21.200000017881393,
+            "unlit": 1.0999999940395355,
+            "height": 1.0999999940395355
+          }
+        },
+        "firefox": {
+          "paintMs": 163,
+          "viewMs": {
+            "lit": 116,
+            "unlit": 2,
+            "height": 3
+          }
+        }
+      }
+    },
+    {
+      "preset": "loaded-flat",
+      "width": 512,
+      "strokes": "04fc73d5565058fefe460afd5f993e4c467ebb215ba0b0d3dd1d886e4beb8bb6",
+      "planes": {
+        "cover": "b8ec0f7d3e0878f8ffc01097c863e0217e9d70737170c9497d4d777c0bb1fc62",
+        "h": "e61aab0501ab9a2a54f966624fe5c09ce96b1beb37aefa70d85aef5797f95e1d",
+        "lat": "ceff51636942a5ad84e747a2efb630c1ff8f9071c8eab2638a329e4f3811b0a1",
+        "rgb": "5aceb67d14534d0aa4c9286361fcb4b3815b17bfdd92dc885eb21144d1ac6cb4",
+        "wet": "59b01c9be7d073e65312e60ff1a303cd5c81d6a0825fde23593c350cf74810ac"
+      },
+      "nodePaintMs": 74.80709999999999,
+      "hosts": {
+        "chromium": {
+          "paintMs": 65.59999999403954,
+          "viewMs": {
+            "lit": 62.099999994039536,
+            "unlit": 1.7999999821186066,
+            "height": 2.5
+          }
+        },
+        "firefox": {
+          "paintMs": 507,
+          "viewMs": {
+            "lit": 750,
+            "unlit": 11,
+            "height": 14
+          }
+        }
+      }
+    },
+    {
+      "preset": "rounded-dab",
+      "width": 256,
+      "strokes": "0e9d569cb27c32e38be00da75d88f7a29d16b5a91fa9cd1b183bb6f5152675ae",
+      "planes": {
+        "cover": "4c8cf8e4450cca6637c9e2daf339c05355838a009695a54204c63f53a466e6ba",
+        "h": "667c583f74f8bf703a00fb7e7e8c06a9aaa720e4402c0e160a65f2dd9caf3eed",
+        "lat": "7b2ccfee30f49e2f8ce326b49705e9bc4e0544e2c9800a21c58fcc094b460ae3",
+        "rgb": "30f546f53fd29f83b790e4726f200b7610977cd45ccf65587952e55069c4d826",
+        "wet": "8eaf78a5f9d65679501e18c6587b42f134fac1c650fa2e4f712b27050fc23c72"
+      },
+      "nodePaintMs": 20.137399999999616,
+      "hosts": {
+        "chromium": {
+          "paintMs": 20.599999994039536,
+          "viewMs": {
+            "lit": 15.299999982118607,
+            "unlit": 0.7999999821186066,
+            "height": 0.9000000059604645
+          }
+        },
+        "firefox": {
+          "paintMs": 118,
+          "viewMs": {
+            "lit": 129,
+            "unlit": 2,
+            "height": 3
+          }
+        }
+      }
+    },
+    {
+      "preset": "rounded-dab",
+      "width": 512,
+      "strokes": "0e9d569cb27c32e38be00da75d88f7a29d16b5a91fa9cd1b183bb6f5152675ae",
+      "planes": {
+        "cover": "e11dc27199d3fa4da49cae5ed1f1dfe5d6da214a0fff88afc2e2d442a2ff055e",
+        "h": "3411d2fe64ae253ab3babdbfacecd29472046ee4a373ecc36a7fd36b122dc5fe",
+        "lat": "705673d811e16c012e7324f5948bcd063fa1c05f97f3131d318196f57d669ec8",
+        "rgb": "e6dea1b62b90503c84f0fb57a087802c4462b86f532c7c6d3315b591aca742bc",
+        "wet": "f32edfd715cc475f2231393ff4bb0e0092d4b9fb8bf00145ed8bf3e662fd489e"
+      },
+      "nodePaintMs": 49.30419999999867,
+      "hosts": {
+        "chromium": {
+          "paintMs": 45.19999998807907,
+          "viewMs": {
+            "lit": 58.80000001192093,
+            "unlit": 2.199999988079071,
+            "height": 1.699999988079071
+          }
+        },
+        "firefox": {
+          "paintMs": 469,
+          "viewMs": {
+            "lit": 714,
+            "unlit": 8,
+            "height": 11
+          }
+        }
+      }
+    },
+    {
+      "preset": "dry-drag",
+      "width": 256,
+      "strokes": "721a9ad5700a640f965cd089a8694cb8c441b28a3b48fb68ec769929e7db44f1",
+      "planes": {
+        "cover": "41e93a4bc808772c1b2edec04ca2a151ce201f470a158184133181d03b3d7d04",
+        "h": "aebebda41112010e927f62f47619a95b37a7d13dc89809210eb9432b79257782",
+        "lat": "0e7517146cf9a78dadb365173fee93d1b0a5bb5046d18a853503db9abf7faa5a",
+        "rgb": "97ab1d8ea46835bfbe378dab4a36d7a1b861bd6fb53ff6239eb04254f3219836",
+        "wet": "210ed78be36dd7b9e53a5f7f854aed6671b9988aac6f36a89487562c84eef8ef"
+      },
+      "nodePaintMs": 23.78970000000845,
+      "hosts": {
+        "chromium": {
+          "paintMs": 18,
+          "viewMs": {
+            "lit": 18.80000001192093,
+            "unlit": 1.300000011920929,
+            "height": 1
+          }
+        },
+        "firefox": {
+          "paintMs": 137,
+          "viewMs": {
+            "lit": 144,
+            "unlit": 2,
+            "height": 2
+          }
+        }
+      }
+    },
+    {
+      "preset": "dry-drag",
+      "width": 512,
+      "strokes": "721a9ad5700a640f965cd089a8694cb8c441b28a3b48fb68ec769929e7db44f1",
+      "planes": {
+        "cover": "179204ea02315d398093f4249ae55d241171d493964782d6e93829a45909bec8",
+        "h": "6a5b755bdb30559522a3eeb27ee722e1bb7c6aa4a00912da0dd97aee86bd48d5",
+        "lat": "cbe57a71e879b7d73ca7fafd479782a665d88d56434873f80bac5d392fd0a354",
+        "rgb": "044bfe04118c17f0560c204e1e67b31e493d133c3ca1d54a21a8d53188cb261d",
+        "wet": "8c8c1c5beb40736c32a877e918dbf579e1ca56ea314b3026c6e5ef1115162b24"
+      },
+      "nodePaintMs": 70.85149999998976,
+      "hosts": {
+        "chromium": {
+          "paintMs": 44.80000001192093,
+          "viewMs": {
+            "lit": 74.19999998807907,
+            "unlit": 3.0999999940395355,
+            "height": 2.5
+          }
+        },
+        "firefox": {
+          "paintMs": 492,
+          "viewMs": {
+            "lit": 561,
+            "unlit": 9,
+            "height": 12
+          }
+        }
+      }
+    },
+    {
+      "preset": "scumble",
+      "width": 256,
+      "strokes": "1e17a6a2c84a52f753dad5d4cce09952377c60032b8597e180398754c39a47ca",
+      "planes": {
+        "cover": "73a4e70e6b5e7fa9253a7e83791e5604f321d022f6fc42c4375dd0d479cf6764",
+        "h": "c31c547fcb1483eea25e5739e07c817b15e58180639a9c0d5548bdf7355810b8",
+        "lat": "49e737b6af4486e25800934ecc23d290e2d2557761bf4e62d765d3161dd78ff7",
+        "rgb": "494319ebae428c3ed8b19859b6a1206fd2e22d7e9a6c0344c208e3999a5219ce",
+        "wet": "18510effc0201727c04ee046192be36cd4911775e4ce311d96dcfe0e997ef99d"
+      },
+      "nodePaintMs": 20.155500000008033,
+      "hosts": {
+        "chromium": {
+          "paintMs": 16.299999982118607,
+          "viewMs": {
+            "lit": 12.699999988079071,
+            "unlit": 0.7000000178813934,
+            "height": 0.699999988079071
+          }
+        },
+        "firefox": {
+          "paintMs": 95,
+          "viewMs": {
+            "lit": 99,
+            "unlit": 2,
+            "height": 2
+          }
+        }
+      }
+    },
+    {
+      "preset": "scumble",
+      "width": 512,
+      "strokes": "1e17a6a2c84a52f753dad5d4cce09952377c60032b8597e180398754c39a47ca",
+      "planes": {
+        "cover": "0a97279eada5721b3cd85cd61158c822c826063cca5b09786e79dc941ae3c3e0",
+        "h": "bcf5c0c61cdb9911c3fefceaf91faebeec55593455f8aa35979e96287a918b33",
+        "lat": "4f3734f163a4f37e5408776e486b19e846006f66f1b2100df9b80be3d51ddca6",
+        "rgb": "5ad2e9c3bf7a351bb7e6a0eadc19b7d6471b86b156782a4a21913b247f2dfc2b",
+        "wet": "bbf39836b4f7731b074a38144f5e1afb07ac06cd9bc5599219494c4697dfc403"
+      },
+      "nodePaintMs": 36.54859999999462,
+      "hosts": {
+        "chromium": {
+          "paintMs": 35.5,
+          "viewMs": {
+            "lit": 53.19999998807907,
+            "unlit": 1.699999988079071,
+            "height": 1.7000000178813934
+          }
+        },
+        "firefox": {
+          "paintMs": 343,
+          "viewMs": {
+            "lit": 555,
+            "unlit": 8,
+            "height": 10
+          }
+        }
+      }
+    },
+    {
+      "preset": "impasto-accent",
+      "width": 256,
+      "strokes": "b5a5e6074b5ba61edf3e3b61e61e6c5d4c45ac8dc49426df42db310bb61ba598",
+      "planes": {
+        "cover": "551e8ee7249b49ffeffbe0caff6475dd80dfabee0831f48947dbc2db9b53b0c9",
+        "h": "0066957f697e4dc5b433ca7fc1650fb8d10bc507f054e2f04eeb46c88786d988",
+        "lat": "8364bb75207d0b858f7b45583f832705330d4dd7ee774ceef361c36d91881fde",
+        "rgb": "b2cc8bcbf19dec78018cbaa44e7f1644feee7a87fd55214a270e0fef10b93a65",
+        "wet": "1bee31f5bbaafff4fe0458dbfaea0b5745abec4bc75d47ec43748696385603f3"
+      },
+      "nodePaintMs": 15.724900000001071,
+      "hosts": {
+        "chromium": {
+          "paintMs": 16.80000001192093,
+          "viewMs": {
+            "lit": 14.099999994039536,
+            "unlit": 0.5999999940395355,
+            "height": 0.699999988079071
+          }
+        },
+        "firefox": {
+          "paintMs": 135,
+          "viewMs": {
+            "lit": 143,
+            "unlit": 2,
+            "height": 3
+          }
+        }
+      }
+    },
+    {
+      "preset": "impasto-accent",
+      "width": 512,
+      "strokes": "b5a5e6074b5ba61edf3e3b61e61e6c5d4c45ac8dc49426df42db310bb61ba598",
+      "planes": {
+        "cover": "a64b98c8e4ff315860bfe6f6e89784d0ef33f3076391c924c2a6881a9aa9be9f",
+        "h": "5a5d398f078e121c0103659709575f6542be36ee293742acb30029fd5611c919",
+        "lat": "71524807d33a28ac31d2d2930eab76288f94f0724a1a5dbdbfd26877df375348",
+        "rgb": "3ea944568366f3079fbddeb98c6082c8832ebcff265b67b406e2967845e23623",
+        "wet": "623e15f93f5b564634f075a7d41b5a3b9cf87d1d71527c5cf982f04b6ad24e0a"
+      },
+      "nodePaintMs": 40.92819999999483,
+      "hosts": {
+        "chromium": {
+          "paintMs": 38.60000002384186,
+          "viewMs": {
+            "lit": 53.30000001192093,
+            "unlit": 1.7999999821186066,
+            "height": 2
+          }
+        },
+        "firefox": {
+          "paintMs": 472,
+          "viewMs": {
+            "lit": 683,
+            "unlit": 11,
+            "height": 13
+          }
+        }
+      }
+    },
+    {
+      "preset": "fine-detail",
+      "width": 256,
+      "strokes": "c8baf4c3cb47328b69e0dae9fe0af414e1502b2006253c2eca1565633f2e6700",
+      "planes": {
+        "cover": "2796cbcc2dd1e48b20940212829d08c5da0caac9b5c36f9982ad9991e3e78397",
+        "h": "556958d32d7428433cb02c2c5d399bbfa3db9182418218d85e99206dee8ffb5a",
+        "lat": "49135fd1b68a1de355385065ad8a4c8f4aa45a151092a2b8b3225fd0a1475b97",
+        "rgb": "b8f1be23a62a97c1f5ae2286b649beafd1b24a3956ae9efe80f4076f51be89a6",
+        "wet": "cc5b508c43d307a896e19967a29c408a03bcc7a87e185870e06b33a9a7700d53"
+      },
+      "nodePaintMs": 17.264500000019325,
+      "hosts": {
+        "chromium": {
+          "paintMs": 13.900000005960464,
+          "viewMs": {
+            "lit": 11.599999994039536,
+            "unlit": 0.5,
+            "height": 0.5
+          }
+        },
+        "firefox": {
+          "paintMs": 84,
+          "viewMs": {
+            "lit": 99,
+            "unlit": 2,
+            "height": 2
+          }
+        }
+      }
+    },
+    {
+      "preset": "fine-detail",
+      "width": 512,
+      "strokes": "c8baf4c3cb47328b69e0dae9fe0af414e1502b2006253c2eca1565633f2e6700",
+      "planes": {
+        "cover": "75b82253ec2069f5291e5d1d21c5d51b3f4e596e43887fa34547fb7c59865dd9",
+        "h": "f4958c0db536b1acf410213e1dfbf638272df02c8b9c2a9dcbbb7c708cd6cb2d",
+        "lat": "8053ad6a1f4d904af27209852e5c049f797d07e73b964c49078ed87dd090580b",
+        "rgb": "33be5e84f4b455631860e4f4bd1a700614b444505c90cf907bac92802dec6c13",
+        "wet": "1dd8c8618748198db0fcfbb30f2b925afd1db3f47fe501cb6ece5f38fad1d3d0"
+      },
+      "nodePaintMs": 30.954200000007404,
+      "hosts": {
+        "chromium": {
+          "paintMs": 28.5,
+          "viewMs": {
+            "lit": 57.29999998211861,
+            "unlit": 2,
+            "height": 2
+          }
+        },
+        "firefox": {
+          "paintMs": 335,
+          "viewMs": {
+            "lit": 589,
+            "unlit": 8,
+            "height": 12
+          }
+        }
+      }
+    },
+    {
+      "preset": "wet-mixing",
+      "width": 256,
+      "strokes": "d7a5003727b9d218ebd207921f7f140b628eb263640af14a9e0f70b342e1a46a",
+      "planes": {
+        "cover": "9fa18e516a09e1e22a9e2c69ae19bbe4535aa5b816eb9b039f0a0a54abc71a2e",
+        "h": "0df3c34d6c4e184a072215fc6a113907ec0f645eba959c2c89460222dd4cbe0b",
+        "lat": "d841823d2f633d21b88254c1ad489e49204e3d39567a1663a80e528a06dfae55",
+        "rgb": "20b0defbd4c6ad409bbb89afd2a241835d2bc70ad183ed2296a2c581026ceb6d",
+        "wet": "c8e5fdfca15cff47ea701ce71a72e8b1e28768dd21e16452e152c2af478359f9"
+      },
+      "nodePaintMs": 13.909399999974994,
+      "hosts": {
+        "chromium": {
+          "paintMs": 15.300000011920929,
+          "viewMs": {
+            "lit": 11.599999994039536,
+            "unlit": 0.5,
+            "height": 0.5999999940395355
+          }
+        },
+        "firefox": {
+          "paintMs": 106,
+          "viewMs": {
+            "lit": 99,
+            "unlit": 1,
+            "height": 1
+          }
+        }
+      }
+    },
+    {
+      "preset": "wet-mixing",
+      "width": 512,
+      "strokes": "d7a5003727b9d218ebd207921f7f140b628eb263640af14a9e0f70b342e1a46a",
+      "planes": {
+        "cover": "2e852c6a5548cc9182cd91ad286c145ef97b8a2894edc70da5a3c235e591a298",
+        "h": "4d60798d620529a68992e7d8d2d6e4845453ea9fc4166194d4e01d3c5b0285b4",
+        "lat": "801c7c9664bb5a6536760ef806fed8ae38f43bb0e80a19dba8a5ee3971cb2cd3",
+        "rgb": "566845f82886cb423c469ea5458edeb2b772b2c4ce53dd0aeebbcf46e4e33432",
+        "wet": "956534831338cb02a89ea9ce8d37dc1310b61b617b906323bbc3046dc63256e9"
+      },
+      "nodePaintMs": 41.95790000000852,
+      "hosts": {
+        "chromium": {
+          "paintMs": 37.39999997615814,
+          "viewMs": {
+            "lit": 57.20000001788139,
+            "unlit": 2.199999988079071,
+            "height": 2.0999999940395355
+          }
+        },
+        "firefox": {
+          "paintMs": 517,
+          "viewMs": {
+            "lit": 552,
+            "unlit": 7,
+            "height": 10
+          }
+        }
+      }
+    }
+  ]
+}

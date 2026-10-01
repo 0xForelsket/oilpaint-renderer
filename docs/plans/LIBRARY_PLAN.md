@@ -2,6 +2,11 @@
 
 Written 2026-09-30, and it supersedes v3 (`LIBRARY_PLAN_v3_cparity.md`). Oil painting only.
 
+**2026-10-01 scoped authoring work:** the separately authorized brush catalog, named groups/local editing and
+interactive preview are implemented as an additive `oil-author` module. See [API and format](../BRUSH_AUTHORING.md)
+and [verification report](../reports/BRUSH_PRIORITIES.md). This does not claim L3 visual acceptance, retirement,
+the full L4 host API, or the later brush-physics milestones. Existing engine/StrokeList outputs remain unchanged.
+
 **Changed from v3:**
 - **Hard break with v1.** There is no legacy mode, no frozen strict-C kernel, and no parity level defined relative
   to C. The v1 renderer lives on as git tag `v1-python-c`, which is the only way to reproduce Storm Light.
