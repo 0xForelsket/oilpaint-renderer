@@ -1,5 +1,6 @@
 //! Compare two local eight-paint OPP3 packages without changing the renderer default.
 //! Arguments: reference.opp candidate.opp output-directory
+//! Use legacy tagless construction to retain reference decoding for this study.
 use oil_kernel::{BrushParams, Canvas};
 use oil_mix::Mixer;
 use oil_palette::{PaletteJobN, PaletteMixerN, RecipeLoadN};
@@ -198,7 +199,7 @@ fn verify_job(
 
 fn prepare(bytes: &[u8], label: &str, timings: &mut String) -> Result<PaletteMixer> {
     let start = Instant::now();
-    let mixer = PaletteMixer::from_palette_bytes(bytes)?;
+    let mixer = PaletteMixer::from_bytes(bytes, &[])?;
     writeln!(
         timings,
         "{label},prepare,0,{},1",

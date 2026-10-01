@@ -1,12 +1,12 @@
-//! Explicit alternate evaluation of the same palette optics, without altering recipes.
+//! Versioned evaluation of the same palette optics, without altering recipes.
 use crate::palette::{PaletteError, PaletteN};
 
-/// Versioned evaluation choices. Reference remains the default and old OPJ2 tag 0.
+/// Preferred evaluation for new corrected palettes; saved jobs retain their tag.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum ForwardDecoder {
-    #[default]
     Reference,
     AlgebraicV1,
+    #[default]
     ExpLutV1,
 }
 

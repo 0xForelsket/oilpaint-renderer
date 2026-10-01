@@ -45,10 +45,42 @@ fn job<const N: usize>() -> PaletteJobN<N, false, 31> {
     PaletteJobN::new(m, g, ground, loads).unwrap()
 }
 fn roundtrip<const N: usize>() {
-    let reference = job::<N>();
+    let new_job = job::<N>();
+    let expected_default = if N == 1 {
+        ForwardDecoder::Reference
+    } else {
+        ForwardDecoder::ExpLutV1
+    };
+    assert_eq!(new_job.mixer().forward_decoder(), expected_default);
+    let new_bytes = new_job.to_bytes().unwrap();
+    assert_eq!(
+        u32::from_le_bytes(new_bytes[8..12].try_into().unwrap()),
+        expected_default.tag()
+    );
+    let new_restored = PaletteJobN::<N, false, 31>::from_bytes(&new_bytes).unwrap();
+    assert_eq!(new_restored.mixer().forward_decoder(), expected_default);
+    assert_eq!(new_restored.to_bytes().unwrap(), new_bytes);
+    let new_rgb = oil_paint::plane_bytes(&new_job.paint_final(64).unwrap().0, "rgb");
+    assert_eq!(
+        new_rgb,
+        oil_paint::plane_bytes(&new_restored.paint_final(64).unwrap().0, "rgb")
+    );
+    let reference = new_job
+        .with_forward_decoder(ForwardDecoder::Reference)
+        .unwrap();
     let bytes = reference.to_bytes().unwrap();
     let (base, stats) = reference.paint_final(64).unwrap();
     assert_eq!(u32::from_le_bytes(bytes[8..12].try_into().unwrap()), 0);
+    let old_restored = PaletteJobN::<N, false, 31>::from_bytes(&bytes).unwrap();
+    assert_eq!(
+        old_restored.mixer().forward_decoder(),
+        ForwardDecoder::Reference
+    );
+    assert_eq!(old_restored.to_bytes().unwrap(), bytes);
+    assert_eq!(
+        oil_paint::plane_bytes(&base, "rgb"),
+        oil_paint::plane_bytes(&old_restored.paint_final(64).unwrap().0, "rgb")
+    );
     for method in [ForwardDecoder::AlgebraicV1, ForwardDecoder::ExpLutV1] {
         let candidate = PaletteJobN::<N, false, 31>::from_bytes(&bytes)
             .unwrap()
@@ -109,7 +141,20 @@ fn selected_decoder_roundtrips_without_changing_materials_for_one_to_sixteen() {
 #[test]
 fn authoring_recipes_streaks_and_reference_search_are_decoder_independent() {
     let g = oil_paint::testsheet::testsheet();
-    let (reference, rr) = PaletteJobN::from_rgb(mixer::<8>(), g.clone()).unwrap();
+    let (reference, rr) = PaletteJobN::from_rgb(
+        mixer::<8>()
+            .with_forward_decoder(ForwardDecoder::Reference)
+            .unwrap(),
+        g.clone(),
+    )
+    .unwrap();
+    let (preferred, _) = PaletteJobN::from_rgb(mixer::<8>(), g.clone()).unwrap();
+    assert_eq!(
+        preferred.mixer().forward_decoder(),
+        ForwardDecoder::ExpLutV1
+    );
+    assert_eq!(preferred.loads(), reference.loads());
+    assert_eq!(preferred.ground(), reference.ground());
     for method in [ForwardDecoder::AlgebraicV1, ForwardDecoder::ExpLutV1] {
         let (candidate, cr) = PaletteJobN::from_rgb(
             mixer::<8>().with_forward_decoder(method).unwrap(),

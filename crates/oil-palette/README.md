@@ -5,7 +5,9 @@ component per paint through brush pickup, deposit, streaks and saved replay.
 The existing default renderer and RGB StrokeList format are unchanged.
 
 For eight paints, load a complete Ochrell optical package and construct a direct
-mixer. Other counts use the same API with a different N (up to 16):
+mixer. New corrected palettes automatically use the compact exponential decoder;
+plain K-M palettes require no exponential table. Other counts use the same API
+with a different N (up to 16):
 
 ```rust
 use oil_palette::{PaletteMixerN, PaletteJobN, RecipeLoadN};
@@ -102,7 +104,8 @@ host, the balanced 94-stroke fixture took a median 224 ms; direct display decode
 was about 1.02 microseconds per recipe. Target matching is an authoring cost,
 separate from these paint timings. The package contains no recipe LUT;
 all eight material proportions and the reference direct decoder are retained.
-An optional compact exponential lookup is now available in the renderer below.
+New corrected-palette mixers now use the compact exponential lookup below.
+The comparison example retains reference decoding to reproduce this study.
 
 ## Exact target-match cache
 
@@ -172,16 +175,21 @@ follow one warmup, with mode order rotated. The measured speedup depends on
 how often pixels are revisited; no equal-throughput claim is made for arbitrary
 scenes, other paint counts, browsers or other hosts.
 
-## Optional forward decoders
+## Default fast display and reference evaluation
 
-Direct 1-16-paint mixers and jobs can select a versioned display evaluator:
+`PaletteMixerN::direct` and `from_palette_bytes` use `ExpLutV1` automatically for
+palettes with empirical pair controls, including the measured Old Holland Eight.
+No extra call is needed for a new painting. Plain K-M palettes retain reference
+evaluation without an unused table; prepared-four OPL1 keeps its existing path.
+Existing saved jobs always use their recorded decoder, regardless of the current
+new-job default. To compare an existing job with reference evaluation:
 
 ```text
-let job = job.with_forward_decoder(ForwardDecoder::ExpLutV1)?;
+let job = job.with_forward_decoder(ForwardDecoder::Reference)?;
 let (canvas, stats) = job.paint_final(2048)?;
 ```
 
-`ForwardDecoder` is exported from `oil_palette`. `Reference` remains the default.
+`ForwardDecoder` is exported from `oil_palette`; its default is `ExpLutV1`.
 `AlgebraicV1` replaces the empirical correction's log/log1p/exp sequence with
 the equivalent ratio `r / (r + (1-r)*exp(-shift))` and prepares the spectral basis.
 `ExpLutV1` additionally interpolates a fixed 513-entry exponential table on
@@ -190,7 +198,7 @@ function table, not a multidimensional table of recipes or a new optical model.
 Pure endpoints and all material proportions are preserved. Both alternate
 evaluators can change floating-point RGB; only the lookup adds interpolation error.
 
-Select on a mixer before authoring using the same `with_forward_decoder` method,
+Override on a mixer before authoring using the same `with_forward_decoder` method,
 or on an existing job without changing its recipes. Target solving and the colors
 used to derive streak recipes keep the reference evaluation. Achieved-color
 reports describe the selected decoder; changing the decoder clears the target
@@ -201,6 +209,9 @@ section stays empty. Existing tag-0 jobs and OPJ1 preserve their bytes and meani
 Unknown tags are rejected, including by older readers that only support tag 0.
 Selected-decoder same-host replay is exact; accelerated output is not promised
 bit-identical to reference. No new cross-host bit-parity claim is made.
+The low-level `PaletteMixerN::from_bytes(palette, table)` imports legacy sections
+without a decoder tag and retains reference evaluation for direct palettes;
+OPJ2 loading then applies its stored tag. Use `from_palette_bytes` for new work.
 
 The table uses 4104 bytes per mixer. For 31 bands, its prepared basis adds 992
 bytes, and the evaluator also owns a cloned optical model. There is no additional

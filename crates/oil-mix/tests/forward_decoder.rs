@@ -40,6 +40,32 @@ fn palette<const N: usize, const B: usize>() -> PaletteN<N, B> {
 }
 fn check<const N: usize, const B: usize>() {
     let p = palette::<N, B>();
+    let expected_default = if N == 1 {
+        ForwardDecoder::Reference
+    } else {
+        ForwardDecoder::ExpLutV1
+    };
+    let direct = PaletteMixerN::direct(p.clone()).unwrap();
+    let imported = PaletteMixerN::<N, false, B>::from_palette_bytes(&p.to_bytes()).unwrap();
+    for mixer in [&direct, &imported] {
+        assert_eq!(mixer.forward_decoder(), expected_default);
+        assert_eq!(
+            mixer.forward_auxiliary_bytes(),
+            if N == 1 { 0 } else { B * 32 + 513 * 8 }
+        );
+        let explicit = PaletteForwardN::new(&p, expected_default);
+        let state = mixer.recipe([1.; N]).unwrap();
+        let expected = ::ochrell::conversion::gamut_map(
+            explicit.decode_linear(state.map(|v| v as f64)).unwrap(),
+        );
+        assert_eq!(
+            mixer.decode_linear_rgb(&state).map(f32::to_bits),
+            expected.map(|v| (v as f32).to_bits())
+        );
+    }
+    let legacy = PaletteMixerN::<N, false, B>::from_bytes(&p.to_bytes(), &[]).unwrap();
+    assert_eq!(legacy.forward_decoder(), ForwardDecoder::Reference);
+    assert_eq!(legacy.forward_auxiliary_bytes(), 0);
     let mut probes = Vec::new();
     for i in 0..N {
         let mut c = [0.; N];
@@ -109,7 +135,10 @@ fn extremes_boundaries_and_full_control_bounds_across_counts_and_grids() {
 #[test]
 fn decoder_switch_clears_reports_and_preserves_reference_authoring() {
     let p = palette::<8, 31>();
-    let m = PaletteMixerN::direct(p.clone()).unwrap();
+    let m = PaletteMixerN::direct(p.clone())
+        .unwrap()
+        .with_forward_decoder(ForwardDecoder::Reference)
+        .unwrap();
     let target = [0.3, 0.4, 0.5];
     let original = m.match_target(target).unwrap();
     let state = m.recipe([1., 2., 3., 4., 5., 6., 7., 8.]).unwrap();
@@ -141,7 +170,11 @@ fn decoder_switch_clears_reports_and_preserves_reference_authoring() {
             .into_owned(),
     )
     .unwrap();
+    assert_eq!(prepared.forward_auxiliary_bytes(), 0);
     assert!(prepared
         .with_forward_decoder(ForwardDecoder::ExpLutV1)
         .is_err());
+    let plain = PaletteMixerN::direct(synthetic_four().clone()).unwrap();
+    assert_eq!(plain.forward_decoder(), ForwardDecoder::Reference);
+    assert_eq!(plain.forward_auxiliary_bytes(), 0);
 }

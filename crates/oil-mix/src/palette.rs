@@ -130,13 +130,16 @@ impl PaletteMixerN<4, true> {
 }
 
 impl<const N: usize, const B: usize> PaletteMixerN<N, false, B> {
-    /// Own the optical model and evaluate mixtures directly. No exponential LUT.
+    /// Own the optical model. Corrected palettes use the compact exponential
+    /// decoder by default; plain K-M palettes need no exponential preparation.
     pub fn direct(palette: PaletteN<N, B>) -> Result<Self, PaletteError> {
         let matcher = ColorMatcherN::with_cbrt(&palette, oil_math::cbrt)?.into_owned();
+        let forward = (!palette.pair_controls().is_empty())
+            .then(|| Box::new(PaletteForwardN::new(&palette, ForwardDecoder::default())));
         Ok(Self {
             table: None,
             matcher,
-            forward: None,
+            forward,
             target_cache: Mutex::new(TargetCache::new(DEFAULT_TARGET_CACHE_CAPACITY)),
         })
     }
@@ -147,8 +150,10 @@ impl<const N: usize, const B: usize> PaletteMixerN<N, false, B> {
 }
 
 impl<const N: usize, const PREPARED: bool, const B: usize> PaletteMixerN<N, PREPARED, B> {
-    /// Prepared mode requires a four-paint OPL1; direct mode requires an empty
-    /// table section, so a saved decoder cannot silently change on reload.
+    /// Legacy tagless sections: prepared mode requires a four-paint OPL1;
+    /// direct mode requires an empty table and retains reference evaluation.
+    /// OPJ2 loading applies its recorded decoder tag after this construction.
+    /// Use from_palette_bytes for a new job with the current preferred decoder.
     pub fn from_bytes(palette: &[u8], table: &[u8]) -> Result<Self, PrepareError> {
         if (PREPARED && (N != 4 || B != 81 || table.is_empty())) || (!PREPARED && !table.is_empty())
         {
@@ -182,7 +187,8 @@ impl<const N: usize, const PREPARED: bool, const B: usize> PaletteMixerN<N, PREP
         self.table.as_ref()
     }
 
-    /// Opt into a versioned alternate direct decoder. Prepared-four OPL1 tables
+    /// Select a versioned direct decoder, including reference evaluation.
+    /// Prepared-four OPL1 tables
     /// keep their own decoder; non-reference choices are rejected for that mode.
     /// Rebuilds preparation and clears cached achieved-color reports.
     pub fn with_forward_decoder(mut self, method: ForwardDecoder) -> Result<Self, PrepareError> {

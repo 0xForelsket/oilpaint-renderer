@@ -1,4 +1,5 @@
 //! Trace exact target reuse and benchmark palette authoring. See the crate README.
+//! Keep reference evaluation via legacy tagless sections for this frozen study.
 use oil_mix::{palette::TargetMatchN, Mixer};
 use oil_palette::{PaletteJobN, PaletteMixerN, RecipeLoadN};
 use oil_strokes::StrokeList;
@@ -21,7 +22,7 @@ fn record(
 }
 
 fn trace_authoring(bytes: &[u8], geometry: StrokeList) -> Result<(Job, TargetTrace)> {
-    let m = PaletteMixer::from_palette_bytes(bytes)?.with_target_cache_capacity(0);
+    let m = PaletteMixer::from_bytes(bytes, &[])?.with_target_cache_capacity(0);
     let mut trace = Vec::new();
     let ground = record(&m, geometry.ground, "ground", &mut trace)?;
     let mut loads = Vec::new();
@@ -122,7 +123,7 @@ fn benchmark(
         ("repeated64", &repeated),
         ("unique64", &unique),
     ] {
-        let reference = PaletteMixer::from_palette_bytes(bytes)?.with_target_cache_capacity(0);
+        let reference = PaletteMixer::from_bytes(bytes, &[])?.with_target_cache_capacity(0);
         let expected: Vec<u8> = if name == "fixture" {
             baseline_bytes.clone()
         } else {
@@ -138,7 +139,7 @@ fn benchmark(
         for repetition in 0..8 {
             for offset in 0..3 {
                 let mode = ["disabled", "cold", "warm"][(repetition + offset) % 3];
-                let m = PaletteMixer::from_palette_bytes(bytes)?
+                let m = PaletteMixer::from_bytes(bytes, &[])?
                     .with_target_cache_capacity(if mode == "disabled" { 0 } else { 1024 });
                 let mut prime_ms = 0.;
                 if mode == "warm" {
@@ -219,7 +220,7 @@ fn main() -> Result<()> {
     let traced_ms = start.elapsed().as_secs_f64() * 1e3;
     let start = Instant::now();
     let (actual, _) = Job::from_rgb(
-        PaletteMixer::from_palette_bytes(&bytes)?.with_target_cache_capacity(0),
+        PaletteMixer::from_bytes(&bytes, &[])?.with_target_cache_capacity(0),
         geometry.clone(),
     )?;
     let production_ms = start.elapsed().as_secs_f64() * 1e3;
