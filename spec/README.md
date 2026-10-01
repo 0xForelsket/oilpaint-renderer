@@ -8,6 +8,8 @@ These specs define the two seams of the new engine:
 | [`STROKELIST_V2.md`](STROKELIST_V2.md) | **StrokeList v2**, the binary output of the planner and input of the painter; carries the engine version | draft (L0); frozen with the codec in L1 |
 | [`ERRORS.md`](ERRORS.md) | The structured error format and the error codes shared by the Rust core, the CLI and the TS API | kept current; scene codes implemented in L2 |
 | [`ENGINE_VERSIONS.md`](ENGINE_VERSIONS.md) | Which engine version shipped in which package version or git tag | kept current from L1 |
+| [`composition-1.schema.json`](composition-1.schema.json) | Resolved planner output with stable group/stroke identities; [API](../docs/PLANNER_AUTHORING.md) | format 1, engine-gated |
+| [`brush-acceptance.json`](brush-acceptance.json) | Seven retained catalog-2 definitions and their regression baseline | accepted working set; not full planner visual sign-off |
 
 ## The engine version
 

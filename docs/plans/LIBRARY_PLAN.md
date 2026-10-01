@@ -633,3 +633,5 @@ the physics after its alpha, at 26 days.
 **2026-10-02 brush review iteration 3:** dev.5 refines clustered scumble, local relief, pressure contact and lane grouping, and tests form-following placement. Seven presets retained; author/catalog schema 2 unchanged. See [report](../reports/BRUSH_ITERATION_3.md).
 
 **2026-10-02 isolated scumble refinement:** dev.6 changes only scumble contact; six retained brushes are regression-locked to dev.5. No catalogue retuning or other renderer work. See [focused report](../reports/SCUMBLE_REFINEMENT.md).
+
+**2026-10-02 retained-brush planner integration:** All seven brushes accepted as the working set and locked to dev.6 hashes. Dev.7 shares their compiler with region/pass planning, adds mask-supported contacts and stable random scopes, and exports resolved editable compositions. A worker workbench demonstrates an automatically planned orange/leaf/stone and selected-region edits. See [report](../reports/PLANNER_INTEGRATION.md) and [API](../PLANNER_AUTHORING.md). This completes the four bounded follow-up priorities, not L3 visual sign-off, retirement, or the later physics roadmap.

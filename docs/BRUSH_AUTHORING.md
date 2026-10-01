@@ -1,6 +1,6 @@
 # Brush authoring and preview
 
-This is the bounded implementation of the three requested priorities, independent of the remaining LIBRARY_PLAN milestones. The seven brush presets are **candidates awaiting artist review**. `impressionist` remains a scene/style preset; brush presets are separate data.
+This is the bounded implementation of the three requested priorities, independent of the remaining LIBRARY_PLAN milestones. All seven brushes are now the **retained working set**, following the user's visual review. `impressionist` remains a scene/style preset; brush presets are separate data. See [planner integration](PLANNER_AUTHORING.md) for region/pass brush selection and resolved composition editing.
 
 ## Launch
 
@@ -22,7 +22,7 @@ Save reference captures the current rendered image and view/mixer metadata to br
 
 ## Source format and API
 
-Rust `oil-author` owns the catalog, validation, path sampling, brush compilation and replay. `crates/oil-author/catalog.json` is the one built-in catalog. TypeScript gets this data from WASM, never a duplicated set of constants. `spec/author-2.schema.json` and `src/author-types.ts` are generated from Rust. Regenerate with:
+Rust `oil-brush` owns the shared catalog, validation and path/contact compilation; `oil-author` owns documents and replay. `crates/oil-brush/catalog.json` is the one built-in catalog, also used by `oil-plan`. TypeScript gets this data from WASM, never a duplicated set of constants. `spec/author-2.schema.json` and `src/author-types.ts` are generated from Rust. Regenerate with:
 
 ```powershell
 cargo run --release -q -p oil-author --example schema | Set-Content spec/author-1.schema.json
@@ -53,7 +53,7 @@ const independentDraw = scopedRandom(document.seed, ['lilies', 'lily-1', 'placem
 
 Document format is explicitly `oil-author`, version **2**. It requires the exact running engine string and an embedded catalog version **2**. Unknown fields, versions, presets, controls, duplicate IDs, invalid ranges and nonfinite numbers fail validation. A group ID is unique in a document; stroke IDs are globally unique. Group and stroke array order is paint order. Renaming display names does not change seeds. Seed scopes use length-delimited UTF-8 FNV-1a; random draws should name the permanent group, subject, purpose and counter. Adding draws in one scope cannot consume another scope's stream.
 
-The current iteration uses engine `2.0.0-dev.6`, author format **2** and catalog **2**. The dev.6 change is isolated to scumble contact. The six retained presets and their same-input paint output match dev.5 exactly; the catalog is unchanged. Earlier-engine documents and StrokeLists are still explicitly refused by the version gate. Dev.5 is preserved at commit `c4a8cd3`. Author/catalog schema 2 remains unchanged; dev.4 / schema 2 is preserved at commit `bc18d7b`. Use commit `a19d964` for dev.3 / author 1; its reference gallery and saved source files remain intact. No silent migration or legacy rendering switch is provided. The author compiler and catalog have their own version gates. Definitions remain embedded, so changing a built-in preset cannot reinterpret a saved document. Keep the JSON source for IDs/editing alongside flattened StrokeList exports.
+The current engine is `2.0.0-dev.7`, author format **2** and catalog **2**. Dev.7 changes planner output; all seven authored brush outputs match dev.6 exactly. The shared catalog's legacy `candidate` status strings are retained byte-for-byte; `spec/brush-acceptance.json` records acceptance, and the UI labels unmodified built-ins as retained. Imported modified definitions remain custom candidates. Earlier-engine documents and StrokeLists are explicitly refused by the version gate. Dev.6 is preserved at `858a22a`, dev.5 at `c4a8cd3`, dev.4 at `bc18d7b`, and dev.3 / author 1 at `a19d964`. Historical galleries and saved source files remain intact. No silent migration or legacy rendering switch is provided. Embedded definitions pin a saved author's catalog. Keep JSON source alongside flattened StrokeList exports to retain editing identities.
 
 Each group compiles to an existing layer with pre-group height blur (0.002 cw) and post-group wetness multiplier. Paths are resampled at roughly 0.2 brush widths (16–2048 segments) using arc length in Rust. Stored pointer pressure multiplies the preset pressure envelope. Width/pressure envelopes use smooth interpolation into the landing and release after 58% of the path. Catalog 2 adds `contact` (`flat`, `round`, `point`) and `variation` (0–0.25). Round contact uses a curved, off-centre footprint; coherent variation is tied to stable stroke seeds. Fine detail uses very low variation. Depletion defaults to `preset.depletion / max(1, 2 * pathLength / width)`; a per-stroke `deplete` override is an advanced escape hatch.
 

@@ -1,0 +1,203 @@
+{
+  "bare": 0.7650082236842105,
+  "bytes": 355480,
+  "engine": "2.0.0-dev.7",
+  "layers": [
+    {
+      "ms": 0,
+      "name": "Cast shadows",
+      "regions": [
+        {
+          "brushPreset": "rounded-dab",
+          "gapStrokes": 0,
+          "region": "shadows",
+          "sites": 90,
+          "strokes": 64
+        }
+      ],
+      "strokes": 64
+    },
+    {
+      "ms": 0,
+      "name": "Block in",
+      "regions": [
+        {
+          "brushPreset": "loaded-flat",
+          "gapStrokes": 5,
+          "region": "leaf",
+          "sites": 32,
+          "strokes": 17
+        },
+        {
+          "brushPreset": "loaded-flat",
+          "gapStrokes": 37,
+          "region": "orange",
+          "sites": 81,
+          "strokes": 94
+        },
+        {
+          "brushPreset": "loaded-flat",
+          "gapStrokes": 16,
+          "region": "stone",
+          "sites": 29,
+          "strokes": 30
+        }
+      ],
+      "strokes": 141
+    },
+    {
+      "ms": 0,
+      "name": "Describe form",
+      "regions": [
+        {
+          "brushPreset": "loaded-flat",
+          "gapStrokes": 13,
+          "region": "leaf",
+          "sites": 110,
+          "strokes": 66
+        },
+        {
+          "brushPreset": "rounded-dab",
+          "gapStrokes": 70,
+          "region": "orange",
+          "sites": 140,
+          "strokes": 157
+        },
+        {
+          "brushPreset": "loaded-flat",
+          "gapStrokes": 10,
+          "region": "stone",
+          "sites": 50,
+          "strokes": 42
+        }
+      ],
+      "strokes": 265
+    },
+    {
+      "ms": 0,
+      "name": "Shape transitions",
+      "regions": [
+        {
+          "brushPreset": "loaded-flat",
+          "gapStrokes": 18,
+          "region": "leaf",
+          "sites": 140,
+          "strokes": 100
+        },
+        {
+          "brushPreset": "rounded-dab",
+          "gapStrokes": 47,
+          "region": "orange",
+          "sites": 140,
+          "strokes": 129
+        },
+        {
+          "brushPreset": "loaded-flat",
+          "gapStrokes": 14,
+          "region": "stone",
+          "sites": 140,
+          "strokes": 81
+        }
+      ],
+      "strokes": 310
+    },
+    {
+      "ms": 0,
+      "name": "Leaf vein",
+      "regions": [
+        {
+          "brushPreset": "fine-detail",
+          "gapStrokes": 0,
+          "region": "leaf",
+          "sites": 15,
+          "strokes": 15
+        }
+      ],
+      "strokes": 15
+    },
+    {
+      "ms": 0,
+      "name": "Light accents",
+      "regions": [
+        {
+          "brushPreset": "impasto-accent",
+          "gapStrokes": 0,
+          "region": "orange",
+          "sites": 8,
+          "strokes": 7
+        }
+      ],
+      "strokes": 7
+    },
+    {
+      "ms": 0,
+      "name": "Stone catches",
+      "regions": [
+        {
+          "brushPreset": "scumble",
+          "gapStrokes": 0,
+          "region": "stone",
+          "sites": 2,
+          "strokes": 2
+        }
+      ],
+      "strokes": 2
+    }
+  ],
+  "mixer": "ochrell-0.2",
+  "points": 14730,
+  "regions": [
+    {
+      "covered": 0.5838739135005946,
+      "region": "shadows",
+      "strokes": 64,
+      "stubs": 16,
+      "width": [
+        0.02709530414868846,
+        0.04798457914585842
+      ]
+    },
+    {
+      "covered": 0.9629065825448769,
+      "region": "leaf",
+      "strokes": 198,
+      "stubs": 18,
+      "width": [
+        0.0032479272569938605,
+        0.07023254562011957
+      ]
+    },
+    {
+      "covered": 0.9540747105422421,
+      "region": "orange",
+      "strokes": 387,
+      "stubs": 33,
+      "width": [
+        0.006066566638226899,
+        0.07002454444304912
+      ]
+    },
+    {
+      "covered": 0.966347669080658,
+      "region": "stone",
+      "strokes": 155,
+      "stubs": 6,
+      "width": [
+        0.010391454771902767,
+        0.07112986367397456
+      ]
+    }
+  ],
+  "seed": 1907,
+  "size": [
+    256,
+    171
+  ],
+  "strokes": 804,
+  "timings": {
+    "guidesMs": 0,
+    "planMs": 0,
+    "totalMs": 0
+  },
+  "warnings": []
+}

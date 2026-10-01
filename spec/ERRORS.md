@@ -53,6 +53,9 @@ The crate `oil-errors` defines the type; `packages/oilpaint` throws it as `OilEr
 | `UNKNOWN_COLOR` | a colour string is neither `#rrggbb` nor a known tube |
 | `UNKNOWN_REGION` | a style, layer or curve names a region that is not declared |
 | `UNKNOWN_PRESET` | `preset` names a preset that is not in this build (with a did-you-mean fix) |
+| `UNKNOWN_BRUSH_PRESET` | a region/layer `brushPreset` is absent from the selected brush catalog |
+| `INVALID_BRUSH_CATALOG` | the embedded catalog version, definitions or controls fail validation |
+| `BRUSH_WIDTH_RANGE` | effective region/pass nominal width lies outside the selected brush's calibrated range |
 | `UNKNOWN_FIELD` | a shape or flow refers to a field not declared in `fields` (or of the wrong kind), or a declared field was not supplied |
 | `FIELD_HASH_MISMATCH` | a supplied sampled field does not match the hash recorded in the spec |
 | `DUPLICATE_NAME` | two regions or two layers share a name |
@@ -76,6 +79,12 @@ The crate `oil-errors` defines the type; `packages/oilpaint` throws it as `OilEr
 | `STALE_GUIDES` | a `Guides` object was read after a later compile replaced it in the engine |
 
 ### Planning feedback (warnings, from L5)
+
+Resolved composition helpers also reject `COMPOSITION_VERSION_MISMATCH`, `INVALID_GROUP_ID`,
+`INVALID_STROKE_ID_OR_POINTS`, and `INVALID_COMPOSITION`; the exact engine gate uses
+`ENGINE_VERSION_MISMATCH`. TypeScript `replaceRegion` throws `REPLAN_SCOPE_CHANGED` when accepting a
+candidate would require a canvas/engine change, new selected-region group, or changed blur/dry boundary.
+These authoring errors currently travel as message strings through the author API.
 
 `REGION_NO_FLOW`, `REGION_UNPAINTED`, `LAYER_OVERDRAW`, `BLACK_PIXELS`, `CLIPPING`: see `docs/plans/LIBRARY_PLAN.md`,
 section 9.

@@ -2,15 +2,16 @@
 
 ## Brush authoring preview
 
-The Rust/WASM authoring tools now include seven **candidate** brush presets, named stroke groups with stable IDs
+The Rust/WASM authoring tools now include seven **retained** brush presets, named stroke groups with stable IDs
 and local editing, and an interactive paint preview. From this directory run `npm run build:wasm`, then
 `npm run preview`, and open <http://127.0.0.1:4173>.
 
 See [authoring API, format and controls](docs/BRUSH_AUTHORING.md), the
 [native/browser review gallery](docs/reports/brush-review-3/index.html), and
 [verification and measured latency](docs/reports/BRUSH_ITERATION_3.md).
-The separate `oil-author` source format keeps existing painting files intact; engine dev.6 / author 2 explicitly reject older formats. These presets
-remain a working set; the six retained brushes are held stable while scumble is refined separately. See the [focused scumble review](docs/reports/scumble-refinement/index.html). This work does not complete the remaining renderer roadmap.
+All seven brushes are now held stable. Engine dev.7 integrates them into region/pass planning and adds a resolved `oil-composition` format for precise local edits. Open [the composition workbench](http://127.0.0.1:4173/packages/oilpaint/preview/composition.html) after launching the server above. See the [planner API and workflow](docs/PLANNER_AUTHORING.md), [still-life review](docs/reports/planner-integration/index.html), and [verification report](docs/reports/PLANNER_INTEGRATION.md).
+
+The separate author 2 and composition 1 source formats keep existing paintings intact and enforce exact engine versions. Previous studies require their original engine. This work does not complete the remaining renderer roadmap.
 
 **Ochrell integration:** `--mixer ochrell` now runs the existing planner, bristle
 renderer and relighting with persistent synthetic K/S material states. It needs

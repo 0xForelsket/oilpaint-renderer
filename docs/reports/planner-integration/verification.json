@@ -1,0 +1,101 @@
+{
+  "engine": "2.0.0-dev.7",
+  "strokes": 804,
+  "groups": 13,
+  "coverage": [
+    {
+      "covered": 0.5838739135005946,
+      "region": "shadows",
+      "strokes": 64,
+      "stubs": 16,
+      "width": [
+        0.02709530414868846,
+        0.04798457914585842
+      ]
+    },
+    {
+      "covered": 0.9629065825448769,
+      "region": "leaf",
+      "strokes": 198,
+      "stubs": 18,
+      "width": [
+        0.0032479272569938605,
+        0.07023254562011957
+      ]
+    },
+    {
+      "covered": 0.9540747105422421,
+      "region": "orange",
+      "strokes": 387,
+      "stubs": 33,
+      "width": [
+        0.006066566638226899,
+        0.07002454444304912
+      ]
+    },
+    {
+      "covered": 0.966347669080658,
+      "region": "stone",
+      "strokes": 155,
+      "stubs": 6,
+      "width": [
+        0.010391454771902767,
+        0.07112986367397456
+      ]
+    }
+  ],
+  "strokesHash": "91f6cdb5772ac60fb8b1a9d38ef221a22865cc18aa425cc4d8e8d1b0647b08b4",
+  "planningMs": {
+    "native": 159.7425,
+    "Node": 345.5409000000001,
+    "browsers": [
+      {
+        "name": "Chromium",
+        "planMs": 319.30000001192093
+      },
+      {
+        "name": "Firefox",
+        "planMs": 1904
+      }
+    ]
+  },
+  "checks": [
+    {
+      "name": "planned",
+      "planes": {
+        "cover": "2b26f1ebf7c086d87c8414365163976da4baef5cacf7872debfd8a6ba9d99490",
+        "h": "bfa292d4c45661d46a779ffd71cb3333b0885c7387121138a2b79765ffd3f056",
+        "lat": "b9919bd2d11a07f997042042e5f35abbee2c0090ecb183f21183124d1fbb11ac",
+        "rgb": "da74994906dddeef296356b7b3fe41e9c5dcb54a9aad52f999dedc9fae6a8e2f",
+        "wet": "2cddc75ec379992dbfb23f55a54c2df6114c19c02430573bb565ca309d219c31"
+      },
+      "image": "4cf4a0e528561d3304ff49749e985d374bd3c2c8c822065dcad7656b2f22848d"
+    },
+    {
+      "name": "leaf-edit",
+      "planes": {
+        "cover": "2b26f1ebf7c086d87c8414365163976da4baef5cacf7872debfd8a6ba9d99490",
+        "h": "bfa292d4c45661d46a779ffd71cb3333b0885c7387121138a2b79765ffd3f056",
+        "lat": "7790d427d7be1fd532ef0747be97da8032752246a96b23b96194fc100faf75ef",
+        "rgb": "04377a60ee7682e71f315b60f15a6a76725bf6b6a2349ff87f94ccb51ce40c02",
+        "wet": "2cddc75ec379992dbfb23f55a54c2df6114c19c02430573bb565ca309d219c31"
+      },
+      "image": "234d6c5427c528b99afd00415759a5e405395f995239c3a81f55f6d360ec7973"
+    },
+    {
+      "name": "leaf-replan",
+      "planes": {
+        "cover": "9e5ffdfb6f9c2a3ab6b85c5a4677be0ad9a918845cc5abcd882faa4c58d8fa2b",
+        "h": "ea26309f11ef0017f2e0f6515469df40a19ccc8dc57e367d7c2e06c13927c1fc",
+        "lat": "f07f60ca677537cbaf091fb27956ab0507fa1ebe7f772062d7066e07d03264ca",
+        "rgb": "b8c7d12acef2480de7a8404f9603e8e7f79ce246f128503940ec58737dae0b6d",
+        "wet": "d5d112c839a64ba24498957d244e2149f2330b327bf3d7d8317d6bde8bee5651"
+      },
+      "image": "d20c3db3e23732af9d485d2653cbb8188fa33b5c7607319e3df80d82e6be0eb7"
+    }
+  ],
+  "nonLeafGroupsUnchanged": true,
+  "orangeAndStonePixelCropsUnchanged": true,
+  "incrementalEqualsFull": true,
+  "checkpointPrefixReuse": true
+}

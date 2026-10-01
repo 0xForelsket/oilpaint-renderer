@@ -359,6 +359,10 @@ give the same StrokeList bytes on every host (`ci/xhost`, cases `plan.*`).
 
 ## Porting v1 scenes
 
+### Additive brush fields (engine dev.7)
+
+Optional root `brushCatalog` embeds catalog-2 definitions. Region/layer styles accept `brushPreset`, `pressure` (two values in 0–1), `edgeFade` (0–1), and `edgeInset` (0–2 half-widths). These do not reinterpret old source fields. Named brush paths use the shared catalog contact compiler, finer steps, mask-supported contacts and in-region color sampling; the generic path/profile description above applies when no brush is selected. Planner output changes carry the new exact engine version. See [planner API and precedence](../docs/PLANNER_AUTHORING.md) and the generated schema for validation. Plan reports now record each region pass's resolved brush name; the WASM plan response also returns an editable resolved composition.
+
 The mapping is mechanical: each DSL call becomes the JSON object in the tables above, and snake_case keys become
 the camelCase names listed. `scenes/storm_v3.ts` is the worked example.
 
