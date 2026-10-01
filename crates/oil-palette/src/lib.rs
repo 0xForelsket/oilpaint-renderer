@@ -5,7 +5,7 @@
 #![doc = include_str!("../README.md")]
 
 mod codec;
-use oil_kernel::brush::{length_in_widths, render_stroke_len};
+use oil_kernel::brush::{length_in_widths, render_stroke_len, render_stroke_len_materials};
 use oil_kernel::{Canvas, Load};
 pub use oil_mix::palette::{PaletteMixer, PaletteMixerN, TargetMatch, TargetMatchN};
 use oil_mix::Mixer;
@@ -164,6 +164,24 @@ impl<const N: usize, const PREPARED: bool, const B: usize> PaletteJobN<N, PREPAR
     pub fn paint(
         &self,
         width: u32,
+        after_layer: impl FnMut(usize, &Canvas<PaletteMixerN<N, PREPARED, B>>),
+    ) -> Result<(Canvas<PaletteMixerN<N, PREPARED, B>>, PaintStats), Error> {
+        self.paint_impl::<false>(width, after_layer)
+    }
+
+    /// Render only the final image, evaluating the unchanged decoder once per
+    /// pixel that received paint. Material transport is identical to `paint`.
+    /// No intermediate layer previews are produced. Saved formats are unchanged.
+    pub fn paint_final(
+        &self,
+        width: u32,
+    ) -> Result<(Canvas<PaletteMixerN<N, PREPARED, B>>, PaintStats), Error> {
+        self.paint_impl::<true>(width, |_, _| {})
+    }
+
+    fn paint_impl<const DEFER_DISPLAY: bool>(
+        &self,
+        width: u32,
         mut after_layer: impl FnMut(usize, &Canvas<PaletteMixerN<N, PREPARED, B>>),
     ) -> Result<(Canvas<PaletteMixerN<N, PREPARED, B>>, PaintStats), Error> {
         if width == 0 || width > 16384 {
@@ -214,14 +232,25 @@ impl<const N: usize, const PREPARED: bool, const B: usize> PaletteJobN<N, PREPAR
                     zcol2: recipe.secondary,
                     dz: recipe.dz,
                 };
-                let st = render_stroke_len(
-                    m,
-                    &mut canvas.planes(),
-                    &points,
-                    &load,
-                    &stroke.brush,
-                    length_in_widths(path),
-                );
+                let st = if DEFER_DISPLAY {
+                    render_stroke_len_materials(
+                        m,
+                        &mut canvas.planes(),
+                        &points,
+                        &load,
+                        &stroke.brush,
+                        length_in_widths(path),
+                    )
+                } else {
+                    render_stroke_len(
+                        m,
+                        &mut canvas.planes(),
+                        &points,
+                        &load,
+                        &stroke.brush,
+                        length_in_widths(path),
+                    )
+                };
                 stats.strokes += 1;
                 stats.painted_pixels += st.pixels;
                 stats.alpha += st.alpha;
@@ -229,7 +258,19 @@ impl<const N: usize, const PREPARED: bool, const B: usize> PaletteJobN<N, PREPAR
             if let Some(d) = layer.dry_after {
                 canvas.dry(d);
             }
-            after_layer(li, &canvas);
+            if !DEFER_DISPLAY {
+                after_layer(li, &canvas);
+            }
+        }
+        if DEFER_DISPLAY {
+            // Every deposit reaching the former RGB update also increments cover
+            // by positive alpha (>0.002). Untouched pixels retain the exact ground
+            // display; each touched pixel uses its final, unchanged recipe.
+            for ((rgb, state), cover) in canvas.rgb.iter_mut().zip(&canvas.lat).zip(&canvas.cover) {
+                if *cover > 0. {
+                    *rgb = m.decode_srgb(state);
+                }
+            }
         }
         Ok((canvas, stats))
     }

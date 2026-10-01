@@ -16,7 +16,7 @@ let ground = mixer.recipe([0., 0., 0., 0., 0., 0., 0., 1.])?;
 let paint = mixer.recipe([1., 2., 0., 0., 1., 0., 0., 4.])?;
 let loads = vec![RecipeLoadN::solid(paint); geometry.strokes.len()];
 let job = PaletteJobN::new(mixer, geometry, ground, loads)?;
-let (canvas, _) = job.paint(512, |_, _| {})?;
+let (canvas, _) = job.paint_final(512)?;
 let saved = job.to_bytes()?;
 let restored = PaletteJobN::<8>::from_bytes(&saved)?;
 # let _ = (canvas, restored);
@@ -136,3 +136,36 @@ under disabled, cold and warm modes, reporting seven rotated observations plus
 warm-cache priming time. Numerical results are in the sibling Ochrell report
 `experiments/palette_authoring_cache/REPORT.md`. This accelerates authoring;
 it is not a forward LUT or a change to the paint model.
+
+## Final-image rendering
+
+Use `job.paint_final(width)` when only the completed image is needed. It runs
+the same brush/material simulation, then evaluates the existing decoder once
+for each pixel that received a deposit. Pixels with no deposit keep the exact
+ground color. All material proportions, height, wetness, coverage, blurred
+height, statistics and final RGB match `job.paint(width, after_layer)` exactly
+on the verified cases. No approximation, LUT or new canvas plane is introduced.
+
+Keep `paint(width, after_layer)` for intermediate layer previews. Its callbacks
+still see current RGB after every layer. `paint_final` has no preview callback
+and does not modify the saved OPJ format; the same job can be rendered with
+either method after reload. Both methods enforce the same dimension/memory limits.
+The optimization is opt-in, and saved model identities and engine version stay
+unchanged because final output bits are preserved.
+
+The native scaling benchmark runs the saved balanced Old Holland Eight scenes
+at widths 512/1024/2048 with a 4:5 aspect. Its diagnostic RGB-bypass mode isolates
+removable decoding work and is never a display option. See the sibling Ochrell
+report `experiments/palette_canvas_scaling/REPORT.md` for timings, exact checks,
+canvas allocation accounting and observed benchmark-process working sets.
+
+```text
+cargo run --release --offline -p oil-palette --example canvas_scaling -- <saved-job-directory> <output-directory> 1024
+```
+
+That directory must contain `fixed-recipes.opj`, `matched-targets.opj` and
+`renderer-fixture.opj` from the existing package comparison. It loads already
+authored recipes; matching is outside every paint timing. Three measured rounds
+follow one warmup, with mode order rotated. The measured speedup depends on
+how often pixels are revisited; no equal-throughput claim is made for arbitrary
+scenes, other paint counts, browsers or other hosts.

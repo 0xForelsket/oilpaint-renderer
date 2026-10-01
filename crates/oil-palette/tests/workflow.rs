@@ -154,6 +154,59 @@ fn authoring_cache_preserves_jobs_reports_and_canvas_and_is_not_serialized() {
     assert_eq!(restored.mixer().target_cache_stats().entries, 0);
     assert_eq!(restored.to_bytes().unwrap(), cached.to_bytes().unwrap());
 }
+
+#[test]
+fn final_only_paint_matches_preview_path_and_keeps_unpainted_ground() {
+    let job = explicit(false, false);
+    let saved = job.to_bytes().unwrap();
+    for width in [1, 64, 97] {
+        let mut previews = 0;
+        let (a, sa) = job
+            .paint(width, |_, canvas| {
+                previews += 1;
+                for i in (0..canvas.lat.len()).step_by(23) {
+                    assert_eq!(canvas.rgb[i], job.mixer().decode_srgb(&canvas.lat[i]));
+                }
+            })
+            .unwrap();
+        let before = job.mixer().target_cache_stats();
+        let (b, sb) = job.paint_final(width).unwrap();
+        assert_eq!(before, job.mixer().target_cache_stats());
+        assert_eq!(previews, job.geometry().layers.len());
+        assert_eq!(
+            (sa.strokes, sa.painted_pixels, sa.alpha.to_bits()),
+            (sb.strokes, sb.painted_pixels, sb.alpha.to_bits())
+        );
+        for plane in PLANES {
+            assert_eq!(plane_bytes(&a, plane), plane_bytes(&b, plane));
+        }
+        assert_eq!(a.hblur, b.hblur);
+        let replay = PaletteJob::from_bytes(&saved)
+            .unwrap()
+            .paint_final(width)
+            .unwrap()
+            .0;
+        for plane in PLANES {
+            assert_eq!(plane_bytes(&a, plane), plane_bytes(&replay, plane));
+        }
+    }
+    assert_eq!(saved, job.to_bytes().unwrap());
+    assert!(job.paint_final(0).is_err());
+    assert!(job.paint_final(4096).is_err()); // 4:5 exceeds the 16M-pixel limit.
+    let mut geometry = job.geometry().clone();
+    for stroke in &mut geometry.strokes {
+        stroke.brush.opacity = 0.;
+    }
+    let blank =
+        PaletteJob::new(mixer(false), geometry, job.ground(), job.loads().to_vec()).unwrap();
+    let (canvas, stats) = blank.paint_final(64).unwrap();
+    assert_eq!(stats.painted_pixels, 0);
+    assert!(canvas.cover.iter().all(|v| *v == 0.));
+    assert!(canvas
+        .rgb
+        .iter()
+        .all(|v| *v == blank.mixer().decode_srgb(&blank.ground())));
+}
 fn checksum(bytes: &mut [u8]) {
     let end = bytes.len() - 32;
     let hash = Sha256::digest(&bytes[..end]);

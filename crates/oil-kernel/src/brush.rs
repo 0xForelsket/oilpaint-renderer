@@ -520,6 +520,32 @@ pub fn render_stroke_len<M: Mixer>(
     bp: &BrushParams,
     total_s: f32,
 ) -> StrokeStats {
+    render_stroke_len_impl::<M, true>(m, cv, pts, load, bp, total_s)
+}
+
+/// Advance material/height/wetness/coverage while leaving RGB untouched.
+/// Brush transport does not read RGB. A host using this path must refresh display
+/// from the final material states before exposing an image. This is for deferred
+/// final rendering; `render_stroke_len` keeps immediate display behavior.
+pub fn render_stroke_len_materials<M: Mixer>(
+    m: &M,
+    cv: &mut Planes<'_, M::State>,
+    pts: &[[f32; 4]],
+    load: &Load<M::State>,
+    bp: &BrushParams,
+    total_s: f32,
+) -> StrokeStats {
+    render_stroke_len_impl::<M, false>(m, cv, pts, load, bp, total_s)
+}
+
+fn render_stroke_len_impl<M: Mixer, const DISPLAY: bool>(
+    m: &M,
+    cv: &mut Planes<'_, M::State>,
+    pts: &[[f32; 4]],
+    load: &Load<M::State>,
+    bp: &BrushParams,
+    total_s: f32,
+) -> StrokeStats {
     let n = pts.len();
     if n < 2 {
         return StrokeStats::default();
@@ -751,7 +777,9 @@ pub fn render_stroke_len<M: Mixer>(
                             lpix[k] += a * (zp[k] - lpix[k]);
                         }
                     }
-                    cv.rgb[idx] = m.decode_srgb(&cv.lat[idx]);
+                    if DISPLAY {
+                        cv.rgb[idx] = m.decode_srgb(&cv.lat[idx]);
+                    }
                     let base = hprev + (hcur - hprev) * t;
                     if mode == MODE_PAINT {
                         let au = u.abs();

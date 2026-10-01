@@ -70,9 +70,18 @@ fn replay<const N: usize>() {
     let (a, stats) = original.paint(64, |_, _| {}).unwrap();
     let (b, _) = restored.paint(64, |_, _| {}).unwrap();
     let (c, _) = job::<N>(true).paint(64, |_, _| {}).unwrap();
+    let (final_only, final_stats) = restored.paint_final(64).unwrap();
+    assert_eq!(stats.strokes, final_stats.strokes);
+    assert_eq!(stats.painted_pixels, final_stats.painted_pixels);
+    assert_eq!(stats.alpha.to_bits(), final_stats.alpha.to_bits());
     assert!(stats.painted_pixels > 0);
     for plane in PLANES {
         assert_eq!(plane_bytes(&a, plane), plane_bytes(&b, plane), "{plane}");
+        assert_eq!(
+            plane_bytes(&a, plane),
+            plane_bytes(&final_only, plane),
+            "deferred {plane}"
+        );
         assert_eq!(
             plane_bytes(&a, plane),
             plane_bytes(&c, plane),
@@ -80,6 +89,7 @@ fn replay<const N: usize>() {
         );
     }
     assert_eq!(a.hblur, b.hblur);
+    assert_eq!(a.hblur, final_only.hblur);
     assert!(a
         .lat
         .iter()
