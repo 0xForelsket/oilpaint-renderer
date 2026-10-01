@@ -62,3 +62,5 @@ written for this project (MIT is the planned licence; no LICENSE file yet).
 ## Orange painting-study reference
 
 The photograph docs/reports/orange-study/reference.jpg is Single Orange (Fruit) by Augustus Binu, CC BY-SA 3.0. Source: https://commons.wikimedia.org/wiki/File:Single_Orange_%28Fruit%29.jpg . License: https://creativecommons.org/licenses/by-sa/3.0/ . It is unchanged; the review displays it smaller. The painted interpretation and comparison in that study folder carry the same license. This asset-specific notice does not change the renderer/source-code license status.
+
+The subsequent painting revision and comparisons in docs/reports/orange-study-2 carry the same CC BY-SA 3.0 artwork attribution and license as the original orange study; they use the same Augustus Binu reference.

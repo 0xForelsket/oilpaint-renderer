@@ -1,0 +1,29 @@
+{
+  "engine": "2.0.0-dev.5",
+  "strokes": 28,
+  "width": 384,
+  "hosts": [
+    "native",
+    "Node",
+    "Chromium",
+    "Firefox"
+  ],
+  "strokeHash": "663a850e028f1b8f250662d99f3d7ec08d1d6ffd109f5fea27188e467a8bece4",
+  "imageHash": "ac9db56bf4ec80b27ce26408d68d503ff0ca2325ab4c2f128e1250af85bce934",
+  "planes": {
+    "cover": "7c884023f5a307b39222f68bb517da1877f6325dca1be267a9091f61e5d0c22f",
+    "h": "626b131494ef3c1da2e3f062a89fc272dfa1444b11559eaf3b567774fcf1fe8b",
+    "lat": "f525f47d8ed4aab14774de393f00e2e207e4833f6183738478d3001facb26097",
+    "rgb": "ca30c2465488e2e75346bf7b3c1f02531a372f9d274a71b6fa1bb1cf19b7d1e1",
+    "wet": "32b4eb16f509c41f69f01c8839d8feb26e2e00c98898e51232007ad178e8187c"
+  },
+  "frozenBase": "fb118dc",
+  "frozen": {
+    "crates/oil-kernel/src/brush.rs": "f66581e797ccecd008638a3358049f75f07b67b319e486e9d547312820efdba1",
+    "crates/oil-kernel/src/lib.rs": "399c0b371be6282f9a991ac844a4ddf68038aacee9561f5d8b80ae9e1fe046c4",
+    "crates/oil-author/catalog.json": "acba49f6eb70b635a38ea89f5d3a4d177efe1998e7cd370291c05f92be246da6",
+    "crates/oil-author/src/lib.rs": "5b2365c8b9b9049fd8343ed0587dcb457023fca2940eb9173b674c97ee9d1efd",
+    "crates/oil-paint/src/lib.rs": "0a8a2e49a118ae77323f0a73dbf5656ae38ff9cdd0ab1d9e4556ef51a69b1727",
+    "crates/oil-light/src/lib.rs": "1cdf230f2f9f37075106c97956f41aedcde7f14a8a3c20ae2226e7de69165285"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "base": "a908b2e",
+  "originalFilesUnchanged": [
+    "docs/reports/orange-study/comparison.png",
+    "docs/reports/orange-study/height-384.png",
+    "docs/reports/orange-study/height-768.png",
+    "docs/reports/orange-study/index.html",
+    "docs/reports/orange-study/lit-384.png",
+    "docs/reports/orange-study/lit-768.png",
+    "docs/reports/orange-study/painting.oil-author.json",
+    "docs/reports/orange-study/painting.oilstrokes",
+    "docs/reports/orange-study/README.md",
+    "docs/reports/orange-study/reference.jpg",
+    "docs/reports/orange-study/report.json",
+    "docs/reports/orange-study/unlit-384.png",
+    "docs/reports/orange-study/unlit-768.png",
+    "docs/reports/orange-study/verification.json",
+    "studies/orange-study.ts"
+  ],
+  "underpaintingGeometryUnchanged": true,
+  "catalogUnchanged": true,
+  "lightingUnchanged": true,
+  "changes": "shadow strokes; underpainting colors; form and highlight strokes"
+}

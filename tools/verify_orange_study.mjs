@@ -6,7 +6,7 @@ import { chromium, firefox } from "playwright";
 import { loadEngine } from "../packages/oilpaint/src/engine.ts";
 import { createAuthor } from "../packages/oilpaint/src/author.ts";
 import { studyLight } from "../studies/orange-study.ts";
-const out = "docs/reports/orange-study";
+const out = process.argv[2] ?? "docs/reports/orange-study";
 const d = JSON.parse(fs.readFileSync(out + "/painting.oil-author.json"));
 const sha = (b) => createHash("sha256").update(b).digest("hex");
 const requests = [
